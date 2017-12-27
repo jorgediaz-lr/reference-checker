@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="**/.svn/**|.svn/" kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jst.server.core.container/com.liferay.studio.server.tomcat.runtimeClasspathProvider/Liferay v6.2 EE (Tomcat 7)">
+		<attributes>
+			<attribute name="owner.project.facets" value="jst.web"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="com.liferay.ide.eclipse.server.plugin.container/portlet">
+		<attributes>
+			<attribute name="org.eclipse.jst.component.nondependency" value=""/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/jline-2.14.5.jar"/>
+	<classpathentry kind="lib" path="lib/snakeyaml-1.18.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

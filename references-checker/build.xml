@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!DOCTYPE project>
+
+<project name="references-checker" basedir="." default="deploy">
+	<property name="plugin.file.default" value="${sdk.dir}/dist/${plugin.name}.jar" />
+	<import file="../build-common-shared.xml" />
+</project>
