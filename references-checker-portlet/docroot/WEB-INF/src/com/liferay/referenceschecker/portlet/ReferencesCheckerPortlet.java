@@ -14,6 +14,10 @@
 
 package com.liferay.referenceschecker.portlet;
 
+import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -21,30 +25,27 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
+import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.Repository;
-import com.liferay.portal.service.CompanyLocalServiceUtil;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.documentlibrary.NoSuchFileEntryException;
-import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.service.DLAppLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.output.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
-import com.liferay.referenceschecker.util.PortletFileRepositoryUtil;
 import com.liferay.referenceschecker.util.SQLUtil;
 import com.liferay.referenceschecker.util.StringUtil;
-import com.liferay.util.bridges.mvc.MVCPortlet;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -56,6 +57,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.ResourceBundle;
 import java.util.TreeMap;
 
 import javax.portlet.ActionRequest;
@@ -87,11 +89,16 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		try {
 			InputStream inputStream = new ByteArrayInputStream(
-				outputContent.getBytes(StringPool.UTF8));
+					outputContent.getBytes(StringPool.UTF8));
 
 			Repository repository =
-				PortletFileRepositoryUtil.getPortletRepository(
+				PortletFileRepositoryUtil.fetchPortletRepository(
 					groupId, portletId);
+
+			if (repository == null) {
+				repository = PortletFileRepositoryUtil.addPortletRepository(
+					groupId, portletId, new ServiceContext());
+			}
 
 			ReferencesCheckerPortlet.cleanupPortletFileEntries(
 				repository, 8 * 60);
@@ -101,7 +108,9 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 					System.currentTimeMillis() + ".csv";
 
 			return PortletFileRepositoryUtil.addPortletFileEntry(
-				repository, inputStream, userId, fileName, "text/csv");
+				repository.getGroupId(), userId, StringPool.BLANK,
+				(long) 0, portletId, repository.getDlFolderId(), inputStream,
+				fileName, "text/csv", true);
 		}
 		catch (Throwable t) {
 			_log.error(t, t);
@@ -243,10 +252,12 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 	public static List<String> getHeaders(
 		PortletConfig portletConfig, Locale locale, String[] headerKeys) {
 
+		ResourceBundle resourceBundle = portletConfig.getResourceBundle(locale);
+
 		List<String> headers = new ArrayList<String>();
 
 		for (int i = 0; i<headerKeys.length; i++) {
-			headers.add(LanguageUtil.get(portletConfig, locale, headerKeys[i]));
+			headers.add(LanguageUtil.get(resourceBundle, headerKeys[i]));
 		}
 
 		return headers;

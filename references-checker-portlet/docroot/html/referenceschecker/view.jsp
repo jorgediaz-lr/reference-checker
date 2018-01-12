@@ -49,6 +49,7 @@
 <portlet:actionURL name="executeCheckReferences" var="executeCheckReferencesURL" windowState="normal" />
 <portlet:actionURL name="executeMappingList" var="executeMappingListURL" windowState="normal" />
 
+<div class="container-fluid-1280"><div class="card-horizontal main-content-card"><div class="panel-body">
 <script type="text/javascript">
 	function showHide(shID) {
 		if (document.getElementById(shID)) {
@@ -63,15 +64,15 @@
 		}
 	}
 </script>
-<div class="alert portlet-msg-alert"><liferay-ui:message key="disclaimer" /></div>
+<div class="alert alert-warning"><liferay-ui:message key="disclaimer" /></div>
 <aui:form action="<%= executeCheckReferencesURL %>" method="POST" name="fm">
-	<aui:fieldset column="<%= true %>" cssClass="aui-w33 span4">
+	<aui:col width="33">
 		<aui:input name="ignoreNullValues" type="checkbox" value="true" />
 		<aui:input name="ignoreEmptyTables" type="checkbox" value="false" />
-	</aui:fieldset>
-	<aui:fieldset column="<%= true %>" cssClass="aui-w33 span4">
+	</aui:col>
+	<aui:col width="33">
 		<aui:input name="excludeColumns"  style="width: 100%;" type="text" value="*classPK, primKey*, userId" />
-	</aui:fieldset>
+	</aui:col>
 	<aui:button-row>
 		<aui:button type="submit" value="execute" />
 		<aui:button onClick='<%= renderResponse.getNamespace() + "mappingList();" %>' value="mapping-list" />
@@ -112,6 +113,8 @@
 <%
 	}
 %>
+
+</div></div></div>
 
 <aui:script>
 	function <portlet:namespace />mappingList() {
