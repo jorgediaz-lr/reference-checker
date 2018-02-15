@@ -42,6 +42,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -105,6 +106,16 @@ public class ReferencesChecker {
 
 			long liferayBuildNumber = getLiferayBuildNumber(connection);
 
+			if (liferayBuildNumber == 0) {
+				_log.error("Liferay build number couldn't be retrieved");
+
+				return Collections.emptyMap();
+			}
+
+			if (_log.isInfoEnabled()) {
+				_log.info("Liferay build number: " + liferayBuildNumber);
+			}
+
 			String configurationFile =
 				ConfigurationUtil.getConfigurationFileName(liferayBuildNumber);
 
@@ -140,6 +151,16 @@ public class ReferencesChecker {
 			connection = DataAccess.getConnection();
 
 			long liferayBuildNumber = getLiferayBuildNumber(connection);
+
+			if (liferayBuildNumber == 0) {
+				_log.error("Liferay build number couldn't be retrieved");
+
+				return Collections.emptyList();
+			}
+
+			if (_log.isInfoEnabled()) {
+				_log.info("Liferay build number: " + liferayBuildNumber);
+			}
 
 			String configurationFile =
 				ConfigurationUtil.getConfigurationFileName(liferayBuildNumber);
@@ -289,7 +310,7 @@ public class ReferencesChecker {
 		}
 		catch (IOException e) {
 			_log.error(
-				"Error reading references.txt configuration: " + e.getMessage(),
+				"Error reading configuration_xx.yml file: " + e.getMessage(),
 				e);
 			throw new RuntimeException(e);
 		}
@@ -326,6 +347,10 @@ public class ReferencesChecker {
 			try {
 				if (_log.isInfoEnabled()) {
 					_log.info("Processing: "+ reference);
+				}
+
+				if (reference.isRaw()) {
+					continue;
 				}
 
 				Query originQuery = reference.getOriginQuery();

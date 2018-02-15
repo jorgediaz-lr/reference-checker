@@ -14,6 +14,9 @@
 
 package com.liferay.referenceschecker.main;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
+
 import com.liferay.portal.kernel.dao.jdbc.DataSourceFactory;
 import com.liferay.portal.kernel.dao.jdbc.DataSourceFactoryUtil;
 import com.liferay.portal.kernel.language.Language;
@@ -23,7 +26,6 @@ import com.liferay.portal.kernel.log.LogFactory;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
-import com.liferay.portal.kernel.util.File;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.Html;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -32,19 +34,27 @@ import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.referenceschecker.main.util.CommandArguments;
 import com.liferay.referenceschecker.main.util.Database;
 import com.liferay.referenceschecker.main.util.Properties;
 import com.liferay.referenceschecker.main.util.TeePrintStream;
 import com.liferay.referenceschecker.output.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
+import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.ReflectionUtil;
 import com.liferay.referenceschecker.util.SQLUtil;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.lang.reflect.Method;
+
+import java.net.URL;
+
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 
 import java.sql.SQLException;
 
@@ -59,19 +69,35 @@ import jline.console.ConsoleReader;
 public class ReferencesChecker {
 
 	public static void main(String[] args) throws Exception {
-		java.io.File logFile = new java.io.File("references-checker.log");
+		String filenameSuffix = "_" + System.currentTimeMillis();
+
+		File logFile = new File("references-checker" + filenameSuffix + ".log");
 
 		System.setOut(
 			new TeePrintStream(new FileOutputStream(logFile), System.out));
 
-		ReferencesChecker referenceChecker = new ReferencesChecker(args);
+		CommandArguments commandArguments = getCommandArguments(args);
+
+		if (commandArguments == null) {
+			System.exit(-1);
+		}
+
+		ReferencesChecker referenceChecker = new ReferencesChecker(
+			filenameSuffix);
 
 		referenceChecker.connectToDatabase();
 
-		referenceChecker.execute();
+		if (commandArguments.showRelations()) {
+			referenceChecker.calculateReferences();
+		}
+		else {
+			referenceChecker.execute();
+		}
 	}
 
-	public ReferencesChecker(String[] args) throws Exception {
+	public ReferencesChecker(String filenameSuffix) throws Exception {
+		this.filenameSuffix = filenameSuffix;
+
 		Class<?> clazz = getClass();
 
 		ClassLoader classLoader = clazz.getClassLoader();
@@ -80,8 +106,7 @@ public class ReferencesChecker {
 	}
 
 	public void connectToDatabase() throws Exception {
-		java.io.File databasePropertiesFile = new java.io.File(
-			"database.properties");
+		File databasePropertiesFile = new File("database.properties");
 
 		Properties databaseProperties = new Properties();
 
@@ -119,6 +144,81 @@ public class ReferencesChecker {
 		databaseProperties.store(databasePropertiesFile);
 	}
 
+	protected static CommandArguments getCommandArguments(String[] args)
+		throws Exception {
+
+		CommandArguments commandArguments = new CommandArguments();
+
+		JCommander jCommander = new JCommander(commandArguments);
+
+		File jarFile = _getJarFile();
+
+		if (jarFile.isFile()) {
+			jCommander.setProgramName("java -jar " + jarFile.getName());
+		}
+		else {
+			jCommander.setProgramName(ReferencesChecker.class.getName());
+		}
+
+		try {
+			jCommander.parse(args);
+
+			if (commandArguments.isHelp()) {
+				_printHelp(jCommander);
+
+				return null;
+			}
+		}
+		catch (ParameterException pe) {
+			if (!commandArguments.isHelp()) {
+				System.err.println(pe.getMessage());
+			}
+
+			_printHelp(jCommander);
+
+			return null;
+		}
+
+		return commandArguments;
+	}
+
+	protected void calculateReferences() throws IOException, SQLException {
+
+		long startTime = System.currentTimeMillis();
+
+		String dbType = SQLUtil.getDBType();
+
+		com.liferay.referenceschecker.ReferencesChecker referencesChecker =
+			new com.liferay.referenceschecker.ReferencesChecker(
+				dbType, null, false, true);
+
+		Map<Reference, Reference> references =
+			referencesChecker.calculateReferences();
+
+		String[] headers = new String[] {
+			"origin table", "attributes", "destination table", "attributes"};
+
+		List<String> outputList =
+			ReferencesCheckerOutput.generateCSVOutputMappingList(
+					Arrays.asList(headers), references);
+
+		String outputFile = "references" + filenameSuffix + ".csv";
+
+		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
+
+		for (String line : outputList) {
+			writer.println(line);
+		}
+
+		writer.close();
+
+		long endTime = System.currentTimeMillis();
+
+		System.out.println("");
+		System.out.println("Total time: " + (endTime-startTime) + " ms");
+		System.out.println("Output was written to file: " + outputFile);
+	}
+
 	protected void execute() throws IOException, SQLException {
 
 		long startTime = System.currentTimeMillis();
@@ -140,7 +240,7 @@ public class ReferencesChecker {
 			ReferencesCheckerOutput.generateCSVOutputCheckReferences(
 				Arrays.asList(headers), listMissingReferences);
 
-		String outputFile = "output_" + System.currentTimeMillis() + ".csv";
+		String outputFile = "missing-references" + filenameSuffix + ".csv";
 
 		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
 
@@ -267,6 +367,28 @@ public class ReferencesChecker {
 		return databaseProperties;
 	}
 
+	private static File _getJarFile() throws Exception {
+		ProtectionDomain protectionDomain =
+			ReferencesChecker.class.getProtectionDomain();
+
+		CodeSource codeSource = protectionDomain.getCodeSource();
+
+		URL url = codeSource.getLocation();
+
+		return new File(url.toURI());
+	}
+
+	private static void _printHelp(JCommander jCommander) {
+		String commandName = jCommander.getParsedCommand();
+
+		if (commandName == null) {
+			jCommander.usage();
+		}
+		else {
+			jCommander.usage(commandName);
+		}
+	}
+
 	private void _initDatabase(
 			String driverClassName, String url, String userName,
 			String password, String jndiName)
@@ -349,7 +471,7 @@ public class ReferencesChecker {
 		FileUtil fileUtil = new FileUtil();
 
 		fileUtil.setFile(
-			(File)ReflectionUtil.newPortalObject(
+			(com.liferay.portal.kernel.util.File)ReflectionUtil.newPortalObject(
 				"com.liferay.portal.util.FileImpl"));
 
 		PortalClassLoaderUtil.setClassLoader(classLoader);
@@ -438,5 +560,6 @@ public class ReferencesChecker {
 	private static Log _log = LogFactoryUtil.getLog(ReferencesChecker.class);
 
 	private final ConsoleReader _consoleReader = new ConsoleReader();
+	private String filenameSuffix;
 
 }

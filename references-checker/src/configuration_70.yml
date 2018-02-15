@@ -1,85 +1,62 @@
-ignoreColumns: [actionId, statusId]
+ignoreColumns: [actionId]
 ignoreTables: [counter, cyrusUser, cyrusVirtual, systemEvent]
 references: [
 #generic references
+  {origin: {table: "*", columns: ["*${destTable.PrimaryKey}"]},                                      dest: {table: "*", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "*", columns: ["${destTable.primaryKey}"]},                                       dest: {table: "*", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "*", columns: ["parent${destTable.PrimaryKey}"], condition: "parent${destTable.PrimaryKey}<>0"}, dest: {table: "SELF", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "*", columns: ["groupId", "companyId"], condition: "groupId<>0"},                 dest: {table: "Group_", columns: ["groupId", "companyId"]}},
-#applications pk references
-  {origin: {table: "Announcements*", columns: ["${destTable.primaryKey}"]},                          dest: {table: "Announcements*",  columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "Asset*",         columns: ["${destTable.primaryKey}"]},                          dest: {table: "Asset*",          columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "Bookmarks*",     columns: ["${destTable.primaryKey}"]},                          dest: {table: "Bookmarks*",      columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "DDL*",           columns: ["${destTable.primaryKey}"]},                          dest: {table: "DDL*",            columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "DDM*",           columns: ["${destTable.primaryKey}"]},                          dest: {table: "DDM*",            columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "DL*",            columns: ["${destTable.primaryKey}"]},                          dest: {table: "DL*",             columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "Journal*",       columns: ["${destTable.primaryKey}"]},                          dest: {table: "Journal*",        columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "Kaleo*",         columns: ["${destTable.primaryKey}"]},                          dest: {table: "Kaleo*",          columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "Shopping*",      columns: ["${destTable.primaryKey}"]},                          dest: {table: "Shopping*",       columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "Trash*",         columns: ["${destTable.primaryKey}"]},                          dest: {table: "Trash*",          columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "Wiki*",          columns: ["${destTable.primaryKey}"]},                          dest: {table: "Wiki*",           columns: ["${destTable.primaryKey}"]}},
+  {origin: {table: "*", columns: ["groupId", "folderId"], condition: "folderId<>0"},                 dest: {table: "*Folder", columns: ["groupId","folderId"]}},
+  {origin: {table: "*", columns: ["folderId", "treePath"], condition: "folderId<>0"},                dest: {table: "*Folder", columns: ["folderId", "treePath"]}},
+  {origin: {table: "*", columns: ["logoId"], condition: "logoId<>0"},                                dest: {table: "Image", columns: ["imageId"]}},
+  {origin: {table: "*", columns: ["layoutId"]},                                                      dest: {table: "Layout", columns: ["layoutId"]}},
+  {origin: {table: "*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}},
 #ignore generic references
   {origin: {table: "*", columns: ["${origTable.primaryKey}"]}}, #primary keys must not be checked with any other pk
+  {origin: {table: "*", columns: ["groupId", "${origTable.primaryKey}"], condition: "folderId<>0", conditionColumns: ["folderId"]}}, #primary keys must not be checked with any other pk
+  {origin: {table: "*", columns: ["${origTable.primaryKey}", "treePath"], condition: "folderId<>0", conditionColumns: ["folderId"]}}, #primary keys must not be checked with any other pk
+  {origin: {table: "*", columns: ["uuid_"]}}, #ignore
+  {origin: {table: "*", columns: ["*statusId"]}}, #ignore
 #force other references
-  {origin: {table: "Bookmarks*",     columns: ["groupId","folderId"], condition: "folderId<>0"},     dest: {table: "BookmarksFolder", columns: ["groupId","folderId"]}},
-  {origin: {table: "DL*",            columns: ["groupId","folderId"], condition: "folderId<>0"},     dest: {table: "DLFolder",        columns: ["groupId","folderId"]}},
+  {origin: {table: "AssetCategory",  columns: ["leftCategoryid"]}}, #ignore
+  {origin: {table: "AssetCategory",  columns: ["rightCategoryid"]}}, #ignore
   {origin: {table: "DL*",            columns: ["repositoryId"]}}, #ignore
   {origin: {table: "DL*",            columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
   {origin: {table: "DL*",            columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
   {origin: {table: "DLFileEntry",    columns: ["fileEntryId","version"]},                            dest: {table: "DLFileVersion",   columns: ["fileEntryId","version"]}},
-  {origin: {table: "Group_",         columns: ["liveGroupId"], condition: "liveGroupId<>0"},         dest: {table: "Group_",          columns: ["groupId"]}},
   {origin: {table: "Layout",         columns: ["parentLayoutId"], condition: "parentLayoutId<>0"},   dest: {table: "Layout",          columns: ["layoutId"]}},
+  {origin: {table: "Marketplace_App",columns: ["remoteAppId"]}}, #ignore
   {origin: {table: "MB*",            columns: ["categoryId"]}}, #ignore
   {origin: {table: "MB*",            columns: ["categoryId"], condition: "categoryId<>-1 and categoryId<>0"}, dest: {table: "MBCategory", columns: ["categoryId"]}},
-  {origin: {table: "MB*",            columns: ["rootMessageId"]},                                    dest: {table: "MBMessage",       columns: ["messageId"]}},
   {origin: {table: "Organization_",  columns: ["statusId"]},                                         dest: {table: "ListType",        columns: ["listTypeId"], condition: "type_='com.liferay.portal.model.Organization.status'"}},
-  {origin: {table: "JournalArticle", columns: ["groupId","folderId"], condition: "folderId<>0"},     dest: {table: "JournalFolder",   columns: ["groupId","folderId"]}},
   {origin: {table: "JournalArticle", columns: ["groupId","resourcePrimKey","articleId"]},            dest: {table: "JournalArticleResource", columns: ["groupId","resourcePrimKey","articleId"]}},
   {origin: {table: "JournalArticleResource", columns: ["groupId","resourcePrimKey","articleId"]},    dest: {table: "JournalArticle",  columns: ["groupId","resourcePrimKey","articleId"]}},
   {origin: {table: "Journal*",       columns: ["articleId"]},                                        dest: {table: "JournalArticleResource",  columns: ["articleId"]}},
   {origin: {table: "JournalArticle", columns: ["ddmStructureKey"]},                                  dest: {table: "DDMStructure",    columns: ["structureKey"], condition: "classNameId in (select classNameId from ClassName_ where value='${origTable.className}')"}},
   {origin: {table: "JournalArticle", columns: ["ddmTemplateKey"]},                                   dest: {table: "DDMTemplate",     columns: ["templateKey"]}},
   {origin: {table: "Repository",     columns: ["dlFolderId"]},                                       dest: {table: "DLFolder",        columns: ["folderId"]}},
-  {origin: {table: "SocialActivity", columns: ["activitySetId"]},                                    dest: {table: "SocialActivitySet", columns: ["activitySetId"]}},
-  {origin: {table: "SocialActivity", columns: ["parentClassNameId"]},                                dest: {table: "ClassName_",      columns: ["classNameId"]}},
   {origin: {table: "SocialActivity", columns: ["parentClassPk"], condition: "parentclassNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: "*",  columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "WikiPage",       columns: ["groupId,resourcePrimKey"]},                          dest: {table: "WikiPageResource", columns: ["groupId,resourcePrimKey"]}},
-  {origin: {table: "WikiPage",       columns: ["parentTitle"]}}, #ignore
+  {origin: {table: "WikiPage",       columns: ["groupId","resourcePrimKey"]},                          dest: {table: "WikiPageResource", columns: ["groupId","resourcePrimKey"]}},
+  {origin: {table: "SyncDL*",        columns: ["*${destTable.PrimaryKey}"]},                         dest: {table: "DL*",             columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "SyncDLObject",   columns: ["repositoryId"]}}, #ignore
   {origin: {table: "SyncDLObject",   columns: ["versionId"]},                                        dest: {table: "DLFileVersion", columns: ["fileVersionId"]}},
 #relations using classname+classpk columns
-  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${MBDiscussion.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "MBMessage", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${JournalArticle.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}}, #ignore, we will use next two entries
-  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0 and classPk not in (select resourcePrimKey from JournalArticle)", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "JournalArticle", columns: ["id_"]}},
-  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0 and classPk not in (select id_ from JournalArticle)", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "JournalArticle", columns: ["resourcePrimKey"]}},
-  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${WikiPage.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}}, #ignore, we will use next two entries
-  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0 and classPk not in (select resourcePrimKey from WikiPage)", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "WikiPage", columns: ["pageId"]}},
-  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0 and classPk not in (select pageId from WikiPage)", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "WikiPage", columns: ["resourcePrimKey"]}},
+  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${MBDiscussion.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "MBMessage", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["ignoreReference"], conditionColumns: ["resourcePrimKey"]}, displayRaw: false, hidden: true}, #ignore tables with resourcePrimKey
+  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0 and classPk not in (select resourcePrimKey from ${destTable.tableName})", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"], conditionColumns: ["resourcePrimKey"]}, displayRaw: true, hidden: true},
+  {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0 and classPk not in (select ${destTable.primaryKey} from ${destTable.tableName})", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["resourcePrimKey"]}, displayRaw: false, hidden: true},
   {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 1"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 2"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "JournalArticle", columns: ["resourcePrimKey"]}},
-  {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "WikiPage", columns: ["resourcePrimKey"]}},
+  {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "*", columns: ["resourcePrimKey"]}, displayRaw: true, hidden: true},
 #trash
   {origin: {table: "*",              columns: ["${origTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]},          dest: {table: "TrashEntry", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${origTable.className}')"}},
-  {origin: {table: "JournalArticle", columns: ["resourcePrimKey"], condition: "status=8", conditionColumns: ["status"]},                  dest: {table: "TrashEntry", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${origTable.className}')"}},
-  {origin: {table: "TrashEntry",     columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: "*", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}},
-  {origin: {table: "TrashEntry",     columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: "JournalArticle", columns: ["resourcePrimKey"], condition: "status=8", conditionColumns: ["status"]}},
+  {origin: {table: "*",              columns: ["resourcePrimKey"], condition: "status=8", conditionColumns: ["status"]},                  dest: {table: "TrashEntry", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${origTable.className}')"}},
+  {origin: {table: "TrashEntry",     columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: "*", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
+  {origin: {table: "TrashEntry",     columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: "*", columns: ["resourcePrimKey"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
 #userId
-  {origin: {table: "*", columns: ["creatorUserId"]},  dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "*", columns: ["fromUserId"]},     dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "*", columns: ["lockUserId"]},     dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "*", columns: ["replierUserId"]},  dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "*", columns: ["statusByUserId"]}, dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "*", columns: ["toUserId"]},       dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "*", columns: ["versionUserId"]},  dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "MBBan", columns: ["banUserId"]},  dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "MB*", columns: ["lastPostByUserId"]},   dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "MB*", columns: ["rootMessageUserId"]},  dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "Social*", columns: ["receiverUserId"]}, dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "Social*", columns: ["userId1"]},  dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: "Social*", columns: ["userId2"]},  dest: {table: "User_", columns: ["userId"]}},
-# {origin: {table: "*", columns: ["userId"]}}, #enable this rule in order to ignore all 'userId' column validations
+  {origin: {table: "*", columns: ["*UserId"]},  dest: {table: "User_", columns: ["userId"]}},
+  {origin: {table: "*", columns: ["userId*"]},  dest: {table: "User_", columns: ["userId"]}},
 #liferay sync
   {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "typeUuid", "parentFolderId", "name"], condition: "type_ = 'folder' and event not in ('delete', 'trash')"}, dest: {table: "DLFolder",     columns: ["companyId", "groupId", "folderId", "uuid_", parentFolderId", "name"],    condition: "groupId=repositoryId and status<>8"}},
   {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "typeUuid", "parentFolderId", "name"], condition: "type_ = 'file' and event not in ('delete', 'trash')"},   dest: {table: "DLFileEntry",  columns: ["companyId", "groupId", "fileEntryId", "uuid_", "folderId", "fileName"],   condition: "groupId=repositoryId and fileEntryId not in (select fileEntryId from DLFileVersion where status=8)"}},

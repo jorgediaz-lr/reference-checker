@@ -91,7 +91,7 @@ public class ReferencesCheckerOutput {
 		out.add(getCSVRow(headers));
 
 		for (Reference reference : references.values()) {
-			if (reference.getDestinationQuery() != null) {
+			if (!reference.isHidden()) {
 				List<String> line = generateReferenceCells(reference, false);
 
 				out.add(getCSVRow(line));
@@ -153,25 +153,31 @@ public class ReferencesCheckerOutput {
 				renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM,
 				SearchContainer.MAX_DELTA, serverURL, headers, null);
 
-		referecesList = ListUtil.subList(
-			referecesList, searchContainer.getStart(),
+		List<Reference> filteredReferencesList = new ArrayList<Reference>();
+
+		for (Reference reference : referecesList) {
+			if (!reference.isHidden()) {
+				filteredReferencesList.add(reference);
+			}
+		}
+
+		filteredReferencesList = ListUtil.subList(
+			filteredReferencesList, searchContainer.getStart(),
 			searchContainer.getEnd());
 
-		searchContainer.setResults(referecesList);
+		searchContainer.setResults(filteredReferencesList);
 
 		List resultRows = searchContainer.getResultRows();
 
 		int numberOfRows = 0;
 
-		for (Reference reference : referecesList) {
+		for (Reference reference : filteredReferencesList) {
 			try {
 				Object row = generateSearchContainerRowMappingList(
 					reference, numberOfRows);
 
-				if (row != null) {
-					numberOfRows++;
-					resultRows.add(row);
-				}
+				numberOfRows++;
+				resultRows.add(row);
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);
@@ -318,10 +324,6 @@ public class ReferencesCheckerOutput {
 	protected static Object generateSearchContainerRowMappingList(
 			Reference reference, int numberOfRows)
 		throws Exception {
-
-		if (reference.getDestinationQuery() == null) {
-			return null;
-		}
 
 		Object row = newResultRow(
 			reference, reference.getOriginQuery().toString(), numberOfRows);

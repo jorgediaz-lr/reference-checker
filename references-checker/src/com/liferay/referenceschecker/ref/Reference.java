@@ -14,7 +14,10 @@
 
 package com.liferay.referenceschecker.ref;
 
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.referenceschecker.dao.Query;
+
+import java.util.Arrays;
 
 /**
  * @author Jorge Díaz
@@ -24,15 +27,28 @@ public class Reference implements Comparable<Reference>, Cloneable {
 	public Reference(Query originQuery, Query destinationQuery) {
 		this.originQuery = originQuery;
 		this.destinationQuery = destinationQuery;
+
+		if (destinationQuery == null) {
+			hidden = true;
+		}
 	}
 
 	public Reference clone() {
-		return new Reference(this.originQuery, this.destinationQuery);
+		Reference copy = new Reference(this.originQuery, this.destinationQuery);
+		copy.setHidden(this.isHidden());
+		copy.setRaw(this.isRaw());
+		return copy;
 	}
 
 	@Override
 	public int compareTo(Reference ref) {
-		return originQuery.compareTo(ref.originQuery);
+		int value = originQuery.compareTo(ref.originQuery);
+
+		if ((value == 0) && (isRaw() || ref.isRaw())) {
+			value = destinationQuery.compareTo(ref.destinationQuery);
+		}
+
+		return value;
 	}
 
 	@Override
@@ -42,6 +58,12 @@ public class Reference implements Comparable<Reference>, Cloneable {
 		}
 
 		Reference ref = (Reference)obj;
+
+		if (this.isRaw() || ref.isRaw()) {
+			return originQuery.equals(ref.originQuery) &&
+				destinationQuery.equals(ref.destinationQuery);
+		}
+
 		return originQuery.equals(ref.originQuery);
 	}
 
@@ -55,16 +77,42 @@ public class Reference implements Comparable<Reference>, Cloneable {
 
 	@Override
 	public int hashCode() {
-		return originQuery.hashCode();
+		if (!isRaw()) {
+			return originQuery.hashCode();
+		}
+
+		Object[] array = {originQuery, destinationQuery};
+
+		return Arrays.hashCode(array);
+	}
+
+	public boolean isHidden() {
+		return hidden;
+	}
+
+	public boolean isRaw() {
+		return raw;
 	}
 
 	public String toString() {
 
+		String rawRule = isRaw() ? "raw" : StringPool.BLANK;
+
 		return String.valueOf(originQuery) + " => " +
-			String.valueOf(destinationQuery);
+			String.valueOf(destinationQuery) + " " + rawRule;
+	}
+
+	protected void setHidden(boolean hidden) {
+		this.hidden = hidden;
+	}
+
+	protected void setRaw(boolean raw) {
+		this.raw = raw;
 	}
 
 	protected Query destinationQuery;
+	protected boolean hidden = false;
 	protected Query originQuery;
+	protected boolean raw = false;
 
 }

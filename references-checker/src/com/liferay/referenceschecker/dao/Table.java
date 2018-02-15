@@ -25,6 +25,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -137,6 +138,48 @@ public class Table implements Comparable<Table> {
 
 	public String[] getColumnNames() {
 		return ArrayUtil.clone(columnNames);
+	}
+
+	public List<String> getColumnNames(String filter) {
+
+		List<String> list = new ArrayList<String>();
+
+		int pos = filter.indexOf("*");
+
+		if (filter.endsWith("*")) {
+			String prefix = StringUtil.toLowerCase(filter.substring(0, pos));
+
+			for (String columnName : getColumnNames()) {
+				String columnNameLowerCase = StringUtil.toLowerCase(columnName);
+
+				if (columnNameLowerCase.startsWith(prefix)) {
+					list.add(columnName);
+				}
+			}
+
+			return list;
+		}
+
+		if (filter.startsWith("*")) {
+			String suffix = StringUtil.toLowerCase(
+				filter.substring(pos + 1, filter.length()));
+
+			for (String columnName : getColumnNames()) {
+				String columnNameLowerCase = StringUtil.toLowerCase(columnName);
+
+				if (columnNameLowerCase.endsWith(suffix)) {
+					list.add(columnName);
+				}
+			}
+
+			return list;
+		}
+
+		if (hasColumn(filter)) {
+			return Collections.singletonList(filter);
+		}
+
+		return Collections.emptyList();
 	}
 
 	public int getColumnPosition(String columnName) {
@@ -276,6 +319,30 @@ public class Table implements Comparable<Table> {
 		}
 
 		return toString;
+	}
+
+	public static class Raw extends Table {
+
+		public Raw(String tableName) {
+
+			this(
+				tableName, new ArrayList<String>(), new ArrayList<String>(),
+				new ArrayList<Integer>(), new ArrayList<String>(),
+				new ArrayList<Integer>(), new ArrayList<Boolean>(), null, null);
+		}
+
+		public Raw(
+			String tableName, List<String> primaryKeys,
+			List<String> columnNames, List<Integer> columnTypes,
+			List<String> columnTypesSqlName, List<Integer> columnSizes,
+			List<Boolean> columnNullables, String className, Long classNameId) {
+
+			super(
+				tableName, primaryKeys, columnNames, columnTypes,
+				columnTypesSqlName, columnSizes, columnNullables, className,
+				classNameId);
+		}
+
 	}
 
 	protected String className;

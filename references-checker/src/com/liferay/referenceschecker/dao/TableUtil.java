@@ -46,6 +46,8 @@ public class TableUtil {
 		ResultSet rs = null;
 		long count = 0;
 
+		String sql = null;
+
 		try {
 			con = DataAccess.getConnection();
 
@@ -55,8 +57,7 @@ public class TableUtil {
 				key = table.getPrimaryKey();
 			}
 
-			String sql =
-				"SELECT COUNT(" + key + ") FROM " + table.getTableName();
+			sql = "SELECT COUNT(" + key + ") FROM " + table.getTableName();
 
 			if (condition != null) {
 				sql = sql + " WHERE " + condition;
@@ -77,7 +78,8 @@ public class TableUtil {
 			}
 		}
 		catch (SQLException sqle) {
-			_log.error(sqle, sqle);
+			_log.error(
+				"Error executing sql: " + sql + " EXCEPTION: " + sqle, sqle);
 
 			return -1;
 		}
@@ -302,14 +304,35 @@ public class TableUtil {
 	}
 
 	public boolean isTableEmpty(Table table) {
+		return isTableEmpty(table, null);
+	}
 
-		Boolean isTableEmpty = emptyTableCache.get(table.getTableName());
+	public boolean isTableEmpty(Table table, String condition) {
 
-		if (isTableEmpty == null) {
-			isTableEmpty = (TableUtil.countTable(table, null) <= 0);
+		String key = table.getTableName();
 
-			emptyTableCache.put(table.getTableName(), isTableEmpty);
+		if (condition != null) {
+			key = key.concat("_").concat(condition);
 		}
+
+		Boolean isTableEmpty = emptyTableCache.get(key);
+
+		if (isTableEmpty != null) {
+			return isTableEmpty;
+		}
+
+		if (condition == null) {
+			isTableEmpty = (TableUtil.countTable(table, null) <= 0);
+		}
+		else {
+			isTableEmpty = isTableEmpty(table);
+
+			if (!isTableEmpty) {
+				isTableEmpty = (TableUtil.countTable(table, condition) <= 0);
+			}
+		}
+
+		emptyTableCache.put(key, isTableEmpty);
 
 		return isTableEmpty;
 	}
