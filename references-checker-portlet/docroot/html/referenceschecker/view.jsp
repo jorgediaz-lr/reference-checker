@@ -70,7 +70,7 @@
 		<aui:input name="ignoreEmptyTables" type="checkbox" value="false" />
 	</aui:fieldset>
 	<aui:fieldset column="<%= true %>" cssClass="aui-w33 span4">
-		<aui:input name="excludeColumns"  style="width: 100%;" type="text" value="*classPK, primKey*, userId" />
+		<aui:input name="excludeColumns"  style="width: 100%;" type="text" value="userId" />
 	</aui:fieldset>
 	<aui:button-row>
 		<aui:button type="submit" value="execute" />
