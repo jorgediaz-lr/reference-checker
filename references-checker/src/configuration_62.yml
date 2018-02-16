@@ -12,6 +12,8 @@ references: [
   {origin: {table: "*", columns: ["portraitId"]},                                                    dest: {table: "Image", columns: ["imageId"]}},
   {origin: {table: "*", columns: ["layoutId"]},                                                      dest: {table: "Layout", columns: ["layoutId"]}},
   {origin: {table: "*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}},
+  {origin: {table: "*", columns: ["*layoutPrototypeUuid"]},                                           dest: {table: "LayoutPrototype", columns: ["uuid_"]}},
+  {origin: {table: "*", columns: ["*layoutSetPrototypeUuid"]},                                        dest: {table: "LayoutSetPrototype", columns: ["uuid_"]}},
 #ignore generic references
   {origin: {table: "*", columns: ["${origTable.primaryKey}"]}}, #primary keys must not be checked with any other pk
   {origin: {table: "*", columns: ["groupId", "${origTable.primaryKey}"], condition: "folderId<>0", conditionColumns: ["folderId"]}}, #primary keys must not be checked with any other pk
@@ -30,7 +32,6 @@ references: [
   {origin: {table: "Marketplace_App",columns: ["remoteAppId"]}}, #ignore
   {origin: {table: "MB*",            columns: ["categoryId"]}}, #ignore
   {origin: {table: "MB*",            columns: ["categoryId"], condition: "categoryId<>-1 and categoryId<>0"}, dest: {table: "MBCategory", columns: ["categoryId"]}},
-  {origin: {table: "Organization_",  columns: ["statusId"]},                                         dest: {table: "ListType",        columns: ["listTypeId"], condition: "type_='com.liferay.portal.model.Organization.status'"}},
   {origin: {table: "JournalArticle", columns: ["groupId","resourcePrimKey","articleId"]},            dest: {table: "JournalArticleResource", columns: ["groupId","resourcePrimKey","articleId"]}},
   {origin: {table: "JournalArticleResource", columns: ["groupId","resourcePrimKey","articleId"]},    dest: {table: "JournalArticle",  columns: ["groupId","resourcePrimKey","articleId"]}},
   {origin: {table: "Journal*",       columns: ["articleId"]},                                        dest: {table: "JournalArticleResource",  columns: ["articleId"]}},
@@ -42,13 +43,28 @@ references: [
   {origin: {table: "SyncDL*",        columns: ["*${destTable.PrimaryKey}"]},                         dest: {table: "DL*",             columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "SyncDLObject",   columns: ["repositoryId"]}}, #ignore
   {origin: {table: "SyncDLObject",   columns: ["versionId"]},                                        dest: {table: "DLFileVersion", columns: ["fileVersionId"]}},
+#relations with ListType columns
+  {origin: {table: "Address",  columns: ["typeId"]},         dest: {table: "ListType", columns: ["listTypeId"], condition: "type_ like '%.address'"}},
+  {origin: {table: "EmailAddress",  columns: ["typeId"]},    dest: {table: "ListType", columns: ["listTypeId"], condition: "type_ like '%.emailAddress'"}},
+  {origin: {table: "Phone",  columns: ["typeId"]},           dest: {table: "ListType", columns: ["listTypeId"], condition: "type_ like '%.phone'"}},
+  {origin: {table: "Website",  columns: ["typeId"]},         dest: {table: "ListType", columns: ["listTypeId"], condition: "type_ like '%.website'"}},
+  {origin: {table: "Contact_",  columns: ["prefixId"]},      dest: {table: "ListType", columns: ["listTypeId"], condition: "type_='com.liferay.portal.model.Contact.prefix'"}},
+  {origin: {table: "Contact_",  columns: ["suffixId"]},      dest: {table: "ListType", columns: ["listTypeId"], condition: "type_='com.liferay.portal.model.Contact.suffix'"}},
+  {origin: {table: "OrgLabor", columns: ["typeId"]},         dest: {table: "ListType", columns: ["listTypeId"], condition: "type_='com.liferay.portal.model.Organization.service'"}},
+  {origin: {table: "Organization_",  columns: ["statusId"]}, dest: {table: "ListType", columns: ["listTypeId"], condition: "type_='com.liferay.portal.model.Organization.status'"}},
 #relations using classname+classpk columns
+  {origin: {table: "*", columns: ["classPK"], condition: "className='${destTable.className}' and classPk<>0", conditionColumns: ["className", "classPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${MBDiscussion.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "MBMessage", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["ignoreReference"], conditionColumns: ["resourcePrimKey"]}, displayRaw: false, hidden: true}, #ignore tables with resourcePrimKey
   {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0 and classPk not in (select resourcePrimKey from ${destTable.tableName})", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"], conditionColumns: ["resourcePrimKey"]}, displayRaw: true, hidden: true},
   {origin: {table: "*", columns: ["classPK"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk<>0 and classPk not in (select ${destTable.primaryKey} from ${destTable.tableName})", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "*", columns: ["resourcePrimKey"]}, displayRaw: false, hidden: true},
   {origin: {table: "ExpandoRow", columns: ["classPk"], condition: "tableId in (select tableId from ExpandoTable where classNameId in (select classNameId from ClassName_ where value='${destTable.className}')) and classPk<>0", conditionColumns: ["tableId", "classPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "Kaleo*", columns: ["assigneeClassPK"], condition: "assigneeClassName='${destTable.className}' and assigneeClassPk<>0", conditionColumns: ["assigneeClassName", "assigneeClassPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "Kaleo*", columns: ["currentAssigneeClassPK"], condition: "currentAssigneeClassName='${destTable.className}' and currentAssigneeClassPk<>0", conditionColumns: ["currentAssigneeClassName", "currentAssigneeClassPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "Kaleo*", columns: ["kaleoClassPK"], condition: "kaleoClassName='${destTable.className}' and kaleoClassPk<>0", conditionColumns: ["kaleoClassName", "kaleoClassPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "Kaleo*", columns: ["previousAssigneeClassPK"], condition: "previousAssigneeClassName='${destTable.className}' and previousAssigneeClassPk<>0", conditionColumns: ["previousAssigneeClassName", "previousAssigneeClassPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "Kaleo*", columns: ["recipientClassPK"], condition: "recipientClassName='${destTable.className}' and recipientClassPk<>0", conditionColumns: ["recipientClassName", "recipientClassPk"]}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 1"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 2"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
