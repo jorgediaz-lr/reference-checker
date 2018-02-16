@@ -23,8 +23,16 @@ import java.io.IOException;
  */
 public class CommandArguments {
 
+	public boolean countTables() throws IOException {
+		return _countTables;
+	}
+
 	public boolean isHelp() {
 		return _help;
+	}
+
+	public boolean showMissingReferences() throws IOException {
+		return _showMissingReferences;
 	}
 
 	public boolean showRelations() throws IOException {
@@ -32,10 +40,22 @@ public class CommandArguments {
 	}
 
 	@Parameter(
+		description = "Count all tables.",
+		names = {"-c", "--countTables"}
+	)
+	private boolean _countTables;
+
+	@Parameter(
 		description = "Print this message.", help = true,
 		names = {"-h", "--help"}
 	)
 	private boolean _help;
+
+	@Parameter(
+		description = "Show missing references.",
+		names = {"-m", "--showMissingReferences"}
+	)
+	private boolean _showMissingReferences;
 
 	@Parameter(
 		description = "Show all detected relations.",

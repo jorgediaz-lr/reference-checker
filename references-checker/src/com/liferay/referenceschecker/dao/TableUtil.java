@@ -39,6 +39,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 public class TableUtil {
 
+	public static long countTable(Table table) {
+		return countTable(table, null);
+	}
+
 	public static long countTable(Table table, String condition) {
 
 		Connection con = null;

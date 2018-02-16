@@ -35,9 +35,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.portlet.PortletURL;
 import javax.portlet.RenderRequest;
@@ -77,6 +79,37 @@ public class ReferencesCheckerOutput {
 				line.add(StringUtil.merge(missingValues));
 			}
 
+			out.add(getCSVRow(line));
+		}
+
+		return out;
+	}
+
+	public static List<String> generateCSVOutputMap(
+		List<String> headers, Map<String, ?> mapTableCount) {
+
+		List<String> out = new ArrayList<String>();
+
+		out.add(getCSVRow(headers));
+
+		for (Entry<String, ?> entry : mapTableCount.entrySet()) {
+			List<String> line = new ArrayList<String>();
+			line.add(entry.getKey());
+
+			String valueString;
+
+			Object value = entry.getValue();
+
+			if (value instanceof List) {
+				List<?> list = (List<?>)value;
+
+				valueString = Arrays.toString(list.toArray());
+			}
+			else {
+				valueString = String.valueOf(value);
+			}
+
+			line.add(valueString);
 			out.add(getCSVRow(line));
 		}
 

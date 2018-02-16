@@ -121,6 +121,37 @@ public class ReferencesChecker {
 		return references;
 	}
 
+	public Map<String, Long> calculateTableCount()
+		throws IOException, SQLException {
+
+		Connection connection = null;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			Configuration configuration = getConfiguration(connection);
+
+			if (configuration == null) {
+				return Collections.emptyMap();
+			}
+
+			Map<String, Long> mapTableCount = new TreeMap<String, Long>();
+
+			TableUtil tableUtil = getTableUtil(connection, configuration);
+
+			for (Table table : tableUtil.getTables()) {
+				long count = TableUtil.countTable(table);
+
+				mapTableCount.put(table.getTableName(), count);
+			}
+
+			return mapTableCount;
+		}
+		finally {
+			DataAccess.cleanUp(connection);
+		}
+	}
+
 	public List<MissingReferences> execute() throws IOException, SQLException {
 		Connection connection = null;
 

@@ -90,7 +90,15 @@ public class ReferencesChecker {
 		if (commandArguments.showRelations()) {
 			referenceChecker.calculateReferences();
 		}
-		else {
+
+		if (commandArguments.countTables()) {
+			referenceChecker.calculateTableCount();
+		}
+
+		if (commandArguments.showMissingReferences() ||
+			(!commandArguments.showRelations() &&
+			 !commandArguments.countTables())) {
+
 			referenceChecker.execute();
 		}
 	}
@@ -203,6 +211,42 @@ public class ReferencesChecker {
 					Arrays.asList(headers), references);
 
 		String outputFile = "references" + filenameSuffix + ".csv";
+
+		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
+
+		for (String line : outputList) {
+			writer.println(line);
+		}
+
+		writer.close();
+
+		long endTime = System.currentTimeMillis();
+
+		System.out.println("");
+		System.out.println("Total time: " + (endTime-startTime) + " ms");
+		System.out.println("Output was written to file: " + outputFile);
+	}
+
+	protected void calculateTableCount() throws IOException, SQLException {
+
+		long startTime = System.currentTimeMillis();
+
+		String dbType = SQLUtil.getDBType();
+
+		com.liferay.referenceschecker.ReferencesChecker referencesChecker =
+			new com.liferay.referenceschecker.ReferencesChecker(
+				dbType, null, false, true);
+
+		Map<String, Long> mapTableCount =
+			referencesChecker.calculateTableCount();
+
+		String[] headers = new String[] {"table", "count"};
+
+		List<String> outputList =
+			ReferencesCheckerOutput.generateCSVOutputMap(
+					Arrays.asList(headers), mapTableCount);
+
+		String outputFile = "tablesCount" + filenameSuffix + ".csv";
 
 		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
 
