@@ -104,34 +104,13 @@ public class ReferencesChecker {
 		try {
 			connection = DataAccess.getConnection();
 
-			long liferayBuildNumber = getLiferayBuildNumber(connection);
+			Configuration configuration = getConfiguration(connection);
 
-			if (liferayBuildNumber == 0) {
-				_log.error("Liferay build number couldn't be retrieved");
-
+			if (configuration == null) {
 				return Collections.emptyMap();
 			}
 
-			if (_log.isInfoEnabled()) {
-				_log.info("Liferay build number: " + liferayBuildNumber);
-			}
-
-			String configurationFile =
-				ConfigurationUtil.getConfigurationFileName(liferayBuildNumber);
-
-			Configuration configuration =
-				ConfigurationUtil.readConfigurationFile(configurationFile);
-
-			if (excludeColumns != null) {
-				configuration.getIgnoreColumns().addAll(excludeColumns);
-			}
-
-			String dbType = SQLUtil.getDBType();
-
-			TableUtil tableUtil = getTableUtil(
-				connection, dbType, configuration.getTableToClassNameMapping(),
-				configuration.getIgnoreTables(),
-				configuration.getIgnoreColumns());
+			TableUtil tableUtil = getTableUtil(connection, configuration);
 
 			references = calculateReferences(configuration, tableUtil);
 		}
@@ -150,34 +129,13 @@ public class ReferencesChecker {
 		try {
 			connection = DataAccess.getConnection();
 
-			long liferayBuildNumber = getLiferayBuildNumber(connection);
+			Configuration configuration = getConfiguration(connection);
 
-			if (liferayBuildNumber == 0) {
-				_log.error("Liferay build number couldn't be retrieved");
-
+			if (configuration == null) {
 				return Collections.emptyList();
 			}
 
-			if (_log.isInfoEnabled()) {
-				_log.info("Liferay build number: " + liferayBuildNumber);
-			}
-
-			String configurationFile =
-				ConfigurationUtil.getConfigurationFileName(liferayBuildNumber);
-
-			Configuration configuration =
-				ConfigurationUtil.readConfigurationFile(configurationFile);
-
-			if (excludeColumns != null) {
-				configuration.getIgnoreColumns().addAll(excludeColumns);
-			}
-
-			String dbType = SQLUtil.getDBType();
-
-			TableUtil tableUtil = getTableUtil(
-				connection, dbType, configuration.getTableToClassNameMapping(),
-				configuration.getIgnoreTables(),
-				configuration.getIgnoreColumns());
+			TableUtil tableUtil = getTableUtil(connection, configuration);
 
 			listMissingReferences = execute(
 				configuration, tableUtil, tableUtil.getTables());
@@ -379,6 +337,34 @@ public class ReferencesChecker {
 		return listMissingReferences;
 	}
 
+	protected Configuration getConfiguration(Connection connection)
+		throws IOException, SQLException {
+
+		long liferayBuildNumber = getLiferayBuildNumber(connection);
+
+		if (liferayBuildNumber == 0) {
+			_log.error("Liferay build number couldn't be retrieved");
+
+			return null;
+		}
+
+		if (_log.isInfoEnabled()) {
+			_log.info("Liferay build number: " + liferayBuildNumber);
+		}
+
+		String configurationFile = ConfigurationUtil.getConfigurationFileName(
+			liferayBuildNumber);
+
+		Configuration configuration = ConfigurationUtil.readConfigurationFile(
+			configurationFile);
+
+		if (excludeColumns != null) {
+			configuration.getIgnoreColumns().addAll(excludeColumns);
+		}
+
+		return configuration;
+	}
+
 	protected Set<String> getNotCheckedColumns(
 		TableUtil tableUtil, Collection<Reference> references) {
 
@@ -429,10 +415,10 @@ public class ReferencesChecker {
 	}
 
 	protected TableUtil getTableUtil(
-			Connection con, String dbType,
-			Map<String, String> tableToClassNameMapping,
-			List<String> ignoreTables, List<String> ignoreColumns)
+			Connection con, Configuration configuration)
 		throws SQLException {
+
+		String dbType = SQLUtil.getDBType();
 
 		DatabaseMetaData metadata = con.getMetaData();
 
@@ -444,9 +430,12 @@ public class ReferencesChecker {
 			schema = catalog;
 		}
 
+		Map<String, String> tableToClassNameMapping =
+			configuration.getTableToClassNameMapping();
+
 		return new TableUtil(
-			metadata, catalog, schema, tableToClassNameMapping, ignoreTables,
-			ignoreColumns);
+			metadata, catalog, schema, tableToClassNameMapping,
+			configuration.getIgnoreTables(), configuration.getIgnoreColumns());
 	}
 
 	protected boolean isValidValue(Object[] result) {
