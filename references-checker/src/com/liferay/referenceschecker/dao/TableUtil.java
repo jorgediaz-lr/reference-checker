@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 public class TableUtil {
 
@@ -181,7 +182,7 @@ public class TableUtil {
 	}
 
 	public List<Table> getTables() {
-		Set<Table> tablesSet = new HashSet<Table>();
+		Set<Table> tablesSet = new TreeSet<Table>();
 
 		for (String tableName : tableNames) {
 			Table table = getTable(tableName);

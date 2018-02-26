@@ -85,9 +85,13 @@ public class Table implements Comparable<Table> {
 			this.columnNullables[i] = columnNullables.get(i);
 		}
 
-		if (Validator.isNull(className) || Validator.isNull(classNameId)) {
+		if (className == null) {
 			this.className = null;
 			this.classNameId = -1;
+		}
+		else if (Validator.isNull(className) || Validator.isNull(classNameId)) {
+			this.className = StringPool.BLANK;
+			this.classNameId = 0;
 		}
 		else {
 			this.className = className;
@@ -97,7 +101,7 @@ public class Table implements Comparable<Table> {
 
 	@Override
 	public int compareTo(Table table) {
-		return this.getTableName().compareTo(table.getTableName());
+		return getTableNameLowerCase().compareTo(table.getTableNameLowerCase());
 	}
 
 	@Override
@@ -107,7 +111,7 @@ public class Table implements Comparable<Table> {
 		}
 
 		Table table = (Table)obj;
-		return this.getTableName().equals(table.getTableName());
+		return getTableNameLowerCase().equals(table.getTableNameLowerCase());
 	}
 
 	public String getClassName() {
