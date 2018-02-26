@@ -69,23 +69,42 @@ import jline.console.ConsoleReader;
 public class ReferencesChecker {
 
 	public static void main(String[] args) throws Exception {
-		String filenameSuffix = "_" + System.currentTimeMillis();
-
-		File logFile = new File("references-checker" + filenameSuffix + ".log");
-
-		System.setOut(
-			new TeePrintStream(new FileOutputStream(logFile), System.out));
-
 		CommandArguments commandArguments = getCommandArguments(args);
 
 		if (commandArguments == null) {
 			System.exit(-1);
 		}
 
-		ReferencesChecker referenceChecker = new ReferencesChecker(
-			filenameSuffix);
+		String databaseCfg = commandArguments.getDatabaseConfiguration();
+		String filenamePrefix = commandArguments.getOutputFilesPrefix();
+		String filenameSuffix = commandArguments.getOutputFilesSuffix();
 
-		referenceChecker.connectToDatabase();
+		if (databaseCfg == null) {
+			databaseCfg = "database.properties";
+		}
+
+		if (filenamePrefix == null) {
+			filenamePrefix = StringPool.BLANK;
+		}
+
+		if (filenameSuffix == null) {
+			filenameSuffix = "_" + System.currentTimeMillis();
+		}
+
+		File logFile = new File(
+			filenamePrefix + "references-checker" + filenameSuffix + ".log");
+
+		System.setOut(
+			new TeePrintStream(new FileOutputStream(logFile), System.out));
+
+		ReferencesChecker referenceChecker = new ReferencesChecker(
+			filenamePrefix, filenameSuffix);
+
+		referenceChecker.connectToDatabase(databaseCfg);
+
+		if (commandArguments.showInformation()) {
+			referenceChecker.dumpDatabaseInfo();
+		}
 
 		if (commandArguments.showRelations()) {
 			referenceChecker.calculateReferences();
@@ -96,14 +115,18 @@ public class ReferencesChecker {
 		}
 
 		if (commandArguments.showMissingReferences() ||
-			(!commandArguments.showRelations() &&
+			(!commandArguments.showInformation() &&
+			 !commandArguments.showRelations() &&
 			 !commandArguments.countTables())) {
 
 			referenceChecker.execute();
 		}
 	}
 
-	public ReferencesChecker(String filenameSuffix) throws Exception {
+	public ReferencesChecker(String filenamePrefix, String filenameSuffix)
+		throws Exception {
+
+		this.filenamePrefix = filenamePrefix;
 		this.filenameSuffix = filenameSuffix;
 
 		Class<?> clazz = getClass();
@@ -113,8 +136,8 @@ public class ReferencesChecker {
 		_initUtil(classLoader);
 	}
 
-	public void connectToDatabase() throws Exception {
-		File databasePropertiesFile = new File("database.properties");
+	public void connectToDatabase(String databaseCfg) throws Exception {
+		File databasePropertiesFile = new File(databaseCfg);
 
 		Properties databaseProperties = new Properties();
 
@@ -210,7 +233,7 @@ public class ReferencesChecker {
 			ReferencesCheckerOutput.generateCSVOutputMappingList(
 					Arrays.asList(headers), references);
 
-		String outputFile = "references" + filenameSuffix + ".csv";
+		String outputFile = _getOutputFileName("references", "csv");
 
 		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
 
@@ -246,7 +269,36 @@ public class ReferencesChecker {
 			ReferencesCheckerOutput.generateCSVOutputMap(
 					Arrays.asList(headers), mapTableCount);
 
-		String outputFile = "tablesCount" + filenameSuffix + ".csv";
+		String outputFile = _getOutputFileName("tablesCount", "csv");
+
+		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
+
+		for (String line : outputList) {
+			writer.println(line);
+		}
+
+		writer.close();
+
+		long endTime = System.currentTimeMillis();
+
+		System.out.println("");
+		System.out.println("Total time: " + (endTime-startTime) + " ms");
+		System.out.println("Output was written to file: " + outputFile);
+	}
+
+	protected void dumpDatabaseInfo() throws IOException, SQLException {
+
+		long startTime = System.currentTimeMillis();
+
+		String dbType = SQLUtil.getDBType();
+
+		com.liferay.referenceschecker.ReferencesChecker referencesChecker =
+			new com.liferay.referenceschecker.ReferencesChecker(
+				dbType, null, false, true);
+
+		List<String> outputList = referencesChecker.dumpDatabaseInfo();
+
+		String outputFile = _getOutputFileName("information", "txt");
 
 		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
 
@@ -284,7 +336,7 @@ public class ReferencesChecker {
 			ReferencesCheckerOutput.generateCSVOutputCheckReferences(
 				Arrays.asList(headers), listMissingReferences);
 
-		String outputFile = "missing-references" + filenameSuffix + ".csv";
+		String outputFile = _getOutputFileName("missing-references", "csv");
 
 		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
 
@@ -431,6 +483,10 @@ public class ReferencesChecker {
 		else {
 			jCommander.usage(commandName);
 		}
+	}
+
+	private String _getOutputFileName(String name, String extension) {
+		return filenamePrefix + name + filenameSuffix + "." + extension;
 	}
 
 	private void _initDatabase(
@@ -604,6 +660,7 @@ public class ReferencesChecker {
 	private static Log _log = LogFactoryUtil.getLog(ReferencesChecker.class);
 
 	private final ConsoleReader _consoleReader = new ConsoleReader();
+	private String filenamePrefix;
 	private String filenameSuffix;
 
 }

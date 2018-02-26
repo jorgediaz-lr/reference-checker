@@ -27,8 +27,24 @@ public class CommandArguments {
 		return _countTables;
 	}
 
+	public String getDatabaseConfiguration() throws IOException {
+		return _databaseConfiguration;
+	}
+
+	public String getOutputFilesPrefix() throws IOException {
+		return _outputFilesPrefix;
+	}
+
+	public String getOutputFilesSuffix() throws IOException {
+		return _outputFilesSuffix;
+	}
+
 	public boolean isHelp() {
 		return _help;
+	}
+
+	public boolean showInformation() throws IOException {
+		return _info;
 	}
 
 	public boolean showMissingReferences() throws IOException {
@@ -46,10 +62,32 @@ public class CommandArguments {
 	private boolean _countTables;
 
 	@Parameter(
+		description = "database configuration file.",
+		names = {"-d", "--databaseConfiguration"}
+	)
+	private String _databaseConfiguration;
+
+	@Parameter(
 		description = "Print this message.", help = true,
 		names = {"-h", "--help"}
 	)
 	private boolean _help;
+
+	@Parameter(
+		description = "Show Liferay database information.",
+		names = {"-i", "--showInformation"}
+	)
+	private boolean _info;
+
+	@Parameter(
+		description = "Output files prefix", names = {"--outputFilesPrefix"}
+	)
+	private String _outputFilesPrefix;
+
+	@Parameter(
+		description = "Output files suffix", names = {"--outputFilesSuffix"}
+	)
+	private String _outputFilesSuffix;
 
 	@Parameter(
 		description = "Show missing references.",
