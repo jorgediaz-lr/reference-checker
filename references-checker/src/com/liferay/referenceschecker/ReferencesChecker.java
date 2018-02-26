@@ -152,6 +152,73 @@ public class ReferencesChecker {
 		}
 	}
 
+	public List<String> dumpDatabaseInfo() throws IOException, SQLException {
+		List<String> output = new ArrayList<String>();
+
+		Connection connection = null;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			long liferayBuildNumber = getLiferayBuildNumber(connection);
+			output.add("Liferay build number: " + liferayBuildNumber);
+			output.add("Database type: " + SQLUtil.getDBType());
+			output.add("");
+
+			Configuration configuration = getConfiguration(connection);
+
+			if (configuration == null) {
+				return Collections.emptyList();
+			}
+
+			TableUtil tableUtil = getTableUtil(connection, configuration);
+
+			List<Table> tablesWithoutClassName = new ArrayList<Table>();
+			List<Table> tablesWithClassName = new ArrayList<Table>();
+
+			for (Table table : tableUtil.getTables()) {
+				if (table.getClassNameId() == -1) {
+					tablesWithoutClassName.add(table);
+				}
+				else if (table.getClassNameId() != 0) {
+					tablesWithClassName.add(table);
+				}
+			}
+
+			if (!tablesWithoutClassName.isEmpty()) {
+				output.add("Tables without className information:");
+
+				for (Table table : tablesWithoutClassName) {
+					output.add(table.getTableName());
+				}
+
+				output.add("");
+			}
+
+			if (!tablesWithClassName.isEmpty()) {
+				output.add("Table-className mapping information:");
+
+				for (Table t : tablesWithClassName) {
+					output.add(t.getTableName() + "=" + t.getClassName());
+				}
+
+				output.add("");
+				output.add("Table-className mapping information:");
+
+				for (Table t : tablesWithClassName) {
+					output.add(t.getTableName() + "=" + t.getClassNameId());
+				}
+
+				output.add("");
+			}
+
+			return output;
+		}
+		finally {
+			DataAccess.cleanUp(connection);
+		}
+	}
+
 	public List<MissingReferences> execute() throws IOException, SQLException {
 		Connection connection = null;
 
