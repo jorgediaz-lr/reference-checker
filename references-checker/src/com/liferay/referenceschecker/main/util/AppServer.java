@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -27,42 +28,41 @@ public class AppServer {
 
 	public static AppServer getJBossEAPAppServer() {
 		return new AppServer(
-			"../../jboss-eap-6.4.0", _getJBossExtraLibDirNames(),
+			"jboss-eap-6.4.0", _getJBossExtraLibDirNames(),
 			"/modules/com/liferay/portal/main",
 			"/standalone/deployments/ROOT.war", "jboss");
 	}
 
 	public static AppServer getJOnASAppServer() {
 		return new AppServer(
-			"../../jonas-5.2.3", "", "/lib/ext", "/deploy/liferay-portal",
-			"jonas");
+			"jonas-5.2.3", "", "/lib/ext", "/deploy/liferay-portal", "jonas");
 	}
 
 	public static AppServer getResinAppServer() {
 		return new AppServer(
-			"../../resin-4.0.44", "", "/ext-lib", "/webapps/ROOT", "resin");
+			"resin-4.0.44", "", "/ext-lib", "/webapps/ROOT", "resin");
 	}
 
 	public static AppServer getTCServerAppServer() {
 		return new AppServer(
-			"../../tc-server-2.9.11", "/tomcat-7.0.64.B.RELEASE/lib",
-			"/liferay/lib", "/liferay/webapps/ROOT", "tomcat");
+			"tc-server-2.9.11", "/tomcat-7.0.64.B.RELEASE/lib", "/liferay/lib",
+			"/liferay/webapps/ROOT", "tomcat");
 	}
 
 	public static AppServer getTomcatAppServer() {
 		return new AppServer(
-			"../../tomcat-8.0.32", "/bin", "/lib", "/webapps/ROOT", "tomcat");
+			"tomcat-8.0.32", "/bin", "/lib", "/webapps/ROOT", "tomcat");
 	}
 
 	public static AppServer getWebLogicAppServer() {
 		return new AppServer(
-			"../../weblogic-12.1.3", "/bin", "/domains/liferay/lib",
+			"weblogic-12.1.3", "/bin", "/domains/liferay/lib",
 			"/domains/liferay/autodeploy/ROOT", "weblogic");
 	}
 
 	public static AppServer getWebSphereAppServer() {
 		return new AppServer(
-			"../../websphere-8.5.5.0", "", "/lib",
+			"websphere-8.5.5.0", "", "/lib",
 			"/profiles/liferay/installedApps/liferay-cell/liferay-portal.ear" +
 				"/liferay-portal.war",
 			"websphere");
@@ -70,7 +70,7 @@ public class AppServer {
 
 	public static AppServer getWildFlyAppServer() {
 		return new AppServer(
-			"../../wildfly-10.0.0", _getJBossExtraLibDirNames(),
+			"wildfly-10.0.0", _getJBossExtraLibDirNames(),
 			"/modules/com/liferay/portal/main",
 			"/standalone/deployments/ROOT.war", "wildfly");
 	}
@@ -89,6 +89,10 @@ public class AppServer {
 
 	public File getDir() {
 		return _dir;
+	}
+
+	public String getDirName() {
+		return _dirName;
 	}
 
 	public String getExtraLibDirNames() {
@@ -151,6 +155,30 @@ public class AppServer {
 		_portalDirName = portalDirName;
 	}
 
+	protected File calculateAppServerDir(String dirName) {
+		List<String> dirNameList = Arrays.asList(
+			"../../" + dirName, "../" + dirName, dirName);
+
+		for (String dirNameValue : dirNameList) {
+			try {
+				File dir = new File(dirNameValue);
+
+				if (dir.exists() && dir.isDirectory()) {
+					if (!dir.isAbsolute()) {
+						dir = dir.getCanonicalFile();
+					}
+
+					return dir;
+				}
+			}
+			catch (IOException ioe) {
+				ioe.printStackTrace();
+			}
+		}
+
+		return null;
+	}
+
 	private static String _getJBossExtraLibDirNames() {
 		StringBuilder sb = new StringBuilder();
 
@@ -170,19 +198,12 @@ public class AppServer {
 	}
 
 	private void _setDirName(String dirName) {
-		try {
-			_dir = new File(dirName);
-
-			if (!_dir.isAbsolute()) {
-				_dir = _dir.getCanonicalFile();
-			}
-		}
-		catch (IOException ioe) {
-			ioe.printStackTrace();
-		}
+		_dirName = dirName;
+		_dir = calculateAppServerDir(dirName);
 	}
 
 	private File _dir;
+	private String _dirName;
 	private String _extraLibDirNames;
 	private String _globalLibDirName;
 	private String _portalDirName;

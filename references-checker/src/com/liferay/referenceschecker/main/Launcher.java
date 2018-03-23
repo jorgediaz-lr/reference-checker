@@ -34,50 +34,56 @@ import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import jline.console.ConsoleReader;
-public class ReferencesCheckerLauncher {
+public class Launcher {
 
-	public static void main(String[] args) throws Exception {
-		ReferencesCheckerLauncher referencesCheckerLauncher =
-			new ReferencesCheckerLauncher();
+	//0 => app-server.properties;
+	//1 => com.liferay.referenceschecker.main.ReferencesChecker
+	//2 => main
 
-		ClassLoader classLoader = referencesCheckerLauncher.getClassLoader(
-			"app-server.properties");
+	public static void main(String[] args) throws IOException {
+		if (args.length < 3) {
+			System.err.println(
+				"ERROR, missing parameters: <app-server.properties> " +
+				"<className> <method> [parameters]");
 
-		Thread currentThread = Thread.currentThread();
+			System.exit(-1);
+		}
 
-		currentThread.setContextClassLoader(classLoader);
+		Launcher launcher = new Launcher();
 
-		Class<?> referencesCheckerClazz = classLoader.loadClass(
-			"com.liferay.referenceschecker.main.ReferencesChecker");
+		String appServerCfg = args[0];
+		String className = args[1];
+		String methodName = args[2];
 
-		Method main = referencesCheckerClazz.getMethod("main", String[].class);
+		args = Arrays.copyOfRange(args, 3, args.length);
 
-		main.invoke(null, ((Object)args));
+		List<URL> classLoaderUrls = launcher.calculateClassLoaderURLs(
+			appServerCfg);
+
+		File currentDir = new File(".");
+
+		currentDir = currentDir.getAbsoluteFile();
+
+		URL url = currentDir.toURI().toURL();
+
+		classLoaderUrls.add(0, url);
+
+		launcher.setClassLoaderURLs(classLoaderUrls);
+
+		launcher.execute(className, methodName, args);
 	}
 
-	public ReferencesCheckerLauncher() throws IOException {
-	}
-
-	public ClassLoader getClassLoader(String appServerCfg) throws IOException {
-		File appServerPropertiesFile = new File(_jarDir, appServerCfg);
-
-		AppServer appServer = getAppServerConfiguration(
-			appServerPropertiesFile);
-
-		String classPath = _getClassPath(appServer);
-
-		return new URLClassLoader(_getClassPathURLs(classPath), null);
-	}
-
-	protected AppServer getAppServerConfiguration(File appServerPropertiesFile)
+	public List<URL> calculateClassLoaderURLs(String appServerCfg)
 		throws IOException {
+
+		File appServerPropertiesFile = new File(appServerCfg);
 
 		Properties appServerProperties = _readProperties(
 			appServerPropertiesFile);
@@ -86,21 +92,102 @@ public class ReferencesCheckerLauncher {
 			"server.detector.server.id");
 
 		if ((value != null) && !value.isEmpty()) {
-			String dirName = appServerProperties.getProperty("dir");
+			try {
+				AppServer appServer = getAppServerFromConfig(
+					appServerProperties, value);
 
-			File dir = new File(dirName);
-
-			if (!dir.isAbsolute()) {
-				dir = new File(_jarDir, dirName);
+				return getClassLoaderURLs(appServer);
 			}
-
-			dirName = dir.getCanonicalPath();
-
-			return new AppServer(
-				dirName, appServerProperties.getProperty("extra.lib.dirs"),
-				appServerProperties.getProperty("global.lib.dir"),
-				appServerProperties.getProperty("portal.dir"), value);
+			catch (Exception e) {
+				System.err.println(
+					"Unable to load configuration file " +
+						appServerPropertiesFile);
+				System.err.println(e.getMessage());
+				System.err.println();
+			}
 		}
+
+		AppServer appServer = null;
+		List<URL> urls = null;
+
+		while (urls == null) {
+			ConsoleReader consoleReader = null;
+
+			try {
+				consoleReader = new ConsoleReader();
+
+				appServer = getAppServerConfigFromCmd(consoleReader);
+
+				urls = getClassLoaderURLs(appServer);
+			}
+			catch (Exception e) {
+				System.err.println(e.getMessage());
+				System.err.println();
+			}
+			finally {
+				if (consoleReader != null) {
+					consoleReader.close();
+				}
+			}
+		}
+
+		storeAppServerPropertiesFile(appServerPropertiesFile, appServer);
+
+		return urls;
+	}
+
+	protected static File getReferencesCheckerLibFolder()
+		throws ExceptionInInitializerError {
+
+		ProtectionDomain protectionDomain =
+			Launcher.class.getProtectionDomain();
+
+		CodeSource codeSource = protectionDomain.getCodeSource();
+
+		URL url = codeSource.getLocation();
+
+		try {
+			Path path = Paths.get(url.toURI());
+
+			File jarFile = path.toFile();
+
+			return jarFile.getParentFile();
+		}
+		catch (URISyntaxException urise) {
+			return null;
+		}
+	}
+
+	protected void execute(String className, String methodName, String[] args) {
+
+		Thread currentThread = Thread.currentThread();
+
+		currentThread.setContextClassLoader(urlClassLoader);
+
+		try {
+			Class<?> referencesCheckerClazz = urlClassLoader.loadClass(
+				className);
+
+			Method main = referencesCheckerClazz.getMethod(
+				methodName, String[].class);
+
+			main.invoke(null, ((Object)args));
+		}
+		catch (Throwable t) {
+			System.err.println(
+				"Classloader URLs: " + Arrays.toString(
+					urlClassLoader.getURLs()));
+			System.err.println();
+			System.err.println(
+				"Error executing " + className + "." + methodName);
+			System.err.println("Arguments: " + Arrays.toString(args));
+			System.err.println();
+			t.printStackTrace(System.err);
+		}
+	}
+
+	protected AppServer getAppServerConfigFromCmd(ConsoleReader consoleReader)
+		throws IOException {
 
 		String response = null;
 
@@ -117,7 +204,7 @@ public class ReferencesCheckerLauncher {
 			System.out.println(
 				"Please enter your application server (tomcat): ");
 
-			response = _consoleReader.readLine();
+			response = consoleReader.readLine();
 
 			if (response.isEmpty()) {
 				response = "tomcat";
@@ -131,16 +218,45 @@ public class ReferencesCheckerLauncher {
 			}
 		}
 
-		File dir = appServer.getDir();
+		appServer = new AppServer(
+			appServer.getDirName(), appServer.getExtraLibDirNames(),
+			appServer.getGlobalLibDirName(), appServer.getPortalDirName(),
+			appServer.getServerDetectorServerId());
 
-		System.out.println(
-			"Please enter your application server directory (" + dir +
-				"): ");
+		response = null;
+		File dir = null;
 
-		response = _consoleReader.readLine();
+		while (((response == null) || response.trim().isEmpty()) &&
+			   (dir == null)) {
 
-		if (!response.isEmpty()) {
-			appServer.setDirName(response);
+			dir = appServer.getDir();
+			String dirName = appServer.getDirName();
+
+			String defaultDir = "LIFERAY_HOME/" + dirName + " or " + dirName;
+
+			if (dir != null) {
+				defaultDir = dir.toString();
+			}
+
+			System.out.println(
+				"Please enter your application server directory, ex: " +
+					defaultDir);
+
+			response = consoleReader.readLine();
+
+			if (!response.isEmpty()) {
+				appServer.setDirName(response);
+
+				dir = appServer.getDir();
+
+				if (dir == null) {
+					System.err.println("ERROR " + response + " doesn't exists");
+
+					appServer.setDirName(dirName);
+
+					response = null;
+				}
+			}
 		}
 
 		System.out.println(
@@ -148,7 +264,7 @@ public class ReferencesCheckerLauncher {
 				"server directory (" + appServer.getExtraLibDirNames() +
 					"): ");
 
-		response = _consoleReader.readLine();
+		response = consoleReader.readLine();
 
 		if (!response.isEmpty()) {
 			appServer.setExtraLibDirNames(response);
@@ -159,7 +275,7 @@ public class ReferencesCheckerLauncher {
 				"server directory (" + appServer.getGlobalLibDirName() +
 					"): ");
 
-		response = _consoleReader.readLine();
+		response = consoleReader.readLine();
 
 		if (!response.isEmpty()) {
 			appServer.setGlobalLibDirName(response);
@@ -169,14 +285,87 @@ public class ReferencesCheckerLauncher {
 			"Please enter your portal directory in application server " +
 				"directory (" + appServer.getPortalDirName() + "): ");
 
-		response = _consoleReader.readLine();
+		response = consoleReader.readLine();
 
 		if (!response.isEmpty()) {
 			appServer.setPortalDirName(response);
 		}
 
-		appServerProperties.setProperty(
-			"dir", appServer.getDir().getCanonicalPath());
+		return appServer;
+	}
+
+	protected AppServer getAppServerFromConfig(
+			Properties appServerProperties, String value)
+		throws IOException {
+
+		String dirName = appServerProperties.getProperty("dir");
+
+		File dir = new File(dirName);
+
+		if (!dir.isAbsolute()) {
+			dir = new File(_jarDir, dirName);
+		}
+
+		dirName = dir.getCanonicalPath();
+
+		return new AppServer(
+			dirName, appServerProperties.getProperty("extra.lib.dirs"),
+			appServerProperties.getProperty("global.lib.dir"),
+			appServerProperties.getProperty("portal.dir"), value);
+	}
+
+	protected List<URL> getClassLoaderURLs(AppServer appServer)
+		throws IOException, MalformedURLException {
+
+		List<File> classPath = new ArrayList<File>();
+
+		_appendClassPath(classPath, _jarDir);
+		_appendClassPath(classPath, appServer.getGlobalLibDir());
+		_appendClassPath(classPath, appServer.getExtraLibDirs());
+
+		classPath.add(appServer.getPortalClassesDir());
+
+		_appendClassPath(classPath, appServer.getPortalLibDir());
+
+		List<URL> urls = new ArrayList<URL>();
+
+		for (File file : classPath) {
+			if (!file.exists()) {
+				throw new RuntimeException(
+					"ERROR: " + file + " doesn't exists");
+			}
+
+			URI uri = file.toURI();
+
+			URL url = uri.toURL();
+
+			if (!urls.contains(url)) {
+				urls.add(url);
+			}
+		}
+
+		return urls;
+	}
+
+	protected void setClassLoaderURLs(List<URL> classLoaderUrls) {
+		URL[] urls = classLoaderUrls.toArray(new URL[classLoaderUrls.size()]);
+
+		urlClassLoader = new URLClassLoader(urls, null);
+	}
+
+	protected void storeAppServerPropertiesFile(
+			File appServerPropertiesFile, AppServer appServer)
+		throws IOException {
+
+		File dir = appServer.getDir();
+
+		if ((dir == null)||!dir.exists()) {
+			return;
+		}
+
+		Properties appServerProperties = new Properties();
+
+		appServerProperties.setProperty("dir", dir.getCanonicalPath());
 		appServerProperties.setProperty(
 			"extra.lib.dirs", appServer.getExtraLibDirNames());
 		appServerProperties.setProperty(
@@ -192,75 +381,39 @@ public class ReferencesCheckerLauncher {
 		catch (IOException ioe) {
 			ioe.printStackTrace();
 		}
-
-		return appServer;
 	}
 
-	private static URL[] _getClassPathURLs(String classPath)
-		throws MalformedURLException {
+	protected URLClassLoader urlClassLoader = null;
 
-		String[] paths = classPath.split(File.pathSeparator);
-
-		Set<URL> urls = new LinkedHashSet<URL>();
-
-		for (String path : paths) {
-			File file = new File(path);
-
-			URI uri = file.toURI();
-
-			urls.add(uri.toURL());
-		}
-
-		return urls.toArray(new URL[urls.size()]);
-	}
-
-	private void _appendClassPath(StringBuilder sb, File dir)
+	private void _appendClassPath(List<File> classPath, File dir)
 		throws IOException {
 
-		if (dir.exists() && dir.isDirectory()) {
-			for (File file : dir.listFiles()) {
-				String fileName = file.getName();
+		if (!dir.exists()) {
+			throw new RuntimeException("ERROR: " + dir + " doesn't exists");
+		}
 
-				if (file.isFile() && fileName.endsWith("jar")) {
-					sb.append(file.getCanonicalPath());
-					sb.append(File.pathSeparator);
-				}
-				else if (file.isDirectory()) {
-					_appendClassPath(sb, file);
-				}
+		if (!dir.isDirectory()) {
+			return;
+		}
+
+		for (File file : dir.listFiles()) {
+			String fileName = file.getName();
+
+			if (file.isFile() && fileName.endsWith("jar")) {
+				classPath.add(file);
+			}
+			else if (file.isDirectory()) {
+				_appendClassPath(classPath, file);
 			}
 		}
 	}
 
-	private void _appendClassPath(StringBuilder sb, List<File> dirs)
+	private void _appendClassPath(List<File> classPath, List<File> dirs)
 		throws IOException {
 
 		for (File dir : dirs) {
-			_appendClassPath(sb, dir);
+			_appendClassPath(classPath, dir);
 		}
-	}
-
-	private String _getClassPath(AppServer appServer) throws IOException {
-		StringBuilder sb = new StringBuilder();
-
-		String liferayClassPath = System.getenv("LIFERAY_CLASSPATH");
-
-		if ((liferayClassPath != null) && !liferayClassPath.isEmpty()) {
-			sb.append(liferayClassPath);
-			sb.append(File.pathSeparator);
-		}
-
-		_appendClassPath(sb, new File(_jarDir, "lib"));
-		_appendClassPath(sb, _jarDir);
-		_appendClassPath(sb, appServer.getGlobalLibDir());
-		_appendClassPath(sb, appServer.getExtraLibDirs());
-
-		sb.append(appServer.getPortalClassesDir());
-		sb.append(File.pathSeparator);
-
-		_appendClassPath(sb, appServer.getPortalLibDir());
-
-		return sb.toString();
 	}
 
 	private Properties _readProperties(File file) {
@@ -281,8 +434,6 @@ public class ReferencesCheckerLauncher {
 	private static final Map<String, AppServer> _appServers =
 		new LinkedHashMap<String, AppServer>();
 
-	private static File _jarDir;
-
 	static {
 		_appServers.put("jboss", AppServer.getJBossEAPAppServer());
 		_appServers.put("jonas", AppServer.getJOnASAppServer());
@@ -293,24 +444,9 @@ public class ReferencesCheckerLauncher {
 		_appServers.put("websphere", AppServer.getWebSphereAppServer());
 		_appServers.put("wildfly", AppServer.getWildFlyAppServer());
 
-		ProtectionDomain protectionDomain =
-			ReferencesCheckerLauncher.class.getProtectionDomain();
-
-		CodeSource codeSource = protectionDomain.getCodeSource();
-
-		URL url = codeSource.getLocation();
-
-		try {
-			Path path = Paths.get(url.toURI());
-
-			File jarFile = path.toFile();
-
-			_jarDir = jarFile.getParentFile();
-		}
-		catch (URISyntaxException urise) {
-			throw new ExceptionInInitializerError(urise);
-		}
+		_jarDir = getReferencesCheckerLibFolder();
 	}
 
-	private final ConsoleReader _consoleReader = new ConsoleReader();
+	private static File _jarDir;
+
 }
