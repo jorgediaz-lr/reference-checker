@@ -42,7 +42,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,161 +84,176 @@ public class ReferencesChecker {
 	}
 
 	public ReferencesChecker(
-		String dbType, List<String> excludeColumns, boolean ignoreEmptyTables,
-		boolean ignoreNullValues) {
+			String dbType, List<String> excludeColumns,
+			boolean ignoreEmptyTables, boolean ignoreNullValues)
+		throws IOException, SQLException {
 
 		this.dbType = dbType;
 		this.excludeColumns = excludeColumns;
 		this.ignoreEmptyTables = ignoreEmptyTables;
 		this.ignoreNullValues = ignoreNullValues;
-	}
-
-	public Map<Reference, Reference> calculateReferences()
-		throws IOException, SQLException {
 
 		Connection connection = null;
-
-		Map<Reference, Reference> references = null;
 
 		try {
 			connection = DataAccess.getConnection();
 
-			Configuration configuration = getConfiguration(connection);
-
-			if (configuration == null) {
-				return Collections.emptyMap();
-			}
-
-			TableUtil tableUtil = getTableUtil(connection, configuration);
-
-			references = calculateReferences(configuration, tableUtil);
+			this.configuration = getConfiguration(connection);
+			this.tableUtil = getTableUtil(connection, configuration);
 		}
 		finally {
 			DataAccess.cleanUp(connection);
 		}
+	}
 
-		return references;
+	public Map<Reference, Reference> calculateReferences() {
+
+		Map<Reference, Reference> referencesMap =
+			new TreeMap<Reference, Reference>();
+
+		List<Reference> references;
+		try {
+			references = ReferenceUtil.getConfigurationReferences(
+				tableUtil, configuration, ignoreEmptyTables);
+		}
+		catch (IOException e) {
+			_log.error(
+				"Error reading configuration_xx.yml file: " + e.getMessage(),
+				e);
+			throw new RuntimeException(e);
+		}
+
+		for (Reference reference : references) {
+			referencesMap.put(reference, reference);
+		}
+
+		if (_log.isDebugEnabled()) {
+			Set<String> idColumns = getNotCheckedColumns(
+				tableUtil, referencesMap.values());
+
+			_log.debug("List of id, key and pk columns that are not checked:");
+
+			for (String idColumn : idColumns) {
+				_log.debug(idColumn);
+			}
+		}
+
+		return referencesMap;
 	}
 
 	public Map<String, Long> calculateTableCount()
 		throws IOException, SQLException {
 
-		Connection connection = null;
+		Map<String, Long> mapTableCount = new TreeMap<String, Long>();
 
-		try {
-			connection = DataAccess.getConnection();
+		for (Table table : tableUtil.getTables()) {
+			long count = TableUtil.countTable(table);
 
-			Configuration configuration = getConfiguration(connection);
-
-			if (configuration == null) {
-				return Collections.emptyMap();
-			}
-
-			Map<String, Long> mapTableCount = new TreeMap<String, Long>();
-
-			TableUtil tableUtil = getTableUtil(connection, configuration);
-
-			for (Table table : tableUtil.getTables()) {
-				long count = TableUtil.countTable(table);
-
-				mapTableCount.put(table.getTableName(), count);
-			}
-
-			return mapTableCount;
+			mapTableCount.put(table.getTableName(), count);
 		}
-		finally {
-			DataAccess.cleanUp(connection);
-		}
+
+		return mapTableCount;
 	}
 
 	public List<String> dumpDatabaseInfo() throws IOException, SQLException {
 		List<String> output = new ArrayList<String>();
 
+		long liferayBuildNumber;
 		Connection connection = null;
 
 		try {
 			connection = DataAccess.getConnection();
 
-			long liferayBuildNumber = getLiferayBuildNumber(connection);
-			output.add("Liferay build number: " + liferayBuildNumber);
-			output.add("Database type: " + SQLUtil.getDBType());
-			output.add("");
-
-			Configuration configuration = getConfiguration(connection);
-
-			if (configuration == null) {
-				return Collections.emptyList();
-			}
-
-			TableUtil tableUtil = getTableUtil(connection, configuration);
-
-			List<Table> tablesWithoutClassName = new ArrayList<Table>();
-			List<Table> tablesWithClassName = new ArrayList<Table>();
-
-			for (Table table : tableUtil.getTables()) {
-				if (table.getClassNameId() == -1) {
-					tablesWithoutClassName.add(table);
-				}
-				else if (table.getClassNameId() != 0) {
-					tablesWithClassName.add(table);
-				}
-			}
-
-			if (!tablesWithoutClassName.isEmpty()) {
-				output.add("Tables without className information:");
-
-				for (Table table : tablesWithoutClassName) {
-					output.add(table.getTableName());
-				}
-
-				output.add("");
-			}
-
-			if (!tablesWithClassName.isEmpty()) {
-				output.add("Table-className mapping information:");
-
-				for (Table t : tablesWithClassName) {
-					output.add(t.getTableName() + "=" + t.getClassName());
-				}
-
-				output.add("");
-				output.add("Table-className mapping information:");
-
-				for (Table t : tablesWithClassName) {
-					output.add(t.getTableName() + "=" + t.getClassNameId());
-				}
-
-				output.add("");
-			}
-
-			return output;
+			liferayBuildNumber = getLiferayBuildNumber(connection);
 		}
 		finally {
 			DataAccess.cleanUp(connection);
 		}
+
+		output.add("Liferay build number: " + liferayBuildNumber);
+		output.add("Database type: " + SQLUtil.getDBType());
+		output.add("");
+
+		List<Table> tablesWithoutClassName = new ArrayList<Table>();
+		List<Table> tablesWithClassName = new ArrayList<Table>();
+
+		for (Table table : tableUtil.getTables()) {
+			if (table.getClassNameId() == -1) {
+				tablesWithoutClassName.add(table);
+			}
+			else if (table.getClassNameId() != 0) {
+				tablesWithClassName.add(table);
+			}
+		}
+
+		if (!tablesWithoutClassName.isEmpty()) {
+			output.add("Tables without className information:");
+
+			for (Table table : tablesWithoutClassName) {
+				output.add(table.getTableName());
+			}
+
+			output.add("");
+		}
+
+		if (!tablesWithClassName.isEmpty()) {
+			output.add("Table-className mapping information:");
+
+			for (Table t : tablesWithClassName) {
+				output.add(t.getTableName() + "=" + t.getClassName());
+			}
+
+			output.add("");
+			output.add("Table-className mapping information:");
+
+			for (Table t : tablesWithClassName) {
+				output.add(t.getTableName() + "=" + t.getClassNameId());
+			}
+
+			output.add("");
+		}
+
+		return output;
 	}
 
-	public List<MissingReferences> execute() throws IOException, SQLException {
-		Connection connection = null;
+	public List<MissingReferences> execute() {
 
-		List<MissingReferences> listMissingReferences = null;
+		Map<Reference, Reference> references = calculateReferences();
 
-		try {
-			connection = DataAccess.getConnection();
+		List<MissingReferences> listMissingReferences =
+			new ArrayList<MissingReferences>();
 
-			Configuration configuration = getConfiguration(connection);
+		for (Reference reference : references.values()) {
+			try {
+				if (_log.isInfoEnabled()) {
+					_log.info("Processing: " + reference);
+				}
 
-			if (configuration == null) {
-				return Collections.emptyList();
+				if (reference.isRaw()) {
+					continue;
+				}
+
+				Query originQuery = reference.getOriginQuery();
+				Query destinationQuery = reference.getDestinationQuery();
+
+				if (destinationQuery == null) {
+					continue;
+				}
+
+				Collection<String> missingReferences = queryInvalidValues(
+					originQuery, destinationQuery);
+
+				if ((missingReferences == null) || missingReferences.size()>0) {
+					listMissingReferences.add(
+						new MissingReferences(reference, missingReferences));
+				}
 			}
+			catch (Throwable t) {
+				_log.error(
+					"EXCEPTION: " + t.getClass() + " - " + t.getMessage(), t);
 
-			TableUtil tableUtil = getTableUtil(connection, configuration);
-
-			listMissingReferences = execute(
-				configuration, tableUtil, tableUtil.getTables());
-		}
-		finally {
-			DataAccess.cleanUp(connection);
+				listMissingReferences.add(new MissingReferences(reference, t));
+			}
 		}
 
 		return listMissingReferences;
@@ -351,88 +365,6 @@ public class ReferencesChecker {
 		}
 
 		return invalidValuesSet;
-	}
-
-	protected Map<Reference, Reference> calculateReferences(
-		Configuration configuration, TableUtil tableUtil) {
-
-		Map<Reference, Reference> referencesMap =
-			new TreeMap<Reference, Reference>();
-
-		List<Reference> references;
-		try {
-			references = ReferenceUtil.getConfigurationReferences(
-				tableUtil, configuration, ignoreEmptyTables);
-		}
-		catch (IOException e) {
-			_log.error(
-				"Error reading configuration_xx.yml file: " + e.getMessage(),
-				e);
-			throw new RuntimeException(e);
-		}
-
-		for (Reference reference : references) {
-			referencesMap.put(reference, reference);
-		}
-
-		if (_log.isDebugEnabled()) {
-			Set<String> idColumns = getNotCheckedColumns(
-				tableUtil, referencesMap.values());
-
-			_log.debug("List of id, key and pk columns that are not checked:");
-
-			for (String idColumn : idColumns) {
-				_log.debug(idColumn);
-			}
-		}
-
-		return referencesMap;
-	}
-
-	protected List<MissingReferences> execute(
-		Configuration configuration, TableUtil tableUtil,
-		List<Table> tableList) {
-
-		Map<Reference, Reference> references = calculateReferences(
-			configuration, tableUtil);
-
-		List<MissingReferences> listMissingReferences =
-			new ArrayList<MissingReferences>();
-
-		for (Reference reference : references.values()) {
-			try {
-				if (_log.isInfoEnabled()) {
-					_log.info("Processing: "+ reference);
-				}
-
-				if (reference.isRaw()) {
-					continue;
-				}
-
-				Query originQuery = reference.getOriginQuery();
-				Query destinationQuery = reference.getDestinationQuery();
-
-				if (destinationQuery == null) {
-					continue;
-				}
-
-				Collection<String> missingReferences = queryInvalidValues(
-					originQuery, destinationQuery);
-
-				if ((missingReferences == null) || missingReferences.size()>0) {
-					listMissingReferences.add(
-						new MissingReferences(reference, missingReferences));
-				}
-			}
-			catch (Throwable t) {
-				_log.error(
-					"EXCEPTION: " + t.getClass() + " - " + t.getMessage(), t);
-
-				listMissingReferences.add(new MissingReferences(reference, t));
-			}
-		}
-
-		return listMissingReferences;
 	}
 
 	protected Configuration getConfiguration(Connection connection)
@@ -588,9 +520,11 @@ public class ReferencesChecker {
 
 	private static Log _log = LogFactoryUtil.getLog(ReferencesChecker.class);
 
+	private Configuration configuration;
 	private String dbType;
 	private List<String> excludeColumns;
 	private boolean ignoreEmptyTables;
 	private boolean ignoreNullValues;
+	private TableUtil tableUtil;
 
 }
