@@ -170,25 +170,30 @@ public class InitPortal {
 			(Html)ReflectionUtil.newPortalObject(
 				"com.liferay.portal.util.HtmlImpl"));
 
-		PortalCacheManager portalCacheManager =
-			(PortalCacheManager)ReflectionUtil.newPortalObject(
-				"com.liferay.portal.cache.memory.MemoryPortalCacheManager");
+		try {
+			PortalCacheManager portalCacheManager =
+				(PortalCacheManager)ReflectionUtil.newPortalObject(
+					"com.liferay.portal.cache.memory.MemoryPortalCacheManager");
 
-		Method afterPropertiesSet =
-			portalCacheManager.getClass().getMethod("afterPropertiesSet");
+			Method afterPropertiesSet =
+				portalCacheManager.getClass().getMethod("afterPropertiesSet");
 
-		afterPropertiesSet.invoke(portalCacheManager);
+			afterPropertiesSet.invoke(portalCacheManager);
 
-		MultiVMPool multiVMPool = (MultiVMPool)ReflectionUtil.newPortalObject(
-			"com.liferay.portal.cache.MultiVMPoolImpl");
+			MultiVMPool multiVMPool =
+				(MultiVMPool)ReflectionUtil.newPortalObject(
+					"com.liferay.portal.cache.MultiVMPoolImpl");
 
-		Method setPortalCacheManager = multiVMPool.getClass().getMethod(
-			"setPortalCacheManager", PortalCacheManager.class);
+			Method setPortalCacheManager = multiVMPool.getClass().getMethod(
+				"setPortalCacheManager", PortalCacheManager.class);
 
-		setPortalCacheManager.invoke(multiVMPool, portalCacheManager);
+			setPortalCacheManager.invoke(multiVMPool, portalCacheManager);
 
-		MultiVMPoolUtil multiVMPoolUtil = new MultiVMPoolUtil();
-		multiVMPoolUtil.setMultiVMPool(multiVMPool);
+			MultiVMPoolUtil multiVMPoolUtil = new MultiVMPoolUtil();
+			multiVMPoolUtil.setMultiVMPool(multiVMPool);
+		}
+		catch (Throwable t) {
+		}
 
 		LanguageUtil languageUtil = new LanguageUtil();
 
