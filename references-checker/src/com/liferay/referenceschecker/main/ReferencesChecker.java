@@ -53,6 +53,12 @@ public class ReferencesChecker {
 		String databaseCfg = commandArguments.getDatabaseConfiguration();
 		String filenamePrefix = commandArguments.getOutputFilesPrefix();
 		String filenameSuffix = commandArguments.getOutputFilesSuffix();
+		int missingReferencesLimit =
+			commandArguments.getMissingReferencesLimit();
+
+		if (missingReferencesLimit == -1) {
+			missingReferencesLimit = 50;
+		}
 
 		if (databaseCfg == null) {
 			databaseCfg = "database.properties";
@@ -79,7 +85,7 @@ public class ReferencesChecker {
 		initPortal.connectToDatabase(databaseCfg);
 
 		ReferencesChecker referenceChecker = new ReferencesChecker(
-			filenamePrefix, filenameSuffix);
+			filenamePrefix, filenameSuffix, missingReferencesLimit);
 
 		if (commandArguments.showInformation()) {
 			referenceChecker.dumpDatabaseInfo();
@@ -102,11 +108,14 @@ public class ReferencesChecker {
 		}
 	}
 
-	public ReferencesChecker(String filenamePrefix, String filenameSuffix)
+	public ReferencesChecker(
+			String filenamePrefix, String filenameSuffix,
+			int missingReferencesLimit)
 		throws Exception {
 
 		this.filenamePrefix = filenamePrefix;
 		this.filenameSuffix = filenameSuffix;
+		this.missingReferencesLimit = missingReferencesLimit;
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)
@@ -264,11 +273,12 @@ public class ReferencesChecker {
 
 		String[] headers = new String[] {
 			"origin table", "attributes", "destination table", "attributes",
-			"missing references"};
+			"#", "missing references"};
 
 		List<String> outputList =
 			ReferencesCheckerOutput.generateCSVOutputCheckReferences(
-				Arrays.asList(headers), listMissingReferences);
+				Arrays.asList(headers), listMissingReferences,
+				missingReferencesLimit);
 
 		String outputFile = _getOutputFileName("missing-references", "csv");
 
@@ -315,5 +325,6 @@ public class ReferencesChecker {
 
 	private String filenamePrefix;
 	private String filenameSuffix;
+	private int missingReferencesLimit;
 
 }

@@ -31,6 +31,15 @@ public class CommandArguments {
 		return _databaseConfiguration;
 	}
 
+	public int getMissingReferencesLimit() throws IOException {
+		try {
+			return Integer.valueOf(_missingReferencesLimit);
+		}
+		catch (Exception e) {
+			return -1;
+		}
+	}
+
 	public String getOutputFilesPrefix() throws IOException {
 		return _outputFilesPrefix;
 	}
@@ -78,6 +87,12 @@ public class CommandArguments {
 		names = {"-i", "--showInformation"}
 	)
 	private boolean _info;
+
+	@Parameter(
+		description = "Missing references limit.",
+		names = {"-l", "--missingReferencesLimit"}
+	)
+	private String _missingReferencesLimit;
 
 	@Parameter(
 		description = "Output files prefix", names = {"--outputFilesPrefix"}

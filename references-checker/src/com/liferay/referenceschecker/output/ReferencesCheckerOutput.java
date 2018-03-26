@@ -53,7 +53,8 @@ public class ReferencesCheckerOutput {
 			ReferencesCheckerOutput.class);
 
 	public static List<String> generateCSVOutputCheckReferences(
-		List<String> headers, List<MissingReferences> listMissingReferences) {
+		List<String> headers, List<MissingReferences> listMissingReferences,
+		int missingReferencesLimit) {
 
 		List<String> out = new ArrayList<String>();
 
@@ -67,6 +68,7 @@ public class ReferencesCheckerOutput {
 			Collection<String> missingValues = missingReferences.getValues();
 
 			if ((throwable != null) || (missingValues == null)) {
+				line.add("-1");
 				line.add("Error checking references");
 			}
 
@@ -76,7 +78,23 @@ public class ReferencesCheckerOutput {
 					throwable.getMessage());
 			}
 			else if (missingValues != null) {
-				line.add(StringUtil.merge(missingValues));
+				line.add(String.valueOf(missingValues.size()));
+
+				if (missingReferencesLimit == 0) {
+					line.add(StringPool.BLANK);
+				}
+				else if ((missingReferencesLimit != -1) &&
+						 (missingValues.size() >= missingReferencesLimit)) {
+
+					String[] missingValuesArray = missingValues.toArray(
+						new String[0]);
+					missingValuesArray = Arrays.copyOfRange(
+						missingValuesArray, 0, missingReferencesLimit);
+					line.add(StringUtil.merge(missingValuesArray)+ "...");
+				}
+				else {
+					line.add(StringUtil.merge(missingValues));
+				}
 			}
 
 			out.add(getCSVRow(line));

@@ -141,7 +141,52 @@ public class ReferenceUtil {
 		return resultLists;
 	}
 
+	protected List<Reference> filterReferencesByDestinationClassName(
+		List<Reference> references, String filter) {
+
+		List<Reference> selectedReferences = new ArrayList<Reference>();
+
+		for (Reference reference : references) {
+			Table destinationTable = getDestinationTable(reference);
+
+			if (destinationTable == null) {
+				continue;
+			}
+
+			String className = destinationTable.getClassName();
+
+			if (Validator.equals(filter, className) ||
+				(StringPool.STAR.equals(filter) &&
+				 Validator.isNotNull(className))) {
+
+				selectedReferences.add(reference);
+			}
+		}
+
+		return selectedReferences;
+	}
+
 	protected Collection<Reference> getBestMatchingReferences(
+		Query query, List<Reference> references) {
+
+		String[] filters = {StringPool.STAR, StringPool.BLANK, null};
+
+		for (String filter : filters) {
+			List<Reference> filteredReferences =
+				filterReferencesByDestinationClassName(references, filter);
+
+			Collection<Reference> bestReferences = getBestMatchingReferences2(
+				query, filteredReferences);
+
+			if (!bestReferences.isEmpty()) {
+				return bestReferences;
+			}
+		}
+
+		return Collections.emptyList();
+	}
+
+	protected Collection<Reference> getBestMatchingReferences2(
 		Query originQuery, Collection<Reference> references) {
 
 		if (references.size() == 0) {
@@ -158,8 +203,11 @@ public class ReferenceUtil {
 		List<Reference> bestReferences = new ArrayList<Reference>();
 
 		for (Reference reference : references) {
-			Query destinationQuery = reference.getDestinationQuery();
-			Table destinationTable = destinationQuery.getTable();
+			Table destinationTable = getDestinationTable(reference);
+
+			if (destinationTable == null) {
+				continue;
+			}
 
 			String newCommonPrefix = getGreatestCommonPrefix(
 				originTable.getTableName(), destinationTable.getTableName());
@@ -528,6 +576,16 @@ public class ReferenceUtil {
 		}
 
 		return text;
+	}
+
+	private Table getDestinationTable(Reference reference) {
+		Query destinationQuery = reference.getDestinationQuery();
+
+		if (destinationQuery == null) {
+			return null;
+		}
+
+		return destinationQuery.getTable();
 	}
 
 	private String getGreatestCommonPrefix(String a, String b) {
