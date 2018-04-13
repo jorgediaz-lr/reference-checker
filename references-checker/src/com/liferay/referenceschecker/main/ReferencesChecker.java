@@ -48,6 +48,8 @@ public class ReferencesChecker {
 
 		if (commandArguments == null) {
 			System.exit(-1);
+
+			return;
 		}
 
 		String databaseCfg = commandArguments.getDatabaseConfiguration();
@@ -84,8 +86,19 @@ public class ReferencesChecker {
 
 		initPortal.connectToDatabase(databaseCfg);
 
-		ReferencesChecker referenceChecker = new ReferencesChecker(
-			filenamePrefix, filenameSuffix, missingReferencesLimit);
+		ReferencesChecker referenceChecker;
+
+		try {
+			referenceChecker = new ReferencesChecker(
+				filenamePrefix, filenameSuffix, missingReferencesLimit);
+		}
+		catch (Throwable t) {
+			t.printStackTrace(System.out);
+
+			System.exit(-1);
+
+			return;
+		}
 
 		if (commandArguments.showInformation()) {
 			referenceChecker.dumpDatabaseInfo();
@@ -116,6 +129,12 @@ public class ReferencesChecker {
 		this.filenamePrefix = filenamePrefix;
 		this.filenameSuffix = filenameSuffix;
 		this.missingReferencesLimit = missingReferencesLimit;
+
+		String dbType = SQLUtil.getDBType();
+
+		this.referencesChecker =
+			new com.liferay.referenceschecker.ReferencesChecker(
+				dbType, null, false, true);
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)
@@ -160,12 +179,6 @@ public class ReferencesChecker {
 
 		long startTime = System.currentTimeMillis();
 
-		String dbType = SQLUtil.getDBType();
-
-		com.liferay.referenceschecker.ReferencesChecker referencesChecker =
-			new com.liferay.referenceschecker.ReferencesChecker(
-				dbType, null, false, true);
-
 		Map<Reference, Reference> references =
 			referencesChecker.calculateReferences();
 
@@ -197,12 +210,6 @@ public class ReferencesChecker {
 
 		long startTime = System.currentTimeMillis();
 
-		String dbType = SQLUtil.getDBType();
-
-		com.liferay.referenceschecker.ReferencesChecker referencesChecker =
-			new com.liferay.referenceschecker.ReferencesChecker(
-				dbType, null, false, true);
-
 		Map<String, Long> mapTableCount =
 			referencesChecker.calculateTableCount();
 
@@ -233,12 +240,6 @@ public class ReferencesChecker {
 
 		long startTime = System.currentTimeMillis();
 
-		String dbType = SQLUtil.getDBType();
-
-		com.liferay.referenceschecker.ReferencesChecker referencesChecker =
-			new com.liferay.referenceschecker.ReferencesChecker(
-				dbType, null, false, true);
-
 		List<String> outputList = referencesChecker.dumpDatabaseInfo();
 
 		String outputFile = _getOutputFileName("information", "txt");
@@ -261,12 +262,6 @@ public class ReferencesChecker {
 	protected void execute() throws IOException, SQLException {
 
 		long startTime = System.currentTimeMillis();
-
-		String dbType = SQLUtil.getDBType();
-
-		com.liferay.referenceschecker.ReferencesChecker referencesChecker =
-			new com.liferay.referenceschecker.ReferencesChecker(
-				dbType, null, true, true);
 
 		List<MissingReferences> listMissingReferences =
 			referencesChecker.execute();
@@ -326,5 +321,6 @@ public class ReferencesChecker {
 	private String filenamePrefix;
 	private String filenameSuffix;
 	private int missingReferencesLimit;
+	private com.liferay.referenceschecker.ReferencesChecker referencesChecker;
 
 }
