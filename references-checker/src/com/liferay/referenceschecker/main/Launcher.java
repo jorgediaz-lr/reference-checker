@@ -46,6 +46,7 @@ public class Launcher {
 	//0 => app-server.properties;
 	//1 => com.liferay.referenceschecker.main.ReferencesChecker
 	//2 => main
+	//3 => [debug]
 
 	public static void main(String[] args) throws IOException {
 		if (args.length < 3) {
@@ -56,13 +57,21 @@ public class Launcher {
 			System.exit(-1);
 		}
 
-		Launcher launcher = new Launcher();
-
 		String appServerCfg = args[0];
 		String className = args[1];
 		String methodName = args[2];
 
-		args = Arrays.copyOfRange(args, 3, args.length);
+		int removeArgs = 3;
+		boolean debug = false;
+
+		if ((args.length>= 4) && args[3].trim().equals("debug")) {
+			debug = true;
+			removeArgs = 4;
+		}
+
+		args = Arrays.copyOfRange(args, removeArgs, args.length);
+
+		Launcher launcher = new Launcher(debug);
 
 		List<URL> classLoaderUrls = launcher.calculateClassLoaderURLs(
 			appServerCfg);
@@ -78,6 +87,10 @@ public class Launcher {
 		launcher.setClassLoaderURLs(classLoaderUrls);
 
 		launcher.execute(className, methodName, args);
+	}
+
+	public Launcher(boolean debug) {
+		this.debug = debug;
 	}
 
 	public List<URL> calculateClassLoaderURLs(String appServerCfg)
@@ -164,9 +177,9 @@ public class Launcher {
 
 		currentThread.setContextClassLoader(urlClassLoader);
 
+		Class<?> referencesCheckerClazz;
 		try {
-			Class<?> referencesCheckerClazz = urlClassLoader.loadClass(
-				className);
+			referencesCheckerClazz = urlClassLoader.loadClass(className);
 
 			Method main = referencesCheckerClazz.getMethod(
 				methodName, String[].class);
@@ -174,14 +187,21 @@ public class Launcher {
 			main.invoke(null, ((Object)args));
 		}
 		catch (Throwable t) {
-			System.err.println(
-				"Classloader URLs: " + Arrays.toString(
-					urlClassLoader.getURLs()));
-			System.err.println();
+			if (debug) {
+				System.err.println(
+					"Classloader URLs: " + Arrays.toString(
+						urlClassLoader.getURLs()));
+				System.err.println();
+			}
+
 			System.err.println(
 				"Error executing " + className + "." + methodName);
-			System.err.println("Arguments: " + Arrays.toString(args));
-			System.err.println();
+
+			if (debug) {
+				System.err.println("Arguments: " + Arrays.toString(args));
+				System.err.println();
+			}
+
 			t.printStackTrace(System.err);
 		}
 	}
@@ -448,5 +468,7 @@ public class Launcher {
 	}
 
 	private static File _jarDir;
+
+	private boolean debug;
 
 }
