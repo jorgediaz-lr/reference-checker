@@ -149,11 +149,11 @@ public class ReferenceUtil {
 		for (Reference reference : references) {
 			Table destinationTable = getDestinationTable(reference);
 
-			if (destinationTable == null) {
-				continue;
-			}
+			String className = null;
 
-			String className = destinationTable.getClassName();
+			if (destinationTable != null) {
+				className = destinationTable.getClassName();
+			}
 
 			if (Validator.equals(filter, className) ||
 				(StringPool.STAR.equals(filter) &&
