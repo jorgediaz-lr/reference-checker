@@ -22,11 +22,47 @@ import java.util.ArrayList;
 import java.util.List;
 public class Query implements Comparable<Query> {
 
+	public static List<String> castColumnsToText(
+		String prefix, List<String> columns, List<Class<?>> columnTypes,
+		List<Class<?>> castTypes) {
+
+		List<String> castedColumns = new ArrayList<String>();
+
+		for (int i = 0; i<columns.size(); i++) {
+			String column = columns.get(i);
+
+			Class<?> columnType = columnTypes.get(i);
+			Class<?> castType = castTypes.get(i);
+
+			if (Validator.isNotNull(prefix)) {
+				column = prefix + "." + column;
+			}
+
+			if (!columnType.equals(castType) && String.class.equals(castType) &&
+				!Object.class.equals(columnType)) {
+
+				column = "CAST_TEXT(" + column + ")";
+			}
+
+			castedColumns.add(column);
+		}
+
+		return castedColumns;
+	}
+
 	public Query(Table table, List<String> columns, String condition) {
 		this.columns = rewriteConstants(columns);
 		this.columnsString = StringUtil.merge(this.columns);
 		this.condition = condition;
 		this.table = table;
+
+		String tableName = table.getTableName();
+
+		if (tableName.length() > 20) {
+			tableName = tableName.substring(0, 20);
+		}
+
+		this.tableAlias = tableName + "_" + StringUtil.randomId();
 	}
 
 	@Override
@@ -46,6 +82,20 @@ public class Query implements Comparable<Query> {
 
 	public List<String> getColumns() {
 		return columns;
+	}
+
+	public List<String> getColumnsWithCast(Query destinationQuery) {
+
+		List<String> destinationColumns = destinationQuery.getColumns();
+
+		Table destinationTable = destinationQuery.getTable();
+
+		List<Class<?>> columnTypes = table.getColumnTypesClass(columns);
+		List<Class<?>> destinationTypes = destinationTable.getColumnTypesClass(
+			destinationColumns);
+
+		return castColumnsToText(
+			tableAlias, columns, columnTypes, destinationTypes);
 	}
 
 	public String getCondition() {
@@ -72,6 +122,8 @@ public class Query implements Comparable<Query> {
 		sb.append(columnsString);
 		sb.append(" FROM ");
 		sb.append(table.getTableName());
+		sb.append(" ");
+		sb.append(tableAlias);
 		sb.append(" WHERE ");
 
 		String sqlCondition = condition;
@@ -85,8 +137,16 @@ public class Query implements Comparable<Query> {
 		return sb.toString();
 	}
 
+	public String getSQLCount() {
+		return getSQL(false, " COUNT(DISTINCT " + this.columnsString + ")");
+	}
+
 	public Table getTable() {
 		return table;
+	}
+
+	public String getTableAlias() {
+		return tableAlias;
 	}
 
 	@Override
@@ -118,6 +178,7 @@ public class Query implements Comparable<Query> {
 	protected String columnsString;
 	protected String condition;
 	protected Table table;
+	protected String tableAlias;
 	protected String toString;
 
 	private static boolean isNumeric(String str)

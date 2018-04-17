@@ -272,62 +272,7 @@ public class ReferencesChecker {
 		try {
 			con = DataAccess.getConnection();
 
-			Table originTable = originQuery.getTable();
-			Table destinationTable = destinationQuery.getTable();
-
-			List<String> originColumns = originQuery.getColumns();
-			List<String> destinationColumns = destinationQuery.getColumns();
-
-			List<Class<?>> originTypes = originTable.getColumnTypesClass(
-				originColumns);
-			List<Class<?>> destinationTypes =
-				destinationTable.getColumnTypesClass(destinationColumns);
-
-			List<String> conditionColumns = castColumnsToText(
-				originColumns, originTypes, destinationTypes);
-
-			destinationColumns =
-				castColumnsToText(
-					destinationColumns, destinationTypes, originTypes);
-
-			StringBundler sb = new StringBundler();
-
-			sb.append(originQuery.getSQL());
-			sb.append(" AND ");
-
-			if ((conditionColumns.size() > 1) &&
-				dbType.equals(SQLUtil.TYPE_SQLSERVER)) {
-
-				/* SQL Server */
-				sb.append("NOT EXISTS (");
-				sb.append(
-					destinationQuery.getSQL(
-						false, StringUtil.merge(destinationColumns)));
-
-				for (int i = 0; i<conditionColumns.size(); i++) {
-					sb.append(" AND ");
-					sb.append(originQuery.getTable().getTableName());
-					sb.append(".");
-					sb.append(conditionColumns.get(i));
-					sb.append("=");
-					sb.append(destinationQuery.getTable().getTableName());
-					sb.append(".");
-					sb.append(destinationColumns.get(i));
-				}
-
-				sb.append(")");
-			}
-			else {
-				sb.append("(");
-				sb.append(StringUtil.merge(conditionColumns));
-				sb.append(") NOT IN (");
-				sb.append(
-					destinationQuery.getSQL(
-						false, StringUtil.merge(destinationColumns)));
-				sb.append(")");
-			}
-
-			String sql = SQLUtil.transformSQL(sb.toString());
+			String sql = getSQL(originQuery, destinationQuery);
 
 			if (_log.isInfoEnabled()) {
 				_log.info("SQL: " + sql);
@@ -444,6 +389,86 @@ public class ReferencesChecker {
 		return idColumns;
 	}
 
+	protected String getSQL(Query originQuery, Query destinationQuery) {
+		return getSQL(originQuery, destinationQuery, false);
+	}
+
+	protected String getSQL(
+		Query originQuery, Query destinationQuery, boolean count) {
+
+		if (dbType.equals(SQLUtil.TYPE_POSTGRESQL) ||
+			dbType.equals(SQLUtil.TYPE_SQLSERVER)) {
+
+			return getSQLNotExists(count, originQuery, destinationQuery);
+		}
+
+		return getSQLNotIn(count, originQuery, destinationQuery);
+	}
+
+	protected String getSQLNotExists(
+		boolean count, Query originQuery, Query destinationQuery) {
+
+		List<String> conditionColumns = originQuery.getColumnsWithCast(
+			destinationQuery);
+
+		List<String> destinationColumns = destinationQuery.getColumnsWithCast(
+			originQuery);
+
+		StringBundler sb = new StringBundler();
+
+		if (count) {
+			sb.append(originQuery.getSQLCount());
+		}
+		else {
+			sb.append(originQuery.getSQL());
+		}
+
+		sb.append(" AND NOT EXISTS (");
+		sb.append(
+			destinationQuery.getSQL(
+				false, StringUtil.merge(destinationColumns)));
+
+		for (int i = 0; i<conditionColumns.size(); i++) {
+			sb.append(" AND ");
+			sb.append(conditionColumns.get(i));
+			sb.append("=");
+			sb.append(destinationColumns.get(i));
+		}
+
+		sb.append(")");
+
+		return SQLUtil.transformSQL(sb.toString());
+	}
+
+	protected String getSQLNotIn(
+		boolean count, Query originQuery, Query destinationQuery) {
+
+		List<String> conditionColumns = originQuery.getColumnsWithCast(
+			destinationQuery);
+
+		List<String> destinationColumns = destinationQuery.getColumnsWithCast(
+			originQuery);
+
+		StringBundler sb = new StringBundler();
+
+		if (count) {
+			sb.append(originQuery.getSQLCount());
+		}
+		else {
+			sb.append(originQuery.getSQL());
+		}
+
+		sb.append(" AND (");
+		sb.append(StringUtil.merge(conditionColumns));
+		sb.append(") NOT IN (");
+		sb.append(
+			destinationQuery.getSQL(
+				false, StringUtil.merge(destinationColumns)));
+		sb.append(")");
+
+		return SQLUtil.transformSQL(sb.toString());
+	}
+
 	protected TableUtil getTableUtil(
 			Connection con, Configuration configuration)
 		throws SQLException {
@@ -492,30 +517,6 @@ public class ReferencesChecker {
 		}
 
 		return true;
-	}
-
-	private List<String> castColumnsToText(
-		List<String> columns, List<Class<?>> columnTypes,
-		List<Class<?>> castTypes) {
-
-		List<String> castColumns = new ArrayList<String>();
-
-		for (int i = 0; i<columns.size(); i++) {
-			String column = columns.get(i);
-
-			Class<?> columnType = columnTypes.get(i);
-			Class<?> castType = castTypes.get(i);
-
-			if (!columnType.equals(castType) && String.class.equals(castType) &&
-				!Object.class.equals(columnType)) {
-
-				column = "CAST_TEXT(" + column + ")";
-			}
-
-			castColumns.add(column);
-		}
-
-		return castColumns;
 	}
 
 	private static Log _log = LogFactoryUtil.getLog(ReferencesChecker.class);
