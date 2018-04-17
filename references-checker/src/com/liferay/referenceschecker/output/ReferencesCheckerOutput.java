@@ -18,7 +18,6 @@ import com.liferay.portal.kernel.dao.search.ResultRow;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
@@ -65,7 +64,7 @@ public class ReferencesCheckerOutput {
 				missingReferences.getReference(), false);
 
 			Throwable throwable = missingReferences.getThrowable();
-			Collection<String> missingValues = missingReferences.getValues();
+			Collection<Object[]> missingValues = missingReferences.getValues();
 
 			if ((throwable != null) || (missingValues == null)) {
 				line.add("-1");
@@ -80,21 +79,10 @@ public class ReferencesCheckerOutput {
 			else if (missingValues != null) {
 				line.add(String.valueOf(missingValues.size()));
 
-				if (missingReferencesLimit == 0) {
-					line.add(StringPool.BLANK);
-				}
-				else if ((missingReferencesLimit != -1) &&
-						 (missingValues.size() >= missingReferencesLimit)) {
+				String missingReferencesString = concatenate(
+					missingValues, missingReferencesLimit);
 
-					String[] missingValuesArray = missingValues.toArray(
-						new String[0]);
-					missingValuesArray = Arrays.copyOfRange(
-						missingValuesArray, 0, missingReferencesLimit);
-					line.add(StringUtil.merge(missingValuesArray)+ "...");
-				}
-				else {
-					line.add(StringUtil.merge(missingValues));
-				}
+				line.add(missingReferencesString);
 			}
 
 			out.add(getCSVRow(line));
@@ -349,7 +337,7 @@ public class ReferencesCheckerOutput {
 		}
 
 		Throwable throwable = missingReferences.getThrowable();
-		Collection<String> missingValues = missingReferences.getValues();
+		Collection<Object[]> missingValues = missingReferences.getValues();
 
 		if (throwable != null) {
 			addTextMethod.invoke(
@@ -392,9 +380,9 @@ public class ReferencesCheckerOutput {
 	}
 
 	protected static String getOutput(
-			Collection<String> missingValues, int numberOfRows, int maxSize) {
+			Collection<Object[]> missingValues, int numberOfRows, int maxSize) {
 
-		String outputString = StringUtil.merge(missingValues);
+		String outputString = concatenate(missingValues);
 
 		outputString = HtmlUtil.escape(outputString.replace(",", ", "));
 
@@ -403,8 +391,7 @@ public class ReferencesCheckerOutput {
 		int overflow = missingValues.size() - maxSize;
 
 		if (overflow > 0) {
-			outputStringTrimmed = StringUtil.merge(
-				ArrayUtil.subset(missingValues.toArray(), 0, maxSize));
+			outputStringTrimmed = concatenate(missingValues, maxSize);
 
 			outputStringTrimmed = HtmlUtil.escape(
 				outputStringTrimmed.replace(",", ", "));
@@ -419,12 +406,55 @@ public class ReferencesCheckerOutput {
 
 			outputString =
 				"<span id=\"" + tagId + "-show\" >" + outputStringTrimmed +
-				"... " + linkMore + "</span><span id=\"" + tagId +
+				" " + linkMore + "</span><span id=\"" + tagId +
 				"\" style=\"display: none;\" >" + outputString + " " +
 				linkCollapse + "</span>";
 		}
 
 		return outputString;
+	}
+
+	private static String concatenate(Collection<Object[]> values) {
+		return concatenate(values, -1);
+	}
+
+	private static String concatenate(Collection<Object[]> values, int limit) {
+		if ((limit == 0) || (values == null) || values.isEmpty()) {
+			return StringPool.BLANK;
+		}
+
+		StringBundler sb = new StringBundler(values.size()*2);
+
+		int i = 0;
+
+		for (Object[] value : values) {
+			if (i != 0) {
+				sb.append(",");
+			}
+
+			String string;
+
+			if (value.length == 1) {
+				string = String.valueOf(value[0]);
+			}
+			else {
+				string = Arrays.toString(value);
+			}
+
+			sb.append(string);
+
+			i++;
+
+			if ((limit >= 0) && (i >= limit)) {
+				break;
+			}
+		}
+
+		if ((limit > 0) && (values.size() >= limit)) {
+			sb.append("...");
+		}
+
+		return sb.toString();
 	}
 
 	private static String escapeText(String text) {

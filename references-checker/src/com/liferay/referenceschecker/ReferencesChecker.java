@@ -40,8 +40,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -240,7 +240,7 @@ public class ReferencesChecker {
 					continue;
 				}
 
-				Collection<String> missingReferences = queryInvalidValues(
+				Collection<Object[]> missingReferences = queryInvalidValues(
 					originQuery, destinationQuery);
 
 				if ((missingReferences == null) || missingReferences.size()>0) {
@@ -259,11 +259,11 @@ public class ReferencesChecker {
 		return listMissingReferences;
 	}
 
-	public Collection<String> queryInvalidValues(
+	public Collection<Object[]> queryInvalidValues(
 			Query originQuery, Query destinationQuery)
 		throws SQLException {
 
-		Set<String> invalidValuesSet = new TreeSet<String>();
+		Set<Object[]> invalidValuesSet = new LinkedHashSet<Object[]>();
 
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -297,12 +297,7 @@ public class ReferencesChecker {
 					continue;
 				}
 
-				if (columnsNumber == 1) {
-					invalidValuesSet.add(String.valueOf(result[0]));
-				}
-				else {
-					invalidValuesSet.add(Arrays.toString(result));
-				}
+				invalidValuesSet.add(result);
 			}
 		}
 		finally {

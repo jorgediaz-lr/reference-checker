@@ -21,7 +21,7 @@ import java.util.Collection;
  */
 public class MissingReferences {
 
-	public MissingReferences(Reference reference, Collection<String> values) {
+	public MissingReferences(Reference reference, Collection<Object[]> values) {
 
 		this.reference = reference;
 		this.values = values;
@@ -41,12 +41,12 @@ public class MissingReferences {
 		return throwable;
 	}
 
-	public Collection<String> getValues() {
+	public Collection<Object[]> getValues() {
 		return values;
 	}
 
 	protected Reference reference = null;
 	protected Throwable throwable = null;
-	protected Collection<String> values = null;
+	protected Collection<Object[]> values = null;
 
 }
