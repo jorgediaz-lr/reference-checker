@@ -69,19 +69,6 @@ public class Configuration {
 
 	public static class Query {
 
-		private String table;
-		private List<String> columns;
-		private List<String> conditionColumns;
-		private String condition;
-
-		public String getTable() {
-			return table;
-		}
-
-		public void setTable(String table) {
-			this.table = table;
-		}
-
 		public List<String> getColumns() {
 			return columns;
 		}
@@ -106,22 +93,42 @@ public class Configuration {
 			this.conditionColumns = conditionColumns;
 		}
 
+		public String getTable() {
+			return table;
+		}
+
+		public void setTable(String table) {
+			this.table = table;
+		}
+
 		public String toString() {
 			return "table=" + table + ", columns=" + columns + ", condition=" +
 				condition;
 		}
 
+		private List<String> columns;
+		private List<String> conditionColumns;
+		private String condition;
+		private String table;
+
 	}
 
 	public static class Reference {
 
-		private Query origin;
-		public Query getOrigin() {
-			return origin;
+		public Boolean isDisplayRaw() {
+			return getDisplayRaw();
 		}
 
-		public void setOrigin(Query origin) {
-			this.origin = origin;
+		public Boolean getDisplayRaw() {
+			if (displayRaw == null) {
+				return false;
+			}
+
+			return displayRaw;
+		}
+
+		public void setDisplayRaw(Boolean displayRaw) {
+			this.displayRaw = displayRaw;
 		}
 
 		public Query getDest() {
@@ -132,11 +139,38 @@ public class Configuration {
 			this.dest = dest;
 		}
 
+		public Boolean isHidden() {
+			return getHidden();
+		}
+
+		public Boolean getHidden() {
+			if (hidden == null) {
+				return false;
+			}
+
+			return hidden;
+		}
+
+		public void setHidden(Boolean hidden) {
+			this.hidden = hidden;
+		}
+
+		public Query getOrigin() {
+			return origin;
+		}
+
+		public void setOrigin(Query origin) {
+			this.origin = origin;
+		}
+
 		public String toString() {
 			return getOrigin() + " => " + String.valueOf(getDest());
 		}
 
+		private Boolean displayRaw;
+		private Boolean hidden;
 		private Query dest;
+		private Query origin;
 
 	}
 

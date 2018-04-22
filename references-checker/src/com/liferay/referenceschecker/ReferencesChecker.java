@@ -40,8 +40,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,95 +84,186 @@ public class ReferencesChecker {
 	}
 
 	public ReferencesChecker(
-		String dbType, List<String> excludeColumns, boolean ignoreEmptyTables,
-		boolean ignoreNullValues) {
+			String dbType, List<String> excludeColumns,
+			boolean ignoreNullValues)
+		throws IOException, SQLException {
 
 		this.dbType = dbType;
 		this.excludeColumns = excludeColumns;
-		this.ignoreEmptyTables = ignoreEmptyTables;
 		this.ignoreNullValues = ignoreNullValues;
+
+		Connection connection = null;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			this.configuration = getConfiguration(connection);
+			this.tableUtil = getTableUtil(connection, configuration);
+		}
+		finally {
+			DataAccess.cleanUp(connection);
+		}
 	}
 
-	public Map<Reference, Reference> calculateReferences()
+	public Collection<Reference> calculateReferences(
+		boolean ignoreEmptyTables) {
+
+		Map<Reference, Reference> referencesMap =
+			new TreeMap<Reference, Reference>();
+
+		List<Reference> references;
+		try {
+			references = ReferenceUtil.getConfigurationReferences(
+				tableUtil, configuration, ignoreEmptyTables);
+		}
+		catch (IOException e) {
+			_log.error(
+				"Error reading configuration_xx.yml file: " + e.getMessage(),
+				e);
+			throw new RuntimeException(e);
+		}
+
+		for (Reference reference : references) {
+			referencesMap.put(reference, reference);
+		}
+
+		if (_log.isDebugEnabled()) {
+			Set<String> idColumns = getNotCheckedColumns(
+				tableUtil, referencesMap.values());
+
+			_log.debug("List of id, key and pk columns that are not checked:");
+
+			for (String idColumn : idColumns) {
+				_log.debug(idColumn);
+			}
+		}
+
+		return referencesMap.values();
+	}
+
+	public Map<String, Long> calculateTableCount()
 		throws IOException, SQLException {
 
-		Connection connection = null;
+		Map<String, Long> mapTableCount = new TreeMap<String, Long>();
 
-		Map<Reference, Reference> references = null;
+		for (Table table : tableUtil.getTables()) {
+			long count = TableUtil.countTable(table);
 
-		try {
-			connection = DataAccess.getConnection();
-
-			long liferayBuildNumber = getLiferayBuildNumber(connection);
-
-			String configurationFile =
-				ConfigurationUtil.getConfigurationFileName(liferayBuildNumber);
-
-			Configuration configuration =
-				ConfigurationUtil.readConfigurationFile(configurationFile);
-
-			if (excludeColumns != null) {
-				configuration.getIgnoreColumns().addAll(excludeColumns);
-			}
-
-			String dbType = SQLUtil.getDBType();
-
-			TableUtil tableUtil = getTableUtil(
-				connection, dbType, configuration.getTableToClassNameMapping(),
-				configuration.getIgnoreTables(),
-				configuration.getIgnoreColumns());
-
-			references = calculateReferences(configuration, tableUtil);
-		}
-		finally {
-			DataAccess.cleanUp(connection);
+			mapTableCount.put(table.getTableName(), count);
 		}
 
-		return references;
+		return mapTableCount;
 	}
 
-	public List<MissingReferences> execute() throws IOException, SQLException {
-		Connection connection = null;
+	public List<String> dumpDatabaseInfo() throws IOException, SQLException {
+		List<String> output = new ArrayList<String>();
 
-		List<MissingReferences> listMissingReferences = null;
+		long liferayBuildNumber;
+		Connection connection = null;
 
 		try {
 			connection = DataAccess.getConnection();
 
-			long liferayBuildNumber = getLiferayBuildNumber(connection);
-
-			String configurationFile =
-				ConfigurationUtil.getConfigurationFileName(liferayBuildNumber);
-
-			Configuration configuration =
-				ConfigurationUtil.readConfigurationFile(configurationFile);
-
-			if (excludeColumns != null) {
-				configuration.getIgnoreColumns().addAll(excludeColumns);
-			}
-
-			String dbType = SQLUtil.getDBType();
-
-			TableUtil tableUtil = getTableUtil(
-				connection, dbType, configuration.getTableToClassNameMapping(),
-				configuration.getIgnoreTables(),
-				configuration.getIgnoreColumns());
-
-			listMissingReferences = execute(
-				configuration, tableUtil, tableUtil.getTables());
+			liferayBuildNumber = getLiferayBuildNumber(connection);
 		}
 		finally {
 			DataAccess.cleanUp(connection);
+		}
+
+		output.add("Liferay build number: " + liferayBuildNumber);
+		output.add("Database type: " + SQLUtil.getDBType());
+		output.add("");
+
+		List<Table> tablesWithoutClassName = new ArrayList<Table>();
+		List<Table> tablesWithClassName = new ArrayList<Table>();
+
+		for (Table table : tableUtil.getTables()) {
+			if (table.getClassNameId() == -1) {
+				tablesWithoutClassName.add(table);
+			}
+			else if (table.getClassNameId() != 0) {
+				tablesWithClassName.add(table);
+			}
+		}
+
+		if (!tablesWithoutClassName.isEmpty()) {
+			output.add("Tables without className information:");
+
+			for (Table table : tablesWithoutClassName) {
+				output.add(table.getTableName());
+			}
+
+			output.add("");
+		}
+
+		if (!tablesWithClassName.isEmpty()) {
+			output.add("Table-className mapping information:");
+
+			for (Table t : tablesWithClassName) {
+				output.add(t.getTableName() + "=" + t.getClassName());
+			}
+
+			output.add("");
+			output.add("Table-className mapping information:");
+
+			for (Table t : tablesWithClassName) {
+				output.add(t.getTableName() + "=" + t.getClassNameId());
+			}
+
+			output.add("");
+		}
+
+		return output;
+	}
+
+	public List<MissingReferences> execute() {
+
+		Collection<Reference> references = calculateReferences(true);
+
+		List<MissingReferences> listMissingReferences =
+			new ArrayList<MissingReferences>();
+
+		for (Reference reference : references) {
+			try {
+				if (_log.isInfoEnabled()) {
+					_log.info("Processing: " + reference);
+				}
+
+				if (reference.isRaw()) {
+					continue;
+				}
+
+				Query originQuery = reference.getOriginQuery();
+				Query destinationQuery = reference.getDestinationQuery();
+
+				if (destinationQuery == null) {
+					continue;
+				}
+
+				Collection<Object[]> missingReferences = queryInvalidValues(
+					originQuery, destinationQuery);
+
+				if ((missingReferences == null) || missingReferences.size()>0) {
+					listMissingReferences.add(
+						new MissingReferences(reference, missingReferences));
+				}
+			}
+			catch (Throwable t) {
+				_log.error(
+					"EXCEPTION: " + t.getClass() + " - " + t.getMessage(), t);
+
+				listMissingReferences.add(new MissingReferences(reference, t));
+			}
 		}
 
 		return listMissingReferences;
 	}
 
-	public Collection<String> queryInvalidValues(
+	public Collection<Object[]> queryInvalidValues(
 			Query originQuery, Query destinationQuery)
 		throws SQLException {
 
-		Set<String> invalidValuesSet = new TreeSet<String>();
+		Set<Object[]> invalidValuesSet = new LinkedHashSet<Object[]>();
 
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -181,62 +272,7 @@ public class ReferencesChecker {
 		try {
 			con = DataAccess.getConnection();
 
-			Table originTable = originQuery.getTable();
-			Table destinationTable = destinationQuery.getTable();
-
-			List<String> originColumns = originQuery.getColumns();
-			List<String> destinationColumns = destinationQuery.getColumns();
-
-			List<Class<?>> originTypes = originTable.getColumnTypesClass(
-				originColumns);
-			List<Class<?>> destinationTypes =
-				destinationTable.getColumnTypesClass(destinationColumns);
-
-			List<String> conditionColumns = castColumnsToText(
-				originColumns, originTypes, destinationTypes);
-
-			destinationColumns =
-				castColumnsToText(
-					destinationColumns, destinationTypes, originTypes);
-
-			StringBundler sb = new StringBundler();
-
-			sb.append(originQuery.getSQL());
-			sb.append(" AND ");
-
-			if ((conditionColumns.size() > 1) &&
-				dbType.equals(SQLUtil.TYPE_SQLSERVER)) {
-
-				/* SQL Server */
-				sb.append("NOT EXISTS (");
-				sb.append(
-					destinationQuery.getSQL(
-						false, StringUtil.merge(destinationColumns)));
-
-				for (int i = 0; i<conditionColumns.size(); i++) {
-					sb.append(" AND ");
-					sb.append(originQuery.getTable().getTableName());
-					sb.append(".");
-					sb.append(conditionColumns.get(i));
-					sb.append("=");
-					sb.append(destinationQuery.getTable().getTableName());
-					sb.append(".");
-					sb.append(destinationColumns.get(i));
-				}
-
-				sb.append(")");
-			}
-			else {
-				sb.append("(");
-				sb.append(StringUtil.merge(conditionColumns));
-				sb.append(") NOT IN (");
-				sb.append(
-					destinationQuery.getSQL(
-						false, StringUtil.merge(destinationColumns)));
-				sb.append(")");
-			}
-
-			String sql = SQLUtil.transformSQL(sb.toString());
+			String sql = getSQL(originQuery, destinationQuery);
 
 			if (_log.isInfoEnabled()) {
 				_log.info("SQL: " + sql);
@@ -261,12 +297,7 @@ public class ReferencesChecker {
 					continue;
 				}
 
-				if (columnsNumber == 1) {
-					invalidValuesSet.add(String.valueOf(result[0]));
-				}
-				else {
-					invalidValuesSet.add(Arrays.toString(result));
-				}
+				invalidValuesSet.add(result);
 			}
 		}
 		finally {
@@ -276,82 +307,32 @@ public class ReferencesChecker {
 		return invalidValuesSet;
 	}
 
-	protected Map<Reference, Reference> calculateReferences(
-		Configuration configuration, TableUtil tableUtil) {
+	protected Configuration getConfiguration(Connection connection)
+		throws IOException, SQLException {
 
-		Map<Reference, Reference> referencesMap =
-			new TreeMap<Reference, Reference>();
+		long liferayBuildNumber = getLiferayBuildNumber(connection);
 
-		List<Reference> references;
-		try {
-			references = ReferenceUtil.getConfigurationReferences(
-				tableUtil, configuration, ignoreEmptyTables);
-		}
-		catch (IOException e) {
-			_log.error(
-				"Error reading references.txt configuration: " + e.getMessage(),
-				e);
-			throw new RuntimeException(e);
+		if (liferayBuildNumber == 0) {
+			_log.error("Liferay build number couldn't be retrieved");
+
+			return null;
 		}
 
-		for (Reference reference : references) {
-			referencesMap.put(reference, reference);
+		if (_log.isInfoEnabled()) {
+			_log.info("Liferay build number: " + liferayBuildNumber);
 		}
 
-		if (_log.isDebugEnabled()) {
-			Set<String> idColumns = getNotCheckedColumns(
-				tableUtil, referencesMap.values());
+		String configurationFile = ConfigurationUtil.getConfigurationFileName(
+			liferayBuildNumber);
 
-			_log.debug("List of id, key and pk columns that are not checked:");
+		Configuration configuration = ConfigurationUtil.readConfigurationFile(
+			configurationFile);
 
-			for (String idColumn : idColumns) {
-				_log.debug(idColumn);
-			}
+		if (excludeColumns != null) {
+			configuration.getIgnoreColumns().addAll(excludeColumns);
 		}
 
-		return referencesMap;
-	}
-
-	protected List<MissingReferences> execute(
-		Configuration configuration, TableUtil tableUtil,
-		List<Table> tableList) {
-
-		Map<Reference, Reference> references = calculateReferences(
-			configuration, tableUtil);
-
-		List<MissingReferences> listMissingReferences =
-			new ArrayList<MissingReferences>();
-
-		for (Reference reference : references.values()) {
-			try {
-				if (_log.isInfoEnabled()) {
-					_log.info("Processing: "+ reference);
-				}
-
-				Query originQuery = reference.getOriginQuery();
-				Query destinationQuery = reference.getDestinationQuery();
-
-				if (destinationQuery == null) {
-					continue;
-				}
-
-				Collection<String> missingReferences = queryInvalidValues(
-					originQuery, destinationQuery);
-
-				if ((missingReferences == null) || missingReferences.size()>0) {
-					listMissingReferences.add(
-						new MissingReferences(reference, missingReferences));
-				}
-			}
-			catch (Throwable t) {
-				_log.error(
-					"EXCEPTION: " + t.getClass() + " - " + t.getMessage(), t);
-
-				listMissingReferences.add(new MissingReferences(reference, t));
-			}
-		}
-
-		return listMissingReferences;
+		return configuration;
 	}
 
 	protected Set<String> getNotCheckedColumns(
@@ -403,11 +384,91 @@ public class ReferencesChecker {
 		return idColumns;
 	}
 
+	protected String getSQL(Query originQuery, Query destinationQuery) {
+		return getSQL(originQuery, destinationQuery, false);
+	}
+
+	protected String getSQL(
+		Query originQuery, Query destinationQuery, boolean count) {
+
+		if (dbType.equals(SQLUtil.TYPE_POSTGRESQL) ||
+			dbType.equals(SQLUtil.TYPE_SQLSERVER)) {
+
+			return getSQLNotExists(count, originQuery, destinationQuery);
+		}
+
+		return getSQLNotIn(count, originQuery, destinationQuery);
+	}
+
+	protected String getSQLNotExists(
+		boolean count, Query originQuery, Query destinationQuery) {
+
+		List<String> conditionColumns = originQuery.getColumnsWithCast(
+			destinationQuery);
+
+		List<String> destinationColumns = destinationQuery.getColumnsWithCast(
+			originQuery);
+
+		StringBundler sb = new StringBundler();
+
+		if (count) {
+			sb.append(originQuery.getSQLCount());
+		}
+		else {
+			sb.append(originQuery.getSQL());
+		}
+
+		sb.append(" AND NOT EXISTS (");
+		sb.append(
+			destinationQuery.getSQL(
+				false, StringUtil.merge(destinationColumns)));
+
+		for (int i = 0; i<conditionColumns.size(); i++) {
+			sb.append(" AND ");
+			sb.append(conditionColumns.get(i));
+			sb.append("=");
+			sb.append(destinationColumns.get(i));
+		}
+
+		sb.append(")");
+
+		return SQLUtil.transformSQL(sb.toString());
+	}
+
+	protected String getSQLNotIn(
+		boolean count, Query originQuery, Query destinationQuery) {
+
+		List<String> conditionColumns = originQuery.getColumnsWithCast(
+			destinationQuery);
+
+		List<String> destinationColumns = destinationQuery.getColumnsWithCast(
+			originQuery);
+
+		StringBundler sb = new StringBundler();
+
+		if (count) {
+			sb.append(originQuery.getSQLCount());
+		}
+		else {
+			sb.append(originQuery.getSQL());
+		}
+
+		sb.append(" AND (");
+		sb.append(StringUtil.merge(conditionColumns));
+		sb.append(") NOT IN (");
+		sb.append(
+			destinationQuery.getSQL(
+				false, StringUtil.merge(destinationColumns)));
+		sb.append(")");
+
+		return SQLUtil.transformSQL(sb.toString());
+	}
+
 	protected TableUtil getTableUtil(
-			Connection con, String dbType,
-			Map<String, String> tableToClassNameMapping,
-			List<String> ignoreTables, List<String> ignoreColumns)
+			Connection con, Configuration configuration)
 		throws SQLException {
+
+		String dbType = SQLUtil.getDBType();
 
 		DatabaseMetaData metadata = con.getMetaData();
 
@@ -419,9 +480,12 @@ public class ReferencesChecker {
 			schema = catalog;
 		}
 
+		Map<String, String> tableToClassNameMapping =
+			configuration.getTableToClassNameMapping();
+
 		return new TableUtil(
-			metadata, catalog, schema, tableToClassNameMapping, ignoreTables,
-			ignoreColumns);
+			metadata, catalog, schema, tableToClassNameMapping,
+			configuration.getIgnoreTables(), configuration.getIgnoreColumns());
 	}
 
 	protected boolean isValidValue(Object[] result) {
@@ -450,35 +514,12 @@ public class ReferencesChecker {
 		return true;
 	}
 
-	private List<String> castColumnsToText(
-		List<String> columns, List<Class<?>> columnTypes,
-		List<Class<?>> castTypes) {
-
-		List<String> castColumns = new ArrayList<String>();
-
-		for (int i = 0; i<columns.size(); i++) {
-			String column = columns.get(i);
-
-			Class<?> columnType = columnTypes.get(i);
-			Class<?> castType = castTypes.get(i);
-
-			if (!columnType.equals(castType) && String.class.equals(castType) &&
-				!Object.class.equals(columnType)) {
-
-				column = "CAST_TEXT(" + column + ")";
-			}
-
-			castColumns.add(column);
-		}
-
-		return castColumns;
-	}
-
 	private static Log _log = LogFactoryUtil.getLog(ReferencesChecker.class);
 
+	private Configuration configuration;
 	private String dbType;
 	private List<String> excludeColumns;
-	private boolean ignoreEmptyTables;
 	private boolean ignoreNullValues;
+	private TableUtil tableUtil;
 
 }

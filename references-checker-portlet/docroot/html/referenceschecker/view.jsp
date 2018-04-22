@@ -37,6 +37,7 @@
 <%@ page import="com.liferay.referenceschecker.ref.MissingReferences" %>
 <%@ page import="com.liferay.referenceschecker.ref.Reference" %>
 
+<%@ page import="java.util.Collection" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 
@@ -71,7 +72,7 @@
 		<aui:input name="ignoreEmptyTables" type="checkbox" value="false" />
 	</aui:col>
 	<aui:col width="33">
-		<aui:input name="excludeColumns"  style="width: 100%;" type="text" value="*classPK, primKey*, userId" />
+		<aui:input name="excludeColumns"  style="width: 100%;" type="text" value="userId" />
 	</aui:col>
 	<aui:button-row>
 		<aui:button type="submit" value="execute" />
@@ -94,7 +95,7 @@
 </aui:form>
 
 <%
-	Map<Reference, Reference> references = (Map<Reference, Reference>) request.getAttribute("referencesMap");
+	Collection<Reference> references = (Collection<Reference>) request.getAttribute("references");
 
 	List<MissingReferences> listMissingReferences = (List<MissingReferences>) request.getAttribute("missingReferencesList");
 
