@@ -52,6 +52,7 @@ import java.io.InputStream;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -144,17 +145,17 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		String[] headerKeys = new String[] {
 			"output.table-name", "output.attributes", "output.destination",
-			"output.attributes", "output.missing-references"};
+			"output.attributes", "output.number", "output.missing-references"};
 
 		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
 
 		return ReferencesCheckerOutput.generateCSVOutputCheckReferences(
-			headers, listMissingReferences);
+			headers, listMissingReferences, -1);
 	}
 
 	public static List<String> generateCSVOutputMappingList(
 		PortletConfig portletConfig, Locale locale,
-		Map<Reference, Reference> references) {
+		Collection<Reference> references) {
 
 		if (references == null) {
 			return null;
@@ -210,13 +211,13 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		Map<Table, SearchContainer<Reference>>
 			generateSearchContainersMappingList(
 			PortletConfig portletConfig, RenderRequest renderRequest,
-			Map<Reference, Reference> references, PortletURL serverURL)
+			Collection<Reference> references, PortletURL serverURL)
 		throws SystemException {
 
 		Map<Table, List<Reference>> referenceListMap =
 			new TreeMap<Table, List<Reference>>();
 
-		for (Reference reference : references.values()) {
+		for (Reference reference : references) {
 			Query originQuery = reference.getOriginQuery();
 			Table originTable = originQuery.getTable();
 
@@ -294,9 +295,8 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 					listMissingReferences);
 		}
 
-		Map<Reference, Reference> references =
-			(Map<Reference, Reference>)renderRequest.getAttribute(
-				"referencesMap");
+		Collection<Reference> references =
+			(Collection<Reference>)renderRequest.getAttribute("references");
 
 		if (references != null) {
 			outputList = ReferencesCheckerPortlet.generateCSVOutputMappingList(
@@ -348,7 +348,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		}
 
 		ReferencesChecker referencesChecker = new ReferencesChecker(
-			dbType, excludeColumns, true, ignoreNullValues);
+			dbType, excludeColumns, ignoreNullValues);
 
 		List<MissingReferences> listMissingReferences =
 			referencesChecker.execute();
@@ -382,14 +382,14 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		}
 
 		ReferencesChecker referencesChecker = new ReferencesChecker(
-			dbType, excludeColumns, ignoreEmptyTables, true);
+			dbType, excludeColumns, true);
 
-		Map<Reference, Reference> references =
-			referencesChecker.calculateReferences();
+		Collection<Reference> references =
+			referencesChecker.calculateReferences(ignoreEmptyTables);
 
 		long endTime = System.currentTimeMillis();
 
-		request.setAttribute("referencesMap", references);
+		request.setAttribute("references", references);
 
 		response.setRenderParameter("processTime", "" + (endTime-startTime));
 	}

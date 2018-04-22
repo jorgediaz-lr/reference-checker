@@ -37,6 +37,7 @@
 <%@ page import="com.liferay.referenceschecker.ref.MissingReferences" %>
 <%@ page import="com.liferay.referenceschecker.ref.Reference" %>
 
+<%@ page import="java.util.Collection" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 
@@ -93,7 +94,7 @@
 </aui:form>
 
 <%
-	Map<Reference, Reference> references = (Map<Reference, Reference>) request.getAttribute("referencesMap");
+	Collection<Reference> references = (Collection<Reference>) request.getAttribute("references");
 
 	List<MissingReferences> listMissingReferences = (List<MissingReferences>) request.getAttribute("missingReferencesList");
 
