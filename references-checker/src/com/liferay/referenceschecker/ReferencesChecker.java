@@ -85,12 +85,11 @@ public class ReferencesChecker {
 
 	public ReferencesChecker(
 			String dbType, List<String> excludeColumns,
-			boolean ignoreEmptyTables, boolean ignoreNullValues)
+			boolean ignoreNullValues)
 		throws IOException, SQLException {
 
 		this.dbType = dbType;
 		this.excludeColumns = excludeColumns;
-		this.ignoreEmptyTables = ignoreEmptyTables;
 		this.ignoreNullValues = ignoreNullValues;
 
 		Connection connection = null;
@@ -106,7 +105,8 @@ public class ReferencesChecker {
 		}
 	}
 
-	public Map<Reference, Reference> calculateReferences() {
+	public Collection<Reference> calculateReferences(
+		boolean ignoreEmptyTables) {
 
 		Map<Reference, Reference> referencesMap =
 			new TreeMap<Reference, Reference>();
@@ -138,7 +138,7 @@ public class ReferencesChecker {
 			}
 		}
 
-		return referencesMap;
+		return referencesMap.values();
 	}
 
 	public Map<String, Long> calculateTableCount()
@@ -218,12 +218,12 @@ public class ReferencesChecker {
 
 	public List<MissingReferences> execute() {
 
-		Map<Reference, Reference> references = calculateReferences();
+		Collection<Reference> references = calculateReferences(true);
 
 		List<MissingReferences> listMissingReferences =
 			new ArrayList<MissingReferences>();
 
-		for (Reference reference : references.values()) {
+		for (Reference reference : references) {
 			try {
 				if (_log.isInfoEnabled()) {
 					_log.info("Processing: " + reference);
@@ -519,7 +519,6 @@ public class ReferencesChecker {
 	private Configuration configuration;
 	private String dbType;
 	private List<String> excludeColumns;
-	private boolean ignoreEmptyTables;
 	private boolean ignoreNullValues;
 	private TableUtil tableUtil;
 

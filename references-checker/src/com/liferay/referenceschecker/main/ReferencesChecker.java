@@ -39,6 +39,7 @@ import java.security.ProtectionDomain;
 import java.sql.SQLException;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 public class ReferencesChecker {
@@ -134,7 +135,7 @@ public class ReferencesChecker {
 
 		this.referencesChecker =
 			new com.liferay.referenceschecker.ReferencesChecker(
-				dbType, null, false, true);
+				dbType, null, true);
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)
@@ -179,8 +180,8 @@ public class ReferencesChecker {
 
 		long startTime = System.currentTimeMillis();
 
-		Map<Reference, Reference> references =
-			referencesChecker.calculateReferences();
+		Collection<Reference> references =
+			referencesChecker.calculateReferences(false);
 
 		String[] headers = new String[] {
 			"origin table", "attributes", "destination table", "attributes"};

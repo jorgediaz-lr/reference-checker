@@ -123,13 +123,13 @@ public class ReferencesCheckerOutput {
 	}
 
 	public static List<String> generateCSVOutputMappingList(
-		List<String> headers, Map<Reference, Reference> references) {
+		List<String> headers, Collection<Reference> references) {
 
 		List<String> out = new ArrayList<String>();
 
 		out.add(getCSVRow(headers));
 
-		for (Reference reference : references.values()) {
+		for (Reference reference : references) {
 			if (!reference.isHidden()) {
 				List<String> line = generateReferenceCells(reference, false);
 
