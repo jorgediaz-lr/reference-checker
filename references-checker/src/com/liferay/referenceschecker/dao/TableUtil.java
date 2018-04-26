@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.referenceschecker.model.ModelUtil;
+import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.SQLUtil;
 import com.liferay.referenceschecker.util.StringUtil;
 
@@ -29,6 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -125,6 +127,53 @@ public class TableUtil {
 
 	public Long getClassNameId(String className) {
 		return classNameToClassNameIdMapping.get(className);
+	}
+
+	public Set<String> getNotCheckedColumns(Collection<Reference> references) {
+		Set<String> idColumns = new TreeSet<String>();
+
+		for (Table table : getTables()) {
+			String tableName = StringUtil.toLowerCase(table.getTableName());
+			String primaryKey = table.getPrimaryKey();
+
+			if (primaryKey != null) {
+				primaryKey = StringUtil.toLowerCase(primaryKey);
+			}
+
+			for (String columnName : table.getColumnNames()) {
+				columnName = StringUtil.toLowerCase(columnName);
+
+				if (ignoreColumn(tableName, columnName) ||
+					"uuid_".equals(columnName) ||
+					columnName.equals(primaryKey)) {
+
+					continue;
+				}
+
+				if (columnName.contains("id") || columnName.contains("pk") ||
+					columnName.contains("key")) {
+
+					idColumns.add(tableName+"."+columnName);
+				}
+			}
+		}
+
+		for (Reference reference : references) {
+			if (reference.getDestinationQuery() == null) {
+				continue;
+			}
+
+			Query query = reference.getOriginQuery();
+			String tableName = query.getTable().getTableName();
+
+			for (String columnName : query.getColumns()) {
+				String idColumn = tableName + "." + columnName;
+				idColumn = StringUtil.toLowerCase(idColumn);
+				idColumns.remove(idColumn);
+			}
+		}
+
+		return idColumns;
 	}
 
 	public Table getTable(String tableName) {

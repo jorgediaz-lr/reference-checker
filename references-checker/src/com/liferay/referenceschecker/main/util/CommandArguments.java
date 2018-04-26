@@ -23,6 +23,10 @@ import java.io.IOException;
  */
 public class CommandArguments {
 
+	public boolean checkUndefinedTables() {
+		return _checkUndefinedTables;
+	}
+
 	public boolean countTables() throws IOException {
 		return _countTables;
 	}
@@ -63,6 +67,12 @@ public class CommandArguments {
 	public boolean showRelations() throws IOException {
 		return _showRelations;
 	}
+
+	@Parameter(
+		description = "Check undefined tables",
+		names = {"--checkUndefinedTables"}
+	)
+	private boolean _checkUndefinedTables;
 
 	@Parameter(
 		description = "Count all tables.",
