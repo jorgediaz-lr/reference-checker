@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 public class ReferencesChecker {
 
 	public static long getLiferayBuildNumber(Connection connection)
@@ -85,9 +84,10 @@ public class ReferencesChecker {
 
 	public ReferencesChecker(
 			String dbType, List<String> excludeColumns,
-			boolean ignoreNullValues)
+			boolean ignoreNullValues, boolean checkUndefinedTables)
 		throws IOException, SQLException {
 
+		this.checkUndefinedTables = checkUndefinedTables;
 		this.dbType = dbType;
 		this.excludeColumns = excludeColumns;
 		this.ignoreNullValues = ignoreNullValues;
@@ -100,6 +100,12 @@ public class ReferencesChecker {
 			this.configuration = getConfiguration(connection);
 			this.tableUtil = getTableUtil(connection, configuration);
 		}
+		catch (IOException e) {
+			_log.error(
+				"Error reading configuration_xx.yml file: " + e.getMessage(),
+				e);
+			throw new RuntimeException(e);
+		}
 		finally {
 			DataAccess.cleanUp(connection);
 		}
@@ -108,37 +114,10 @@ public class ReferencesChecker {
 	public Collection<Reference> calculateReferences(
 		boolean ignoreEmptyTables) {
 
-		Map<Reference, Reference> referencesMap =
-			new TreeMap<Reference, Reference>();
+		ReferenceUtil referenceUtil = new ReferenceUtil(
+			tableUtil, ignoreEmptyTables, checkUndefinedTables);
 
-		List<Reference> references;
-		try {
-			references = ReferenceUtil.getConfigurationReferences(
-				tableUtil, configuration, ignoreEmptyTables);
-		}
-		catch (IOException e) {
-			_log.error(
-				"Error reading configuration_xx.yml file: " + e.getMessage(),
-				e);
-			throw new RuntimeException(e);
-		}
-
-		for (Reference reference : references) {
-			referencesMap.put(reference, reference);
-		}
-
-		if (_log.isDebugEnabled()) {
-			Set<String> idColumns = getNotCheckedColumns(
-				tableUtil, referencesMap.values());
-
-			_log.debug("List of id, key and pk columns that are not checked:");
-
-			for (String idColumn : idColumns) {
-				_log.debug(idColumn);
-			}
-		}
-
-		return referencesMap.values();
+		return referenceUtil.calculateReferences(configuration);
 	}
 
 	public Map<String, Long> calculateTableCount()
@@ -335,55 +314,6 @@ public class ReferencesChecker {
 		return configuration;
 	}
 
-	protected Set<String> getNotCheckedColumns(
-		TableUtil tableUtil, Collection<Reference> references) {
-
-		Set<String> idColumns = new TreeSet<String>();
-
-		for (Table table : tableUtil.getTables()) {
-			String tableName = StringUtil.toLowerCase(table.getTableName());
-			String primaryKey = table.getPrimaryKey();
-
-			if (primaryKey != null) {
-				primaryKey = StringUtil.toLowerCase(primaryKey);
-			}
-
-			for (String columnName : table.getColumnNames()) {
-				columnName = StringUtil.toLowerCase(columnName);
-
-				if (tableUtil.ignoreColumn(tableName, columnName) ||
-					"uuid_".equals(columnName) ||
-					columnName.equals(primaryKey)) {
-
-					continue;
-				}
-
-				if (columnName.contains("id") || columnName.contains("pk") ||
-					columnName.contains("key")) {
-
-					idColumns.add(tableName+"."+columnName);
-				}
-			}
-		}
-
-		for (Reference reference : references) {
-			if (reference.getDestinationQuery() == null) {
-				continue;
-			}
-
-			Query query = reference.getOriginQuery();
-			String tableName = query.getTable().getTableName();
-
-			for (String columnName : query.getColumns()) {
-				String idColumn = tableName + "." + columnName;
-				idColumn = StringUtil.toLowerCase(idColumn);
-				idColumns.remove(idColumn);
-			}
-		}
-
-		return idColumns;
-	}
-
 	protected String getSQL(Query originQuery, Query destinationQuery) {
 		return getSQL(originQuery, destinationQuery, false);
 	}
@@ -516,6 +446,7 @@ public class ReferencesChecker {
 
 	private static Log _log = LogFactoryUtil.getLog(ReferencesChecker.class);
 
+	private boolean checkUndefinedTables;
 	private Configuration configuration;
 	private String dbType;
 	private List<String> excludeColumns;

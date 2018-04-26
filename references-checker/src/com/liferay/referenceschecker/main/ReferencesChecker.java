@@ -87,11 +87,14 @@ public class ReferencesChecker {
 
 		initPortal.connectToDatabase(databaseCfg);
 
+		boolean checkUndefinedTables = commandArguments.checkUndefinedTables();
+
 		ReferencesChecker referenceChecker;
 
 		try {
 			referenceChecker = new ReferencesChecker(
-				filenamePrefix, filenameSuffix, missingReferencesLimit);
+				filenamePrefix, filenameSuffix, missingReferencesLimit,
+				checkUndefinedTables);
 		}
 		catch (Throwable t) {
 			t.printStackTrace(System.out);
@@ -124,7 +127,7 @@ public class ReferencesChecker {
 
 	public ReferencesChecker(
 			String filenamePrefix, String filenameSuffix,
-			int missingReferencesLimit)
+			int missingReferencesLimit, boolean checkUndefinedTables)
 		throws Exception {
 
 		this.filenamePrefix = filenamePrefix;
@@ -135,7 +138,7 @@ public class ReferencesChecker {
 
 		this.referencesChecker =
 			new com.liferay.referenceschecker.ReferencesChecker(
-				dbType, null, true);
+				dbType, null, true, checkUndefinedTables);
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)

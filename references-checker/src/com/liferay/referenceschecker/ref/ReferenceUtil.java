@@ -24,8 +24,6 @@ import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.dao.TableUtil;
 import com.liferay.referenceschecker.util.StringUtil;
 
-import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,19 +31,50 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * @author Jorge Díaz
  */
 public class ReferenceUtil {
 
-	public static List<Reference> getConfigurationReferences(
-		TableUtil tableUtil, Configuration configuration,
-			boolean ignoreEmptyTables)
-		throws IOException {
+	public ReferenceUtil(
+		TableUtil tableUtil, boolean ignoreEmptyTables,
+		boolean checkUndefinedTables) {
 
-		ReferenceUtil referenceUtil = new ReferenceUtil(
-			tableUtil, ignoreEmptyTables);
+		this.tableUtil = tableUtil;
+		this.checkUndefinedTables = checkUndefinedTables;
+		this.ignoreEmptyTables = ignoreEmptyTables;
+	}
+
+	public Collection<Reference> calculateReferences(
+		Configuration configuration) {
+
+		List<Reference> references = getReferences(configuration);
+
+		Map<Reference, Reference> referencesMap =
+			new TreeMap<Reference, Reference>();
+
+		for (Reference reference : references) {
+			referencesMap.put(reference, reference);
+		}
+
+		if (_log.isDebugEnabled()) {
+			Set<String> idColumns = tableUtil.getNotCheckedColumns(
+				referencesMap.values());
+
+			_log.debug("List of id, key and pk columns that are not checked:");
+
+			for (String idColumn : idColumns) {
+				_log.debug(idColumn);
+			}
+		}
+
+		return referencesMap.values();
+	}
+
+	public List<Reference> getReferences(Configuration configuration) {
 
 		List<Reference> referencesList = new ArrayList<Reference>();
 
@@ -53,8 +82,7 @@ public class ReferenceUtil {
 				configuration.getReferences()) {
 
 			try {
-				List<Reference> references = referenceUtil.getReferences(
-					referenceConfig);
+				List<Reference> references = getReferences(referenceConfig);
 
 				if (references.isEmpty() && _log.isInfoEnabled()) {
 					_log.info("Ignoring reference config: " + referenceConfig);
@@ -70,11 +98,6 @@ public class ReferenceUtil {
 		}
 
 		return referencesList;
-	}
-
-	public ReferenceUtil(TableUtil tableUtil, boolean ignoreEmptyTables) {
-		this.tableUtil = tableUtil;
-		this.ignoreEmptyTables = ignoreEmptyTables;
 	}
 
 	public List<Reference> getReferences(
@@ -100,6 +123,16 @@ public class ReferenceUtil {
 		List<Reference> listReferences = new ArrayList<Reference>();
 
 		for (Table originTable : originTables) {
+			if (!checkUndefinedTables && (originTable.getClassNameId() == -1)) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Ignoring table because className is undefined: " +
+							originTable);
+				}
+
+				continue;
+			}
+
 			if (ignoreEmptyTables && tableUtil.isTableEmpty(originTable)) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
@@ -312,11 +345,22 @@ public class ReferenceUtil {
 			return null;
 		}
 
+		if (!checkUndefinedTables && (originTable.getClassNameId() == -1)) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Ignoring originTable because className is undefined: " +
+						originTable);
+			}
+
+			return null;
+		}
+
 		if (ignoreEmptyTables &&
 			tableUtil.isTableEmpty(originTable, originCondition)) {
 
 			if (_log.isDebugEnabled()) {
-				_log.debug("Ignoring table because is empty: " + originTable);
+				_log.debug(
+					"Ignoring originTable because is empty: " + originTable);
 			}
 
 			return null;
@@ -328,8 +372,17 @@ public class ReferenceUtil {
 		Query destinationQuery = null;
 
 		if (destinationTable != null) {
-			destinationQuery = new Query(
-				destinationTable, destinationColumns, destinationCondition);
+			if (checkUndefinedTables ||
+				(destinationTable.getClassNameId() != -1)) {
+
+				destinationQuery = new Query(
+					destinationTable, destinationColumns, destinationCondition);
+			}
+			else if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Ignoring destinationTable because className is undefined" +
+						": " + destinationTable);
+			}
 		}
 
 		return new Reference(originQuery, destinationQuery);
@@ -602,6 +655,7 @@ public class ReferenceUtil {
 
 	private static Log _log = LogFactoryUtil.getLog(ReferenceUtil.class);
 
+	private boolean checkUndefinedTables;
 	private boolean ignoreEmptyTables;
 	private TableUtil tableUtil;
 
