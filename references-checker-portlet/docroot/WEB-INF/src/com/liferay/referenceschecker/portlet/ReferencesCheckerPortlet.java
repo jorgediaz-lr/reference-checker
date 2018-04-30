@@ -348,7 +348,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		}
 
 		ReferencesChecker referencesChecker = new ReferencesChecker(
-			dbType, excludeColumns, ignoreNullValues);
+			dbType, excludeColumns, ignoreNullValues, false);
 
 		List<MissingReferences> listMissingReferences =
 			referencesChecker.execute();
@@ -382,7 +382,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		}
 
 		ReferencesChecker referencesChecker = new ReferencesChecker(
-			dbType, excludeColumns, true);
+			dbType, excludeColumns, true, false);
 
 		Collection<Reference> references =
 			referencesChecker.calculateReferences(ignoreEmptyTables);
