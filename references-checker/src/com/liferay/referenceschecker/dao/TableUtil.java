@@ -129,6 +129,11 @@ public class TableUtil {
 		return classNameToClassNameIdMapping.get(className);
 	}
 
+	public Set<String> getClassNames() {
+		return Collections.unmodifiableSet(
+			classNameToClassNameIdMapping.keySet());
+	}
+
 	public Set<String> getNotCheckedColumns(Collection<Reference> references) {
 		Set<String> idColumns = new TreeSet<String>();
 
@@ -515,7 +520,7 @@ public class TableUtil {
 			}
 
 			classNameToTableMapping.put(
-				StringUtil.toLowerCase(entry.getValue()), entry.getKey());
+				entry.getValue(), StringUtil.toLowerCase(entry.getKey()));
 		}
 
 		return classNameToTableMapping;

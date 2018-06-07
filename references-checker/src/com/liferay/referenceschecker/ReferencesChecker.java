@@ -41,6 +41,7 @@ import java.sql.SQLException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -152,6 +153,29 @@ public class ReferencesChecker {
 		output.add("Liferay build number: " + liferayBuildNumber);
 		output.add("Database type: " + SQLUtil.getDBType());
 		output.add("");
+
+		List<String> classNamesWithoutTable = new ArrayList<String>();
+
+		for (String className : tableUtil.getClassNames()) {
+			String tableName = tableUtil.getTableNameFromClassName(className);
+
+			if (tableName == null) {
+				classNamesWithoutTable.add(className);
+			}
+		}
+
+		if (!classNamesWithoutTable.isEmpty()) {
+			output.add("ClassName without table information:");
+
+			Collections.sort(classNamesWithoutTable);
+
+			for (String className : classNamesWithoutTable) {
+				output.add(
+					className + "=" + tableUtil.getClassNameId(className));
+			}
+
+			output.add("");
+		}
 
 		List<Table> tablesWithoutClassName = new ArrayList<Table>();
 		List<Table> tablesWithClassName = new ArrayList<Table>();
