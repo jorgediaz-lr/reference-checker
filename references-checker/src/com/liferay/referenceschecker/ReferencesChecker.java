@@ -157,6 +157,10 @@ public class ReferencesChecker {
 		List<String> classNamesWithoutTable = new ArrayList<String>();
 
 		for (String className : tableUtil.getClassNames()) {
+			if (!className.contains(".model.")) {
+				continue;
+			}
+
 			String tableName = tableUtil.getTableNameFromClassName(className);
 
 			if (tableName == null) {
@@ -203,14 +207,61 @@ public class ReferencesChecker {
 			output.add("Table-className mapping information:");
 
 			for (Table t : tablesWithClassName) {
-				output.add(t.getTableName() + "=" + t.getClassName());
+				output.add(
+					t.getTableName() + "=" + t.getClassName() + "," +
+						t.getClassNameId());
 			}
 
 			output.add("");
-			output.add("Table-className mapping information:");
+		}
 
-			for (Table t : tablesWithClassName) {
-				output.add(t.getTableName() + "=" + t.getClassNameId());
+		List<String> missingTables = new ArrayList<String>();
+
+		Set<String> configuredTables =
+			configuration.getTableToClassNameMapping().keySet();
+
+		for (String configuredTable : configuredTables) {
+			Table table = tableUtil.getTable(configuredTable);
+
+			if (table == null) {
+				missingTables.add(configuredTable);
+			}
+		}
+
+		if (!missingTables.isEmpty()) {
+			output.add("Configured tables that doesn't exist:");
+
+			Collections.sort(missingTables);
+
+			for (String missingTable : missingTables) {
+				output.add(
+					missingTable + "=" + tableUtil.getClassNameFromTableName(
+						missingTable));
+			}
+
+			output.add("");
+		}
+
+		List<String> missingClassNames = new ArrayList<String>(
+			configuration.getTableToClassNameMapping().values());
+
+		missingClassNames.removeAll(tableUtil.getClassNames());
+
+		List<String> missingClassNamesNoBlank = new ArrayList<String>();
+
+		for (String missingClassName : missingClassNames) {
+			if (Validator.isNotNull(missingClassName)) {
+				missingClassNamesNoBlank.add(missingClassName);
+			}
+		}
+
+		if (!missingClassNamesNoBlank.isEmpty()) {
+			output.add("Configured classNames that doesn't exist:");
+
+			Collections.sort(missingClassNamesNoBlank);
+
+			for (String missingClassName : missingClassNamesNoBlank) {
+				output.add(missingClassName);
 			}
 
 			output.add("");
