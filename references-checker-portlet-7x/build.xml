@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE project>
+
+<project name="references_checker-portlet" basedir="." default="deploy">
+	<property name="plugin-package.module-full-version" value="7x-0.2" />
+	<property name="lp.version" value="7" />
+	<import file="../build-common-portlet.xml" />
+</project>
