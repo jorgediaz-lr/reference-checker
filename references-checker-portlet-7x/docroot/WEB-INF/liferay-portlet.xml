@@ -8,10 +8,6 @@
 		<control-panel-entry-category>
 			apps
 		</control-panel-entry-category>
-		<control-panel-entry-weight>1.5</control-panel-entry-weight>
-		<control-panel-entry-class>
-			com.liferay.referenceschecker.portlet.ReferencesCheckerControlPanelEntry
-		</control-panel-entry-class>
 		<single-page-application>false</single-page-application>
 		<header-portlet-css>/css/main.css</header-portlet-css>
 		<footer-portlet-javascript>
