@@ -14,15 +14,12 @@
 
 package com.liferay.referenceschecker.ref;
 
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.referenceschecker.config.Configuration;
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.dao.TableUtil;
-import com.liferay.referenceschecker.util.StringUtil;
+
+import java.sql.Connection;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,6 +30,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.WordUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 /**
  * @author Jorge Díaz
@@ -49,9 +51,9 @@ public class ReferenceUtil {
 	}
 
 	public Collection<Reference> calculateReferences(
-		Configuration configuration) {
+		Connection connection, Configuration configuration) {
 
-		List<Reference> references = getReferences(configuration);
+		List<Reference> references = getReferences(connection, configuration);
 
 		Map<Reference, Reference> referencesMap =
 			new TreeMap<Reference, Reference>();
@@ -74,7 +76,8 @@ public class ReferenceUtil {
 		return referencesMap.values();
 	}
 
-	public List<Reference> getReferences(Configuration configuration) {
+	public List<Reference> getReferences(
+			Connection connection, Configuration configuration) {
 
 		List<Reference> referencesList = new ArrayList<Reference>();
 
@@ -82,7 +85,8 @@ public class ReferenceUtil {
 				configuration.getReferences()) {
 
 			try {
-				List<Reference> references = getReferences(referenceConfig);
+				List<Reference> references = getReferences(
+					connection, referenceConfig);
 
 				if (references.isEmpty() && _log.isInfoEnabled()) {
 					_log.info("Ignoring reference config: " + referenceConfig);
@@ -101,7 +105,7 @@ public class ReferenceUtil {
 	}
 
 	public List<Reference> getReferences(
-		Configuration.Reference referenceConfig) {
+		Connection connection, Configuration.Reference referenceConfig) {
 
 		/* origin */
 		List<Table> originTables = getTablesToApply(
@@ -133,7 +137,9 @@ public class ReferenceUtil {
 				continue;
 			}
 
-			if (ignoreEmptyTables && tableUtil.isTableEmpty(originTable)) {
+			if (ignoreEmptyTables &&
+				tableUtil.isTableEmpty(connection, originTable)) {
+
 				if (_log.isDebugEnabled()) {
 					_log.debug(
 						"Ignoring table because is empty: " + originTable);
@@ -143,7 +149,9 @@ public class ReferenceUtil {
 			}
 
 			listReferences.addAll(
-				getReferences(referenceConfig, originTable, destinationTables));
+				getReferences(
+					connection, referenceConfig, originTable,
+						destinationTables));
 		}
 
 		return listReferences;
@@ -188,9 +196,9 @@ public class ReferenceUtil {
 				className = destinationTable.getClassName();
 			}
 
-			if (Validator.equals(filter, className) ||
-				(StringPool.STAR.equals(filter) &&
-				 Validator.isNotNull(className))) {
+			if (StringUtils.equals(filter, className) ||
+				(_STAR.equals(filter) &&
+				 StringUtils.isNotBlank(className))) {
 
 				selectedReferences.add(reference);
 			}
@@ -202,7 +210,7 @@ public class ReferenceUtil {
 	protected Collection<Reference> getBestMatchingReferences(
 		Query query, List<Reference> references) {
 
-		String[] filters = {StringPool.STAR, StringPool.BLANK, null};
+		String[] filters = {_STAR, StringUtils.EMPTY, null};
 
 		for (String filter : filters) {
 			List<Reference> filteredReferences =
@@ -232,7 +240,7 @@ public class ReferenceUtil {
 
 		Table originTable = originQuery.getTable();
 
-		String commonPrefix = StringPool.BLANK;
+		String commonPrefix = StringUtils.EMPTY;
 		List<Reference> bestReferences = new ArrayList<Reference>();
 
 		for (Reference reference : references) {
@@ -308,9 +316,9 @@ public class ReferenceUtil {
 	}
 
 	protected Reference getReference(
-		Table originTable, List<String> originColumns, String originCondition,
-		Table destinationTable, List<String> destinationColumns,
-		String destinationCondition) {
+		Connection connection, Table originTable, List<String> originColumns,
+		String originCondition, Table destinationTable,
+		List<String> destinationColumns, String destinationCondition) {
 
 		if (!hasColumns(originTable, originColumns)) {
 			if (_log.isDebugEnabled()) {
@@ -356,7 +364,7 @@ public class ReferenceUtil {
 		}
 
 		if (ignoreEmptyTables &&
-			tableUtil.isTableEmpty(originTable, originCondition)) {
+			tableUtil.isTableEmpty(connection, originTable, originCondition)) {
 
 			if (_log.isDebugEnabled()) {
 				_log.debug(
@@ -389,8 +397,8 @@ public class ReferenceUtil {
 	}
 
 	protected List<Reference> getReferences(
-		Configuration.Reference referenceConfig, Table originTable,
-		List<Table> destinationTables) {
+		Connection connection, Configuration.Reference referenceConfig,
+		Table originTable, List<Table> destinationTables) {
 
 		Configuration.Query originConfig = referenceConfig.getOrigin();
 		Configuration.Query destinationConfig = referenceConfig.getDest();
@@ -410,7 +418,8 @@ public class ReferenceUtil {
 
 		if ((destinationConfig == null) || destinationTables.isEmpty()) {
 			return getReferences(
-				originTable, originColumns, originCondition, null, null, null);
+				connection, originTable, originColumns, originCondition, null,
+				null, null);
 		}
 
 		Map<Query, List<Reference>> mapReferences =
@@ -429,8 +438,8 @@ public class ReferenceUtil {
 			}
 
 			List<Reference> references = getReferences(
-				originTable, originColumns, originCondition, destinationTable,
-				destinationColumns, destinationCondition);
+				connection, originTable, originColumns, originCondition,
+				destinationTable, destinationColumns, destinationCondition);
 
 			for (Reference reference : references) {
 				if (hiddenReference) {
@@ -467,9 +476,9 @@ public class ReferenceUtil {
 	}
 
 	protected List<Reference> getReferences(
-		Table originTable, List<String> originColumns, String originCondition,
-		Table destinationTable, List<String> destinationColumns,
-		String destinationCondition) {
+		Connection connection, Table originTable, List<String> originColumns,
+		String originCondition, Table destinationTable,
+		List<String> destinationColumns, String destinationCondition) {
 
 		originColumns = replaceVars(
 			originTable, destinationTable, originColumns);
@@ -494,7 +503,7 @@ public class ReferenceUtil {
 
 		for (List<String> originColumnsReplaced : listOriginColumnsReplaced) {
 			Reference reference = getReference(
-				originTable, originColumnsReplaced, originCondition,
+				connection, originTable, originColumnsReplaced, originCondition,
 				destinationTable, destinationColumns, destinationCondition);
 
 			if (reference != null) {
@@ -506,7 +515,9 @@ public class ReferenceUtil {
 	}
 
 	protected List<Table> getTablesToApply(Configuration.Query queryConfig) {
-		if ((queryConfig == null) || Validator.isNull(queryConfig.getTable())) {
+		if ((queryConfig == null) ||
+			StringUtils.isBlank(queryConfig.getTable())) {
+
 			return Collections.emptyList();
 		}
 
@@ -519,7 +530,7 @@ public class ReferenceUtil {
 		}
 
 		for (String column : columns) {
-			if (Validator.isNull(column)) {
+			if (StringUtils.isBlank(column)) {
 				return false;
 			}
 
@@ -567,18 +578,17 @@ public class ReferenceUtil {
 
 	protected String replaceVars(String varPrefix, Table table, String text) {
 		String primaryKeyColumn = table.getPrimaryKey();
-		String primaryKeyColumnFirstUpper = StringPool.BLANK;
+		String primaryKeyColumnFirstUpper = StringUtils.EMPTY;
 
 		if (primaryKeyColumn != null) {
-			primaryKeyColumnFirstUpper = StringUtil.upperCaseFirstLetter(
-				primaryKeyColumn);
+			primaryKeyColumnFirstUpper = WordUtils.capitalize(
+				primaryKeyColumn, new char[]{});
 		}
 
 		String className = table.getClassName();
 		long classNameId = table.getClassNameId();
 		String tableName = table.getTableName();
-
-		return StringUtil.replace(
+		return StringUtils.replaceEach(
 				text,
 				new String[] {
 					"${" + varPrefix + ".className}",
@@ -653,7 +663,9 @@ public class ReferenceUtil {
 		return a.substring(0, minLength);
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ReferenceUtil.class);
+	private static final String _STAR = "*";
+
+	private static Logger _log = LogManager.getLogger(ReferenceUtil.class);
 
 	private boolean checkUndefinedTables;
 	private boolean ignoreEmptyTables;

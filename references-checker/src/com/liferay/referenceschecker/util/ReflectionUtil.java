@@ -14,13 +14,14 @@ package com.liferay.referenceschecker.util;
  * details.
  */
 
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 /**
  * @author Jorge Díaz
@@ -136,6 +137,6 @@ public class ReflectionUtil {
 		return constructor.newInstance();
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(ReflectionUtil.class);
+	private static Logger _log = LogManager.getLogger(ReflectionUtil.class);
 
 }

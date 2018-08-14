@@ -14,11 +14,7 @@
 
 package com.liferay.referenceschecker.dao;
 
-import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.referenceschecker.util.SQLUtil;
-import com.liferay.referenceschecker.util.StringUtil;
 
 import java.sql.Types;
 
@@ -29,18 +25,21 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 public class Table implements Comparable<Table> {
 
 	public static String getColumnsWithTypes(
 		Table table, List<String> columnList) {
 
-		String allColumns = StringPool.BLANK;
+		String allColumns = StringUtils.EMPTY;
 
 		for (String column : columnList) {
 			Class<?> type = table.getColumnTypeClass(column);
 
-			if (Validator.isNotNull(allColumns)) {
-				allColumns += StringPool.COMMA;
+			if (StringUtils.isNotBlank(allColumns)) {
+				allColumns += ",";
 			}
 
 			allColumns =
@@ -57,7 +56,7 @@ public class Table implements Comparable<Table> {
 		String className, Long classNameId) {
 
 		this.tableName = tableName;
-		this.tableNameLowerCase = StringUtil.toLowerCase(tableName);
+		this.tableNameLowerCase = StringUtils.lowerCase(tableName);
 
 		if (primaryKeys.size() == 1) {
 			this.primaryKey = primaryKeys.get(0);
@@ -89,8 +88,10 @@ public class Table implements Comparable<Table> {
 			this.className = null;
 			this.classNameId = -1;
 		}
-		else if (Validator.isNull(className) || Validator.isNull(classNameId)) {
-			this.className = StringPool.BLANK;
+		else if (StringUtils.isBlank(className) || (classNameId == null) ||
+				 (classNameId == 0L)) {
+
+			this.className = StringUtils.EMPTY;
 			this.classNameId = 0;
 		}
 		else {
@@ -141,7 +142,7 @@ public class Table implements Comparable<Table> {
 	}
 
 	public String[] getColumnNames() {
-		return ArrayUtil.clone(columnNames);
+		return ArrayUtils.clone(columnNames);
 	}
 
 	public List<String> getColumnNames(String filter) {
@@ -151,10 +152,10 @@ public class Table implements Comparable<Table> {
 		int pos = filter.indexOf("*");
 
 		if (filter.endsWith("*")) {
-			String prefix = StringUtil.toLowerCase(filter.substring(0, pos));
+			String prefix = StringUtils.lowerCase(filter.substring(0, pos));
 
 			for (String columnName : getColumnNames()) {
-				String columnNameLowerCase = StringUtil.toLowerCase(columnName);
+				String columnNameLowerCase = StringUtils.lowerCase(columnName);
 
 				if (columnNameLowerCase.startsWith(prefix)) {
 					list.add(columnName);
@@ -165,11 +166,11 @@ public class Table implements Comparable<Table> {
 		}
 
 		if (filter.startsWith("*")) {
-			String suffix = StringUtil.toLowerCase(
+			String suffix = StringUtils.lowerCase(
 				filter.substring(pos + 1, filter.length()));
 
 			for (String columnName : getColumnNames()) {
-				String columnNameLowerCase = StringUtil.toLowerCase(columnName);
+				String columnNameLowerCase = StringUtils.lowerCase(columnName);
 
 				if (columnNameLowerCase.endsWith(suffix)) {
 					list.add(columnName);
@@ -194,7 +195,7 @@ public class Table implements Comparable<Table> {
 		int pos = -1;
 
 		for (int i = 0; i < columnNames.length; i++) {
-			if (StringUtil.equalsIgnoreCase(columnNames[i], columnName)) {
+			if (StringUtils.equalsIgnoreCase(columnNames[i], columnName)) {
 				pos = i;
 			}
 		}
@@ -274,7 +275,7 @@ public class Table implements Comparable<Table> {
 	}
 
 	public String[] getCompoundPrimaryKey() {
-		return ArrayUtil.clone(compoundPrimaryKey);
+		return ArrayUtils.clone(compoundPrimaryKey);
 	}
 
 	public int getNumberOfColumns() {

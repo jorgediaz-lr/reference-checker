@@ -14,11 +14,11 @@
 
 package com.liferay.referenceschecker.config;
 
-import com.liferay.referenceschecker.util.StringUtil;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Jorge Díaz
@@ -63,7 +63,7 @@ public class Configuration {
 				tableToClassNameMapping.entrySet()) {
 
 			this.tableToClassNameMapping.put(
-				StringUtil.toLowerCase(entry.getKey()), entry.getValue());
+				StringUtils.lowerCase(entry.getKey()), entry.getValue());
 		}
 	}
 

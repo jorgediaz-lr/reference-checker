@@ -14,14 +14,9 @@
 
 package com.liferay.referenceschecker.dao;
 
-import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.referenceschecker.model.ModelUtil;
 import com.liferay.referenceschecker.ref.Reference;
-import com.liferay.referenceschecker.util.SQLUtil;
-import com.liferay.referenceschecker.util.StringUtil;
+import com.liferay.referenceschecker.util.JDBCUtil;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -39,15 +34,19 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 public class TableUtil {
 
-	public static long countTable(Table table) {
-		return countTable(table, null);
+	public static long countTable(Connection connection, Table table) {
+		return countTable(connection, table, null);
 	}
 
-	public static long countTable(Table table, String whereClause) {
+	public static long countTable(
+		Connection connection, Table table, String whereClause) {
 
-		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		long count = 0;
@@ -55,8 +54,6 @@ public class TableUtil {
 		String sql = null;
 
 		try {
-			con = DataAccess.getConnection();
-
 			String key = "*";
 
 			if (!table.hasCompoundPrimKey()) {
@@ -69,13 +66,11 @@ public class TableUtil {
 				sql = sql + " WHERE " + whereClause;
 			}
 
-			sql = SQLUtil.transformSQL(sql);
-
 			if (_log.isDebugEnabled()) {
 				_log.debug("SQL: " + sql);
 			}
 
-			ps = con.prepareStatement(sql);
+			ps = connection.prepareStatement(sql);
 
 			rs = ps.executeQuery();
 
@@ -90,7 +85,7 @@ public class TableUtil {
 			return -1;
 		}
 		finally {
-			DataAccess.cleanUp(con, ps, rs);
+			JDBCUtil.cleanUp(ps, rs);
 		}
 
 		return count;
@@ -99,6 +94,7 @@ public class TableUtil {
 	public TableUtil(
 			DatabaseMetaData databaseMetaData, String catalog, String schema,
 			Map<String, String> tableToClassNameMapping,
+			Map<String, Long> classNameToClassNameIdMapping,
 			List<String> ignoreTables, List<String> ignoreColumns)
 		throws SQLException {
 
@@ -108,7 +104,8 @@ public class TableUtil {
 		this.classNameToTableMapping = initClassNameToTableMapping(
 			tableToClassNameMapping);
 
-		this.classNameToClassNameIdMapping = getClassNameIdsMapping();
+		this.classNameToClassNameIdMapping = new HashMap<String, Long>(
+			classNameToClassNameIdMapping);
 
 		this.ignoreColumns = initIgnoreColumns(ignoreColumns);
 
@@ -122,7 +119,7 @@ public class TableUtil {
 	}
 
 	public String getClassNameFromTableName(String tableName) {
-		return tableToClassNameMapping.get(StringUtil.toLowerCase(tableName));
+		return tableToClassNameMapping.get(StringUtils.lowerCase(tableName));
 	}
 
 	public Long getClassNameId(String className) {
@@ -138,15 +135,15 @@ public class TableUtil {
 		Set<String> idColumns = new TreeSet<String>();
 
 		for (Table table : getTables()) {
-			String tableName = StringUtil.toLowerCase(table.getTableName());
+			String tableName = StringUtils.lowerCase(table.getTableName());
 			String primaryKey = table.getPrimaryKey();
 
 			if (primaryKey != null) {
-				primaryKey = StringUtil.toLowerCase(primaryKey);
+				primaryKey = StringUtils.lowerCase(primaryKey);
 			}
 
 			for (String columnName : table.getColumnNames()) {
-				columnName = StringUtil.toLowerCase(columnName);
+				columnName = StringUtils.lowerCase(columnName);
 
 				if (ignoreColumn(tableName, columnName) ||
 					"uuid_".equals(columnName) ||
@@ -173,7 +170,7 @@ public class TableUtil {
 
 			for (String columnName : query.getColumns()) {
 				String idColumn = tableName + "." + columnName;
-				idColumn = StringUtil.toLowerCase(idColumn);
+				idColumn = StringUtils.lowerCase(idColumn);
 				idColumns.remove(idColumn);
 			}
 		}
@@ -182,7 +179,7 @@ public class TableUtil {
 	}
 
 	public Table getTable(String tableName) {
-		String key = StringUtil.toLowerCase(tableName);
+		String key = StringUtils.lowerCase(tableName);
 
 		return tableMap.get(key);
 	}
@@ -201,14 +198,14 @@ public class TableUtil {
 
 	public List<Table> getTables(String filter) {
 
-		if (Validator.isNull(filter) || "*".equals(filter)) {
+		if (StringUtils.isBlank(filter) || "*".equals(filter)) {
 			return this.getTables();
 		}
 
 		if (filter.endsWith("*")) {
 			String tablePrefix = filter.substring(0, filter.indexOf("*"));
 
-			tablePrefix = StringUtil.toLowerCase(tablePrefix);
+			tablePrefix = StringUtils.lowerCase(tablePrefix);
 
 			List<Table> tableList = new ArrayList<Table>();
 
@@ -227,7 +224,7 @@ public class TableUtil {
 			String tableSuffix = filter.substring(
 				filter.indexOf("*") + 1, filter.length());
 
-			tableSuffix = StringUtil.toLowerCase(tableSuffix);
+			tableSuffix = StringUtils.lowerCase(tableSuffix);
 
 			List<Table> tableList = new ArrayList<Table>();
 
@@ -252,11 +249,11 @@ public class TableUtil {
 	}
 
 	public boolean ignoreColumn(String tableName, String columnName) {
-		if (Validator.isNull(columnName)) {
+		if (StringUtils.isBlank(columnName)) {
 			return true;
 		}
 
-		columnName = StringUtil.lowerCase(columnName);
+		columnName = StringUtils.lowerCase(columnName);
 
 		for (String[] ignoreColumnArray : ignoreColumns) {
 			String ignoreTable = ignoreColumnArray[0];
@@ -279,12 +276,12 @@ public class TableUtil {
 	}
 
 	public boolean ignoreTable(String tableName) {
-		if (Validator.isNull(tableName)) {
+		if (StringUtils.isBlank(tableName)) {
 			return true;
 		}
 
 		for (String ignoreTable : ignoreTables) {
-			if (StringUtil.equalsIgnoreCase(ignoreTable, tableName)) {
+			if (StringUtils.equalsIgnoreCase(ignoreTable, tableName)) {
 				return true;
 			}
 		}
@@ -292,11 +289,12 @@ public class TableUtil {
 		return false;
 	}
 
-	public boolean isTableEmpty(Table table) {
-		return isTableEmpty(table, null);
+	public boolean isTableEmpty(Connection connection, Table table) {
+		return isTableEmpty(connection, table, null);
 	}
 
-	public boolean isTableEmpty(Table table, String whereClause) {
+	public boolean isTableEmpty(
+			Connection connection, Table table, String whereClause) {
 
 		String key = table.getTableNameLowerCase();
 
@@ -311,13 +309,14 @@ public class TableUtil {
 		}
 
 		if (whereClause == null) {
-			isTableEmpty = (TableUtil.countTable(table, null) <= 0);
+			isTableEmpty = (TableUtil.countTable(connection, table, null) <= 0);
 		}
 		else {
-			isTableEmpty = isTableEmpty(table);
+			isTableEmpty = isTableEmpty(connection, table);
 
 			if (!isTableEmpty) {
-				isTableEmpty = (TableUtil.countTable(table, whereClause) <= 0);
+				isTableEmpty =
+					(TableUtil.countTable(connection, table, whereClause) <= 0);
 			}
 		}
 
@@ -357,7 +356,7 @@ public class TableUtil {
 			}
 		}
 		finally {
-			DataAccess.cleanUp(rsPK);
+			JDBCUtil.cleanUp(rsPK);
 		}
 
 		List<String> columnNames = new ArrayList<String>();
@@ -406,7 +405,7 @@ public class TableUtil {
 			}
 		}
 		finally {
-			DataAccess.cleanUp(rsCols);
+			JDBCUtil.cleanUp(rsCols);
 		}
 
 		if (columnNames.isEmpty()) {
@@ -418,15 +417,13 @@ public class TableUtil {
 		if (className == null) {
 			className = modelUtil.getClassName(tableName);
 
-			if (_log.isWarnEnabled()) {
-				if (className == null) {
-					_log.warn(tableName + " has no className");
-				}
-				else {
-					_log.warn(
-						"Mapping " + tableName + " => " + className +
-						" was retrieved from model");
-				}
+			if (className == null) {
+				_log.warn(tableName + " has no className");
+			}
+			else {
+				_log.warn(
+					"Mapping " + tableName + " => " + className +
+					" was retrieved from model");
 			}
 		}
 
@@ -434,36 +431,6 @@ public class TableUtil {
 			tableName, primaryKeys, columnNames, columnDataTypes,
 			columnTypeNames, columnSizes, columnNullables, className,
 			getClassNameId(className));
-	}
-
-	protected Map<String, Long> getClassNameIdsMapping() throws SQLException {
-
-		Map<String, Long> mapping = new HashMap<String, Long>();
-
-		Connection con = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
-		try {
-			con = DataAccess.getConnection();
-
-			ps = con.prepareStatement(
-				"select classNameId, value from ClassName_");
-
-			rs = ps.executeQuery();
-
-			while (rs.next()) {
-				long classNameId = rs.getLong("classNameId");
-				String value = rs.getString("value");
-
-				mapping.put(value, classNameId);
-			}
-		}
-		finally {
-			DataAccess.cleanUp(con, ps, rs);
-		}
-
-		return mapping;
 	}
 
 	protected Set<String> getTableNames(
@@ -499,7 +466,7 @@ public class TableUtil {
 			}
 		}
 		finally {
-			DataAccess.cleanUp(rs);
+			JDBCUtil.cleanUp(rs);
 		}
 
 		return tableNames;
@@ -515,12 +482,12 @@ public class TableUtil {
 			Map.Entry<String, String> entry :
 				tableToClassNameMapping.entrySet()) {
 
-			if (Validator.isNull(entry.getValue())) {
+			if (StringUtils.isBlank(entry.getValue())) {
 				continue;
 			}
 
 			classNameToTableMapping.put(
-				entry.getValue(), StringUtil.toLowerCase(entry.getKey()));
+				entry.getValue(), StringUtils.lowerCase(entry.getKey()));
 		}
 
 		return classNameToTableMapping;
@@ -534,7 +501,7 @@ public class TableUtil {
 				continue;
 			}
 
-			ignoreColumn = StringUtil.lowerCase(ignoreColumn);
+			ignoreColumn = StringUtils.lowerCase(ignoreColumn);
 
 			int pos = ignoreColumn.indexOf('.');
 			String[] ignoreColumnArray = new String[4];
@@ -625,7 +592,7 @@ public class TableUtil {
 		}
 
 		if (matchType == null) {
-			return Validator.equals(match, value);
+			return StringUtils.equals(match, value);
 		}
 
 		return false;
@@ -637,7 +604,7 @@ public class TableUtil {
 	protected Map<String, Table> tableMap;
 	protected Set<String> tableNames;
 
-	private static Log _log = LogFactoryUtil.getLog(TableUtil.class);
+	private static Logger _log = LogManager.getLogger(TableUtil.class);
 
 	private Map<String, Long> classNameToClassNameIdMapping;
 	private Map<String, String> classNameToTableMapping;

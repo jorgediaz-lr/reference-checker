@@ -16,12 +16,9 @@ package com.liferay.referenceschecker.model;
 
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.RepositoryModel;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.referenceschecker.util.ReflectionUtil;
-import com.liferay.referenceschecker.util.StringUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -31,6 +28,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 public class ModelUtil {
 
 	public ModelUtil(Collection<String> classNames) {
@@ -49,7 +50,7 @@ public class ModelUtil {
 	}
 
 	public String getClassName(String tableName) {
-		return tableToClassNameMapping.get(StringUtil.toLowerCase(tableName));
+		return tableToClassNameMapping.get(StringUtils.lowerCase(tableName));
 	}
 
 	public Class<?> getLiferayModelImpl(String className)
@@ -264,10 +265,7 @@ public class ModelUtil {
 				classLiferayModelImpl = getLiferayModelImpl(realClassName);
 			}
 			catch (Throwable t) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						"Ignoring " + className + " due to exception: " + t);
-				}
+				_log.warn("Ignoring " + className + " due to exception: " + t);
 			}
 
 			if (classLiferayModelImpl == null) {
@@ -297,7 +295,7 @@ public class ModelUtil {
 
 			classNameToTableMapping.put(className, modelTableName);
 			tableToClassNameMapping.put(
-				StringUtil.toLowerCase(modelTableName), className);
+				StringUtils.lowerCase(modelTableName), className);
 		}
 	}
 
@@ -330,6 +328,6 @@ public class ModelUtil {
 	protected Map<String, String> tableToClassNameMapping =
 		new ConcurrentHashMap<String, String>();
 
-	private static Log _log = LogFactoryUtil.getLog(ModelUtil.class);
+	private static Logger _log = LogManager.getLogger(ModelUtil.class);
 
 }

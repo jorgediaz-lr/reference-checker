@@ -14,10 +14,11 @@
 
 package com.liferay.referenceschecker.ref;
 
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.referenceschecker.dao.Query;
 
 import java.util.Arrays;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Jorge Díaz
@@ -96,7 +97,7 @@ public class Reference implements Comparable<Reference>, Cloneable {
 
 	public String toString() {
 
-		String rawRule = isRaw() ? "raw" : StringPool.BLANK;
+		String rawRule = isRaw() ? "raw" : StringUtils.EMPTY;
 
 		return String.valueOf(originQuery) + " => " +
 			String.valueOf(destinationQuery) + " " + rawRule;

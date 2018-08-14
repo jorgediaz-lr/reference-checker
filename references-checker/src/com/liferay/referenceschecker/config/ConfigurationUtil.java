@@ -14,8 +14,6 @@
 
 package com.liferay.referenceschecker.config;
 
-import com.liferay.referenceschecker.util.StringUtil;
-
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -49,8 +47,6 @@ public class ConfigurationUtil {
 				"File " + configurationFile + " doesn't exists");
 		}
 
-		String configuration = StringUtil.read(inputStream);
-
 		Constructor constructor = new Constructor(Configuration.class);
 		TypeDescription configurationDescription = new TypeDescription(
 			Configuration.class);
@@ -63,7 +59,7 @@ public class ConfigurationUtil {
 		constructor.addTypeDescription(configurationDescription);
 		Yaml yaml = new Yaml(constructor);
 
-		return (Configuration)yaml.load(configuration);
+		return (Configuration)yaml.load(inputStream);
 	}
 
 	private static final String CONFIGURATION_FILE = "configuration_%s.yml";

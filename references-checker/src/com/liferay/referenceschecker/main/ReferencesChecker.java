@@ -17,13 +17,14 @@ package com.liferay.referenceschecker.main;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.referenceschecker.main.util.CommandArguments;
 import com.liferay.referenceschecker.main.util.InitPortal;
 import com.liferay.referenceschecker.main.util.TeePrintStream;
 import com.liferay.referenceschecker.output.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
+import com.liferay.referenceschecker.util.JDBCUtil;
 import com.liferay.referenceschecker.util.SQLUtil;
 
 import java.io.File;
@@ -36,12 +37,15 @@ import java.net.URL;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
 public class ReferencesChecker {
 
 	public static void main(String[] args) throws Exception {
@@ -68,7 +72,7 @@ public class ReferencesChecker {
 		}
 
 		if (filenamePrefix == null) {
-			filenamePrefix = StringPool.BLANK;
+			filenamePrefix = StringUtils.EMPTY;
 		}
 
 		if (filenameSuffix == null) {
@@ -89,12 +93,16 @@ public class ReferencesChecker {
 
 		boolean checkUndefinedTables = commandArguments.checkUndefinedTables();
 
+		Connection connection = null;
+
 		ReferencesChecker referenceChecker;
 
 		try {
+			connection = DataAccess.getConnection();
+
 			referenceChecker = new ReferencesChecker(
-				filenamePrefix, filenameSuffix, missingReferencesLimit,
-				checkUndefinedTables);
+				connection, filenamePrefix, filenameSuffix,
+				missingReferencesLimit, checkUndefinedTables);
 		}
 		catch (Throwable t) {
 			t.printStackTrace(System.out);
@@ -126,7 +134,7 @@ public class ReferencesChecker {
 	}
 
 	public ReferencesChecker(
-			String filenamePrefix, String filenameSuffix,
+			Connection connection, String filenamePrefix, String filenameSuffix,
 			int missingReferencesLimit, boolean checkUndefinedTables)
 		throws Exception {
 
@@ -134,11 +142,11 @@ public class ReferencesChecker {
 		this.filenameSuffix = filenameSuffix;
 		this.missingReferencesLimit = missingReferencesLimit;
 
-		String dbType = SQLUtil.getDBType();
+		String dbType = SQLUtil.getDBType(connection);
 
 		this.referencesChecker =
 			new com.liferay.referenceschecker.ReferencesChecker(
-				dbType, null, true, checkUndefinedTables);
+				connection, dbType, null, true, checkUndefinedTables);
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)
@@ -180,11 +188,21 @@ public class ReferencesChecker {
 	}
 
 	protected void calculateReferences() throws IOException, SQLException {
-
 		long startTime = System.currentTimeMillis();
 
-		Collection<Reference> references =
-			referencesChecker.calculateReferences(false);
+		Connection connection = null;
+
+		Collection<Reference> references;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			references = referencesChecker.calculateReferences(
+				connection, false);
+		}
+		finally {
+			JDBCUtil.cleanUp(connection);
+		}
 
 		String[] headers = new String[] {
 			"origin table", "attributes", "destination table", "attributes"};
@@ -211,11 +229,20 @@ public class ReferencesChecker {
 	}
 
 	protected void calculateTableCount() throws IOException, SQLException {
-
 		long startTime = System.currentTimeMillis();
 
-		Map<String, Long> mapTableCount =
-			referencesChecker.calculateTableCount();
+		Connection connection = null;
+
+		Map<String, Long> mapTableCount;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			mapTableCount = referencesChecker.calculateTableCount(connection);
+		}
+		finally {
+			JDBCUtil.cleanUp(connection);
+		}
 
 		String[] headers = new String[] {"table", "count"};
 
@@ -244,7 +271,18 @@ public class ReferencesChecker {
 
 		long startTime = System.currentTimeMillis();
 
-		List<String> outputList = referencesChecker.dumpDatabaseInfo();
+		Connection connection = null;
+
+		List<String> outputList;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			outputList = referencesChecker.dumpDatabaseInfo(connection);
+		}
+		finally {
+			JDBCUtil.cleanUp(connection);
+		}
 
 		String outputFile = _getOutputFileName("information", "txt");
 
@@ -267,8 +305,18 @@ public class ReferencesChecker {
 
 		long startTime = System.currentTimeMillis();
 
-		List<MissingReferences> listMissingReferences =
-			referencesChecker.execute();
+		List<MissingReferences> listMissingReferences = null;
+
+		Connection connection = null;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			listMissingReferences = referencesChecker.execute(connection);
+		}
+		finally {
+			JDBCUtil.cleanUp(connection);
+		}
 
 		String[] headers = new String[] {
 			"origin table", "attributes", "destination table", "attributes",

@@ -7,13 +7,11 @@
 			<attribute name="owner.project.facets" value="jst.web"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="com.liferay.ide.eclipse.server.plugin.container/portlet">
-		<attributes>
-			<attribute name="org.eclipse.jst.component.nondependency" value=""/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="lib" path="lib/jline-2.14.5.jar"/>
 	<classpathentry kind="lib" path="lib/snakeyaml-1.18.jar"/>
 	<classpathentry kind="lib" path="lib/jcommander-1.72.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang3-3.7.jar"/>
+	<classpathentry kind="lib" path="lib/log4j.jar"/>
+	<classpathentry kind="lib" path="lib/commons-text-1.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

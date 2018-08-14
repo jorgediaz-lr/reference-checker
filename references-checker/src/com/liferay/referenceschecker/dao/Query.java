@@ -14,17 +14,18 @@
 
 package com.liferay.referenceschecker.dao;
 
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.Validator;
-import com.liferay.referenceschecker.util.StringUtil;
+import com.liferay.referenceschecker.util.SQLUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 public class Query implements Comparable<Query> {
 
 	public static List<String> castColumnsToText(
-		String prefix, List<String> columns, List<Class<?>> columnTypes,
-		List<Class<?>> castTypes) {
+		String dbType, String prefix, List<String> columns,
+		List<Class<?>> columnTypes, List<Class<?>> castTypes) {
 
 		List<String> castedColumns = new ArrayList<String>();
 
@@ -34,14 +35,14 @@ public class Query implements Comparable<Query> {
 			Class<?> columnType = columnTypes.get(i);
 			Class<?> castType = castTypes.get(i);
 
-			if (Validator.isNotNull(prefix)) {
+			if (StringUtils.isNotBlank(prefix)) {
 				column = prefix + "." + column;
 			}
 
 			if (!columnType.equals(castType) && String.class.equals(castType) &&
 				!Object.class.equals(columnType)) {
 
-				column = "CAST_TEXT(" + column + ")";
+				column = SQLUtil.castTextColumn(dbType, column);
 			}
 
 			castedColumns.add(column);
@@ -52,7 +53,7 @@ public class Query implements Comparable<Query> {
 
 	public Query(Table table, List<String> columns, String condition) {
 		this.columns = rewriteConstants(columns);
-		this.columnsString = StringUtil.merge(this.columns);
+		this.columnsString = StringUtils.join(this.columns, ",");
 		this.condition = condition;
 		this.table = table;
 
@@ -62,7 +63,7 @@ public class Query implements Comparable<Query> {
 			tableName = tableName.substring(0, 20);
 		}
 
-		this.tableAlias = tableName + "_" + StringUtil.randomId();
+		tableAlias = tableName + "_" + RandomStringUtils.randomAlphabetic(4);
 	}
 
 	@Override
@@ -84,7 +85,8 @@ public class Query implements Comparable<Query> {
 		return columns;
 	}
 
-	public List<String> getColumnsWithCast(Query destinationQuery) {
+	public List<String> getColumnsWithCast(
+		String dbType, Query destinationQuery) {
 
 		List<String> destinationColumns = destinationQuery.getColumns();
 
@@ -95,7 +97,7 @@ public class Query implements Comparable<Query> {
 			destinationColumns);
 
 		return castColumnsToText(
-			tableAlias, columns, columnTypes, destinationTypes);
+			dbType, tableAlias, columns, columnTypes, destinationTypes);
 	}
 
 	public String getCondition() {
@@ -111,7 +113,7 @@ public class Query implements Comparable<Query> {
 	}
 
 	public String getSQL(boolean distinct, String columnsString) {
-		StringBundler sb = new StringBundler();
+		StringBuilder sb = new StringBuilder();
 
 		sb.append("SELECT ");
 
@@ -128,7 +130,7 @@ public class Query implements Comparable<Query> {
 
 		String sqlCondition = condition;
 
-		if (Validator.isNull(sqlCondition)) {
+		if (StringUtils.isBlank(sqlCondition)) {
 			sqlCondition = "1=1";
 		}
 
@@ -157,7 +159,7 @@ public class Query implements Comparable<Query> {
 	@Override
 	public String toString() {
 		if (toString == null) {
-			StringBundler sb = new StringBundler();
+			StringBuilder sb = new StringBuilder();
 			sb.append(table.getTableName());
 
 			if (condition != null) {
@@ -168,7 +170,7 @@ public class Query implements Comparable<Query> {
 
 			sb.append("#");
 			sb.append(columnsString);
-			toString = StringUtil.toLowerCase(sb.toString());
+			toString = StringUtils.lowerCase(sb.toString());
 		}
 
 		return toString;

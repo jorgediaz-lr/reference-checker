@@ -21,7 +21,6 @@ import com.liferay.portal.kernel.dao.jdbc.DataSourceFactory;
 import com.liferay.portal.kernel.dao.jdbc.DataSourceFactoryUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactory;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
@@ -33,7 +32,6 @@ import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.referenceschecker.util.ReflectionUtil;
 import com.liferay.referenceschecker.util.SQLUtil;
 
@@ -48,6 +46,10 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import jline.console.ConsoleReader;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 /**
  * @author Jorge Díaz
@@ -91,7 +93,7 @@ public class InitPortal {
 			"jdbc.default.username");
 
 		_initDatabase(
-			driverClassName, url, username, password, StringPool.BLANK);
+			driverClassName, url, username, password, StringUtils.EMPTY);
 
 		databaseProperties.store(databasePropertiesFile);
 	}
@@ -407,7 +409,7 @@ public class InitPortal {
 	private static final Map<String, Database> _databases =
 		new HashMap<String, Database>();
 
-	private static Log _log = LogFactoryUtil.getLog(InitPortal.class);
+	private static Logger _log = LogManager.getLogger(InitPortal.class);
 
 	private static File _jarDir;
 

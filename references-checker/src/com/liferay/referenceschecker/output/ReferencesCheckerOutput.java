@@ -16,19 +16,11 @@ package com.liferay.referenceschecker.output;
 
 import com.liferay.portal.kernel.dao.search.ResultRow;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
-import com.liferay.referenceschecker.util.StringUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -36,6 +28,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,13 +36,16 @@ import java.util.Map.Entry;
 import javax.portlet.PortletURL;
 import javax.portlet.RenderRequest;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 /**
  * @author Jorge Díaz
  */
 public class ReferencesCheckerOutput {
-
-	public static Log _log = LogFactoryUtil.getLog(
-			ReferencesCheckerOutput.class);
 
 	public static List<String> generateCSVOutputCheckReferences(
 		List<String> headers, List<MissingReferences> listMissingReferences,
@@ -151,7 +147,7 @@ public class ReferencesCheckerOutput {
 				renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM,
 				SearchContainer.MAX_DELTA, serverURL, headers, null);
 
-		listMissingReferences = ListUtil.subList(
+		listMissingReferences = subList(
 			listMissingReferences, searchContainer.getStart(),
 			searchContainer.getEnd());
 
@@ -200,7 +196,7 @@ public class ReferencesCheckerOutput {
 			}
 		}
 
-		filteredReferencesList = ListUtil.subList(
+		filteredReferencesList = subList(
 			filteredReferencesList, searchContainer.getStart(),
 			searchContainer.getEnd());
 
@@ -229,12 +225,12 @@ public class ReferencesCheckerOutput {
 	}
 
 	public static String getCSVRow(List<String> rowData) {
-		return getCSVRow(rowData, StringPool.COMMA);
+		return getCSVRow(rowData, ",");
 	}
 
 	public static String getCSVRow(List<String> rowData, String sep) {
 
-		String row = StringPool.BLANK;
+		String row = StringUtils.EMPTY;
 
 		for (String aux : rowData) {
 			row = addCell(row, aux, sep);
@@ -256,11 +252,11 @@ public class ReferencesCheckerOutput {
 	}
 
 	protected static String addCell(String line, String cell, String sep) {
-		if (cell.contains(StringPool.SPACE) || cell.contains(sep)) {
-			cell = StringPool.QUOTE + cell + StringPool.QUOTE;
+		if (cell.contains(StringUtils.SPACE) || cell.contains(sep)) {
+			cell = "\"" + cell + "\"";
 		}
 
-		if (Validator.isNull(line)) {
+		if (StringUtils.isBlank(line)) {
 			line = cell;
 		}
 		else {
@@ -278,7 +274,7 @@ public class ReferencesCheckerOutput {
 		String tableWithCondition = query.getTable().getTableName();
 
 		if (query.getCondition() != null) {
-			StringBundler sb = new StringBundler();
+			StringBuilder sb = new StringBuilder();
 
 			sb.append(tableWithCondition);
 			sb.append(" WHERE ");
@@ -294,7 +290,7 @@ public class ReferencesCheckerOutput {
 				query.getTable(), query.getColumns());
 		}
 		else {
-			attributes = StringUtil.merge(query.getColumns());
+			attributes = StringUtils.join(query.getColumns(), ",");
 		}
 
 		line.add(tableWithCondition);
@@ -342,13 +338,14 @@ public class ReferencesCheckerOutput {
 		if (throwable != null) {
 			addTextMethod.invoke(
 				row,
-				HtmlUtil.escape(
+				StringEscapeUtils.escapeHtml4(
 					"Error checking references, EXCEPTION: " +
 					throwable.getClass() + " - " + throwable.getMessage()));
 		}
 		else if (missingValues == null) {
 			addTextMethod.invoke(
-				row, (HtmlUtil.escape("Error checking references")));
+				row,
+				(StringEscapeUtils.escapeHtml4("Error checking references")));
 		}
 		else {
 			String outputString = getOutput(
@@ -384,7 +381,8 @@ public class ReferencesCheckerOutput {
 
 		String outputString = concatenate(missingValues);
 
-		outputString = HtmlUtil.escape(outputString.replace(",", ", "));
+		outputString = StringEscapeUtils.escapeHtml4(
+			outputString.replace(",", ", "));
 
 		String outputStringTrimmed = null;
 
@@ -393,10 +391,11 @@ public class ReferencesCheckerOutput {
 		if (overflow > 0) {
 			outputStringTrimmed = concatenate(missingValues, maxSize);
 
-			outputStringTrimmed = HtmlUtil.escape(
+			outputStringTrimmed = StringEscapeUtils.escapeHtml4(
 				outputStringTrimmed.replace(",", ", "));
 
-			String tagId = StringUtil.randomString() + "_" + numberOfRows;
+			String tagId =
+				RandomStringUtils.randomAlphabetic(4) + "_" + numberOfRows;
 			String onClick =
 				"onclick=\"showHide('" + tagId + "');return false;\"";
 			String linkMore =
@@ -420,10 +419,10 @@ public class ReferencesCheckerOutput {
 
 	private static String concatenate(Collection<Object[]> values, int limit) {
 		if ((limit == 0) || (values == null) || values.isEmpty()) {
-			return StringPool.BLANK;
+			return StringUtils.EMPTY;
 		}
 
-		StringBundler sb = new StringBundler(values.size()*2);
+		StringBuilder sb = new StringBuilder(values.size()*2);
 
 		int i = 0;
 
@@ -471,9 +470,27 @@ public class ReferencesCheckerOutput {
 			textLength = text.length();
 		}
 
-		return HtmlUtil.escape(text);
+		return StringEscapeUtils.escapeHtml4(text);
 	}
 
+	private static <E> List<E> subList(List<E> list, int start, int end) {
+		if (start < 0) {
+			start = 0;
+		}
+
+		if ((end < 0) || (end > list.size())) {
+			end = list.size();
+		}
+
+		if (start < end) {
+			return list.subList(start, end);
+		}
+
+		return Collections.emptyList();
+	}
+
+	private static Logger _log = LogManager.getLogger(
+		ReferencesCheckerOutput.class);
 	private static Constructor<?> resultRowConstructor;
 
 	static {
