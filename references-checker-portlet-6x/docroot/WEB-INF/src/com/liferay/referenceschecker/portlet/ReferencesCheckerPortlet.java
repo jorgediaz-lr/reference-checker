@@ -14,6 +14,7 @@
 
 package com.liferay.referenceschecker.portlet;
 
+import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -43,12 +44,13 @@ import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.PortletFileRepositoryUtil;
 import com.liferay.referenceschecker.util.SQLUtil;
-import com.liferay.referenceschecker.util.StringUtil;
 import com.liferay.util.bridges.mvc.MVCPortlet;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import java.sql.Connection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,6 +73,8 @@ import javax.portlet.ResourceResponse;
 import javax.portlet.ResourceURL;
 
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Portlet implementation class ReferencesCheckerPortlet
@@ -307,8 +311,8 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		String portletId = portletConfig.getPortletName();
 		long userId = PortalUtil.getUserId(renderRequest);
 
-		String outputContent = StringUtil.merge(
-				outputList, StringPool.NEW_LINE);
+		String outputContent = StringUtils.join(
+			outputList, StringPool.NEW_LINE);
 
 		FileEntry exportCsvFileEntry =
 			ReferencesCheckerPortlet.addPortletOutputFileEntry(
@@ -334,8 +338,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		PortalUtil.copyRequestParameters(request, response);
 
-		String dbType = SQLUtil.getDBType();
-
 		boolean ignoreNullValues = ParamUtil.getBoolean(
 			request, "ignoreNullValues");
 		String excludeColumnsParam = ParamUtil.getString(
@@ -347,11 +349,23 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			excludeColumns = Arrays.asList(excludeColumnsParam.split(","));
 		}
 
-		ReferencesChecker referencesChecker = new ReferencesChecker(
-			dbType, excludeColumns, ignoreNullValues, false);
+		Connection connection = null;
 
-		List<MissingReferences> listMissingReferences =
-			referencesChecker.execute();
+		List<MissingReferences> listMissingReferences = null;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			String dbType = SQLUtil.getDBType(connection);
+
+			ReferencesChecker referencesChecker = new ReferencesChecker(
+				connection, dbType, excludeColumns, ignoreNullValues, false);
+
+			listMissingReferences = referencesChecker.execute(connection);
+		}
+		finally {
+			DataAccess.cleanUp(connection);
+		}
 
 		long endTime = System.currentTimeMillis();
 
@@ -368,8 +382,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		PortalUtil.copyRequestParameters(request, response);
 
-		String dbType = SQLUtil.getDBType();
-
 		boolean ignoreEmptyTables = ParamUtil.getBoolean(
 			request, "ignoreEmptyTables");
 		String excludeColumnsParam = ParamUtil.getString(
@@ -381,11 +393,24 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			excludeColumns = Arrays.asList(excludeColumnsParam.split(","));
 		}
 
-		ReferencesChecker referencesChecker = new ReferencesChecker(
-			dbType, excludeColumns, true, false);
+		Connection connection = null;
 
-		Collection<Reference> references =
-			referencesChecker.calculateReferences(ignoreEmptyTables);
+		Collection<Reference> references = null;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			String dbType = SQLUtil.getDBType(connection);
+
+			ReferencesChecker referencesChecker = new ReferencesChecker(
+				connection, dbType, excludeColumns, true, false);
+
+			references = referencesChecker.calculateReferences(
+				connection, ignoreEmptyTables);
+		}
+		finally {
+			DataAccess.cleanUp(connection);
+		}
 
 		long endTime = System.currentTimeMillis();
 
