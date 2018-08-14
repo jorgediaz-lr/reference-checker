@@ -1,0 +1,3 @@
+rootProject.name = 'references_checker'
+
+include 'check-queries'
