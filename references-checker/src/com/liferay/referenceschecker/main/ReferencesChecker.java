@@ -21,6 +21,8 @@ import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.referenceschecker.main.util.CommandArguments;
 import com.liferay.referenceschecker.main.util.InitPortal;
 import com.liferay.referenceschecker.main.util.TeePrintStream;
+import com.liferay.referenceschecker.model.ModelUtil;
+import com.liferay.referenceschecker.model.ModelUtilImpl;
 import com.liferay.referenceschecker.output.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
@@ -144,9 +146,12 @@ public class ReferencesChecker {
 
 		String dbType = SQLUtil.getDBType(connection);
 
+		ModelUtil modelUtil = new ModelUtilImpl();
+
 		this.referencesChecker =
 			new com.liferay.referenceschecker.ReferencesChecker(
-				connection, dbType, null, true, checkUndefinedTables);
+				connection, dbType, null, true, checkUndefinedTables,
+				modelUtil);
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)

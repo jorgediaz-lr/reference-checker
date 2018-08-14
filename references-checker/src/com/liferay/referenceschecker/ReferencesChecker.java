@@ -19,6 +19,7 @@ import com.liferay.referenceschecker.config.ConfigurationUtil;
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.dao.TableUtil;
+import com.liferay.referenceschecker.model.ModelUtil;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.ref.ReferenceUtil;
@@ -83,7 +84,8 @@ public class ReferencesChecker {
 
 	public ReferencesChecker(
 			Connection connection, String dbType, List<String> excludeColumns,
-			boolean ignoreNullValues, boolean checkUndefinedTables)
+			boolean ignoreNullValues, boolean checkUndefinedTables,
+			ModelUtil modelUtil)
 		throws IOException, SQLException {
 
 		this.checkUndefinedTables = checkUndefinedTables;
@@ -93,7 +95,7 @@ public class ReferencesChecker {
 
 		try {
 			this.configuration = getConfiguration(connection);
-			this.tableUtil = getTableUtil(connection, configuration);
+			this.tableUtil = getTableUtil(connection, configuration, modelUtil);
 		}
 		catch (IOException e) {
 			_log.error(
@@ -491,7 +493,8 @@ public class ReferencesChecker {
 	}
 
 	protected TableUtil getTableUtil(
-			Connection connection, Configuration configuration)
+			Connection connection, Configuration configuration,
+			ModelUtil modelUtil)
 		throws SQLException {
 
 		String dbType = SQLUtil.getDBType(connection);
@@ -515,7 +518,7 @@ public class ReferencesChecker {
 		return new TableUtil(
 			metadata, catalog, schema, tableToClassNameMapping,
 			classNameToClassNameIdMapping, configuration.getIgnoreTables(),
-			configuration.getIgnoreColumns());
+			configuration.getIgnoreColumns(), modelUtil);
 	}
 
 	protected boolean isValidValue(Object[] result) {

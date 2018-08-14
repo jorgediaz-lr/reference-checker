@@ -39,6 +39,8 @@ import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
+import com.liferay.referenceschecker.model.ModelUtil;
+import com.liferay.referenceschecker.model.ModelUtilImpl;
 import com.liferay.referenceschecker.output.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
@@ -358,8 +360,11 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 			String dbType = SQLUtil.getDBType(connection);
 
+			ModelUtil modelUtil = new ModelUtilImpl();
+
 			ReferencesChecker referencesChecker = new ReferencesChecker(
-				connection, dbType, excludeColumns, ignoreNullValues, false);
+				connection, dbType, excludeColumns, ignoreNullValues, false,
+				modelUtil);
 
 			listMissingReferences = referencesChecker.execute(connection);
 		}
@@ -402,8 +407,10 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 			String dbType = SQLUtil.getDBType(connection);
 
+			ModelUtil modelUtil = new ModelUtilImpl();
+
 			ReferencesChecker referencesChecker = new ReferencesChecker(
-				connection, dbType, excludeColumns, true, false);
+				connection, dbType, excludeColumns, true, false, modelUtil);
 
 			references = referencesChecker.calculateReferences(
 				connection, ignoreEmptyTables);

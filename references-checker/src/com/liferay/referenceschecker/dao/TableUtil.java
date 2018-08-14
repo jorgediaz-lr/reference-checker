@@ -95,7 +95,8 @@ public class TableUtil {
 			DatabaseMetaData databaseMetaData, String catalog, String schema,
 			Map<String, String> tableToClassNameMapping,
 			Map<String, Long> classNameToClassNameIdMapping,
-			List<String> ignoreTables, List<String> ignoreColumns)
+			List<String> ignoreTables, List<String> ignoreColumns,
+			ModelUtil modelUtil)
 		throws SQLException {
 
 		this.tableToClassNameMapping = new HashMap<String, String>(
@@ -113,7 +114,12 @@ public class TableUtil {
 
 		this.tableNames = getTableNames(databaseMetaData, catalog, schema, "%");
 
-		this.modelUtil = new ModelUtil(classNameToClassNameIdMapping.keySet());
+		this.modelUtil = modelUtil;
+
+		if (this.modelUtil != null) {
+			this.modelUtil.initModelMappings(
+				classNameToClassNameIdMapping.keySet());
+		}
 
 		this.tableMap = initTableMap(databaseMetaData, catalog, schema);
 	}
