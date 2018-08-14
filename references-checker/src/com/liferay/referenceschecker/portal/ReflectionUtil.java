@@ -1,4 +1,4 @@
-package com.liferay.referenceschecker.util;
+package com.liferay.referenceschecker.portal;
 
 /**
  * Copyright (c) 2017-present Liferay, Inc. All rights reserved.

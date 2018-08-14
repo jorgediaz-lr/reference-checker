@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.output;
+package com.liferay.referenceschecker.portal;
 
 import com.liferay.portal.kernel.dao.search.ResultRow;
 import com.liferay.portal.kernel.dao.search.SearchContainer;

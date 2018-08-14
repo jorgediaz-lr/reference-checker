@@ -12,13 +12,13 @@
  * details.
  */
 
-package com.liferay.referenceschecker.model;
+package com.liferay.referenceschecker.portal;
 
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.repository.model.RepositoryModel;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.referenceschecker.util.ReflectionUtil;
+import com.liferay.referenceschecker.model.ModelUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

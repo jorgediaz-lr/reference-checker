@@ -32,7 +32,7 @@ import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.referenceschecker.util.ReflectionUtil;
+import com.liferay.referenceschecker.portal.ReflectionUtil;
 import com.liferay.referenceschecker.util.SQLUtil;
 
 import java.io.File;
