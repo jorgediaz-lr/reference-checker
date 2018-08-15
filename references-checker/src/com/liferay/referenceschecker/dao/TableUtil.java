@@ -112,8 +112,6 @@ public class TableUtil {
 
 		this.ignoreTables = new ArrayList<String>(ignoreTables);
 
-		this.tableNames = getTableNames(databaseMetaData, catalog, schema, "%");
-
 		this.modelUtil = modelUtil;
 
 		if (this.modelUtil != null) {
@@ -121,7 +119,28 @@ public class TableUtil {
 				classNameToClassNameIdMapping.keySet());
 		}
 
-		this.tableMap = initTableMap(databaseMetaData, catalog, schema);
+		Set<String> tableNames = getTableNames(
+			databaseMetaData, catalog, schema, "%");
+
+		addTables(databaseMetaData, catalog, schema, tableNames);
+	}
+
+	public void addTable(
+		DatabaseMetaData databaseMetaData, String catalog, String schema,
+		String tableName) {
+
+		addTables(
+			databaseMetaData, catalog, schema,
+			Collections.singleton(tableName));
+	}
+
+	public void addTables(
+		DatabaseMetaData databaseMetaData, String catalog, String schema,
+		Collection<String> tableNames) {
+
+		this.tableMap.putAll(
+			initTableMap(databaseMetaData, catalog, schema, tableNames));
+		this.tableNames.addAll(tableNames);
 	}
 
 	public String getClassNameFromTableName(String tableName) {
@@ -331,6 +350,19 @@ public class TableUtil {
 		return isTableEmpty;
 	}
 
+	public void removeTable(String tableName) {
+		Table table = getTable(tableName);
+
+		this.tableNames.remove(table.getTableName());
+		this.tableMap.remove(table.getTableNameLowerCase());
+	}
+
+	public void removeTables(Collection<String> tableNames) {
+		for (String tableName : tableNames) {
+			removeTable(tableName);
+		}
+	}
+
 	protected Table createTable(
 			DatabaseMetaData databaseMetaData, String catalog, String schema,
 			String tableName)
@@ -421,7 +453,9 @@ public class TableUtil {
 		String className = this.getClassNameFromTableName(tableName);
 
 		if (className == null) {
-			className = modelUtil.getClassName(tableName);
+			if (modelUtil != null) {
+				className = modelUtil.getClassName(tableName);
+			}
 
 			if (className == null) {
 				_log.warn(tableName + " has no className");
@@ -531,7 +565,8 @@ public class TableUtil {
 	}
 
 	protected Map<String, Table> initTableMap(
-		DatabaseMetaData databaseMetaData, String catalog, String schema) {
+		DatabaseMetaData databaseMetaData, String catalog, String schema,
+		Collection<String> tableNames) {
 
 		Map<String, Table> tableMap = new TreeMap<String, Table>();
 
@@ -607,8 +642,8 @@ public class TableUtil {
 	protected Map<String, Boolean> emptyTableCache =
 		new ConcurrentHashMap<String, Boolean>();
 	protected ModelUtil modelUtil;
-	protected Map<String, Table> tableMap;
-	protected Set<String> tableNames;
+	protected Map<String, Table> tableMap = new TreeMap<String, Table>();
+	protected Set<String> tableNames = new TreeSet<String>();;
 
 	private static Logger _log = LogManager.getLogger(TableUtil.class);
 

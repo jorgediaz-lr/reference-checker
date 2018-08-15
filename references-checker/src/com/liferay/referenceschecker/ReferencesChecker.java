@@ -83,13 +83,13 @@ public class ReferencesChecker {
 	}
 
 	public ReferencesChecker(
-			Connection connection, String dbType, List<String> excludeColumns,
+			Connection connection, List<String> excludeColumns,
 			boolean ignoreNullValues, boolean checkUndefinedTables,
 			ModelUtil modelUtil)
 		throws IOException, SQLException {
 
 		this.checkUndefinedTables = checkUndefinedTables;
-		this.dbType = dbType;
+		this.dbType = SQLUtil.getDBType(connection);
 		this.excludeColumns = excludeColumns;
 		this.ignoreNullValues = ignoreNullValues;
 

@@ -27,7 +27,6 @@ import com.liferay.referenceschecker.portal.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.JDBCUtil;
-import com.liferay.referenceschecker.util.SQLUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -144,14 +143,11 @@ public class ReferencesChecker {
 		this.filenameSuffix = filenameSuffix;
 		this.missingReferencesLimit = missingReferencesLimit;
 
-		String dbType = SQLUtil.getDBType(connection);
-
 		ModelUtil modelUtil = new ModelUtilImpl();
 
 		this.referencesChecker =
 			new com.liferay.referenceschecker.ReferencesChecker(
-				connection, dbType, null, true, checkUndefinedTables,
-				modelUtil);
+				connection, null, true, checkUndefinedTables, modelUtil);
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)

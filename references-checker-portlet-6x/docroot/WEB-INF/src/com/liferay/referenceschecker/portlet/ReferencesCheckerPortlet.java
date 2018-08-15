@@ -45,7 +45,6 @@ import com.liferay.referenceschecker.portal.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.PortletFileRepositoryUtil;
-import com.liferay.referenceschecker.util.SQLUtil;
 import com.liferay.util.bridges.mvc.MVCPortlet;
 
 import java.io.ByteArrayInputStream;
@@ -358,13 +357,10 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		try {
 			connection = DataAccess.getConnection();
 
-			String dbType = SQLUtil.getDBType(connection);
-
 			ModelUtil modelUtil = new ModelUtilImpl();
 
 			ReferencesChecker referencesChecker = new ReferencesChecker(
-				connection, dbType, excludeColumns, ignoreNullValues, false,
-				modelUtil);
+				connection, excludeColumns, ignoreNullValues, false, modelUtil);
 
 			listMissingReferences = referencesChecker.execute(connection);
 		}
@@ -405,12 +401,10 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		try {
 			connection = DataAccess.getConnection();
 
-			String dbType = SQLUtil.getDBType(connection);
-
 			ModelUtil modelUtil = new ModelUtilImpl();
 
 			ReferencesChecker referencesChecker = new ReferencesChecker(
-				connection, dbType, excludeColumns, true, false, modelUtil);
+				connection, excludeColumns, true, false, modelUtil);
 
 			references = referencesChecker.calculateReferences(
 				connection, ignoreEmptyTables);
