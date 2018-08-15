@@ -18,6 +18,7 @@ import com.liferay.referenceschecker.dao.Query;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -43,10 +44,10 @@ public class Reference implements Comparable<Reference>, Cloneable {
 
 	@Override
 	public int compareTo(Reference ref) {
-		int value = originQuery.compareTo(ref.originQuery);
+		int value = ObjectUtils.compare(originQuery, ref.originQuery);
 
 		if ((value == 0) && (isRaw() || ref.isRaw())) {
-			value = destinationQuery.compareTo(ref.destinationQuery);
+			value = ObjectUtils.compare(destinationQuery, ref.destinationQuery);
 		}
 
 		return value;
