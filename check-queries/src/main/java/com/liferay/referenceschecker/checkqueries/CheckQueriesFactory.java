@@ -1,3 +1,4 @@
+
 package com.liferay.referenceschecker.checkqueries;
 
 import com.p6spy.engine.event.JdbcEventListener;
@@ -8,14 +9,16 @@ import com.p6spy.engine.spy.option.P6OptionsRepository;
 
 public class CheckQueriesFactory implements P6Factory {
 
-  @Override
-  public JdbcEventListener getJdbcEventListener() {
-    return CheckQueriesListener.INSTANCE;
-  }
+	@Override
+	public JdbcEventListener getJdbcEventListener() {
 
-  @Override
-  public P6LoadableOptions getOptions(P6OptionsRepository optionsRepository) {
-    return new P6LogOptions(optionsRepository);
-  }
+		return CheckQueriesListener.INSTANCE;
+	}
+
+	@Override
+	public P6LoadableOptions getOptions(P6OptionsRepository optionsRepository) {
+
+		return new P6LogOptions(optionsRepository);
+	}
 
 }
