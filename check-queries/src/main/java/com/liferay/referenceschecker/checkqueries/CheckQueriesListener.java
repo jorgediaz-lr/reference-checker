@@ -1,18 +1,36 @@
+/**
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2.1 of the License, or (at your option)
+ * any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ */
 
 package com.liferay.referenceschecker.checkqueries;
 
+import com.liferay.referenceschecker.checkqueries.Query.QueryType;
+
+import com.p6spy.engine.common.ConnectionInformation;
+import com.p6spy.engine.common.StatementInformation;
+import com.p6spy.engine.event.SimpleJdbcEventListener;
+
 import java.sql.SQLException;
+
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-import com.liferay.referenceschecker.checkqueries.Query.QueryType;
-import com.p6spy.engine.common.ConnectionInformation;
-import com.p6spy.engine.common.StatementInformation;
-import com.p6spy.engine.event.SimpleJdbcEventListener;
-
+/**
+ * @author Jorge Díaz
+ */
 public class CheckQueriesListener extends SimpleJdbcEventListener {
 
 	public static final CheckQueriesListener INSTANCE =
@@ -57,7 +75,7 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 			_log.debug(
 				"After commit. Connection-id=" +
 					connectionInformation.getConnectionId());
-		} ;
+		};
 	}
 
 	@Override
@@ -111,43 +129,52 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 			_log.debug(
 				"After rollback. Connection-id=" +
 					connectionInformation.getConnectionId());
-		} ;;
+		};
 	}
 
 	@Override
 	public void onBeforeCommit(ConnectionInformation connectionInformation) {
-
 		if (_log.isDebugEnabled()) {
 			_log.debug(
 				"Before commit. Connection-id=" +
 					connectionInformation.getConnectionId());
-		} ;
+		};
 
 		logQueries(
-			connectionInformation, insertQueryListThreadLocal.get(),
+			connectionInformation, _insertQueriesThreadLocal.get(),
 			"Insert queries");
 		logQueries(
-			connectionInformation, updateQueryListThreadLocal.get(),
+			connectionInformation, _updateQueriesThreadLocal.get(),
 			"Update queries");
 		logQueries(
-			connectionInformation, deleteQueryListThreadLocal.get(),
+			connectionInformation, _deleteQueriesThreadLocal.get(),
 			"Delete queries");
 		logQueries(
-			connectionInformation, otherQueryListThreadLocal.get(),
+			connectionInformation, _otherQueriesThreadLocal.get(),
 			"Other queries");
 	}
 
-	private void logQueries(
-		ConnectionInformation connectionInformation, Set<Query> queryList,
+	protected void addQueryToThreadLocal(
+		ThreadLocal<Set<Query>> queriesThreadLocal, Query query) {
+
+		if (queriesThreadLocal.get() == null) {
+			queriesThreadLocal.set(new TreeSet<Query>());
+		}
+
+		Set<Query> queries = queriesThreadLocal.get();
+
+		queries.add(query);
+	}
+
+	protected void logQueries(
+		ConnectionInformation connectionInformation, Set<Query> queriesSet,
 		String message) {
 
-		if ((queryList == null) || queryList.isEmpty()) {
-
+		if ((queriesSet == null) || queriesSet.isEmpty()) {
 			return;
 		}
 
 		if (!_log.isInfoEnabled()) {
-
 			return;
 		}
 
@@ -155,7 +182,7 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 
 		_log.info(message + ". Connection-id=" + connectionId);
 
-		for (Query query : queryList) {
+		for (Query query : queriesSet) {
 			_log.info("Query: " + query);
 
 			if (!_log.isDebugEnabled()) {
@@ -187,49 +214,36 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 		}
 
 		if (query.getQueryType() == QueryType.INSERT) {
-			addQueryToThreadLocal(insertQueryListThreadLocal, query);
+			addQueryToThreadLocal(_insertQueriesThreadLocal, query);
 		}
 		else if (query.getQueryType() == QueryType.UPDATE) {
-			addQueryToThreadLocal(updateQueryListThreadLocal, query);
+			addQueryToThreadLocal(_updateQueriesThreadLocal, query);
 		}
 		else if (query.getQueryType() == QueryType.DELETE) {
-			addQueryToThreadLocal(deleteQueryListThreadLocal, query);
+			addQueryToThreadLocal(_deleteQueriesThreadLocal, query);
 		}
 		else {
-			addQueryToThreadLocal(otherQueryListThreadLocal, query);
+			addQueryToThreadLocal(_otherQueriesThreadLocal, query);
 		}
-	}
-
-	private void addQueryToThreadLocal(
-		ThreadLocal<Set<Query>> queryListThreadLocal, Query query) {
-
-		if (queryListThreadLocal.get() == null) {
-			queryListThreadLocal.set(new TreeSet<Query>());
-		}
-
-		queryListThreadLocal.get().add(query);
 	}
 
 	protected void resetThreadLocals() {
-
-		insertQueryListThreadLocal.set(new TreeSet<Query>());
-		updateQueryListThreadLocal.set(new TreeSet<Query>());
-		deleteQueryListThreadLocal.set(new TreeSet<Query>());
-		otherQueryListThreadLocal.set(new TreeSet<Query>());
+		_insertQueriesThreadLocal.set(new TreeSet<Query>());
+		_updateQueriesThreadLocal.set(new TreeSet<Query>());
+		_deleteQueriesThreadLocal.set(new TreeSet<Query>());
+		_otherQueriesThreadLocal.set(new TreeSet<Query>());
 	}
-
-	private ThreadLocal<Set<Query>> insertQueryListThreadLocal =
-		new ThreadLocal<Set<Query>>();
-
-	private ThreadLocal<Set<Query>> updateQueryListThreadLocal =
-		new ThreadLocal<Set<Query>>();
-
-	private ThreadLocal<Set<Query>> deleteQueryListThreadLocal =
-		new ThreadLocal<Set<Query>>();
-
-	private ThreadLocal<Set<Query>> otherQueryListThreadLocal =
-		new ThreadLocal<Set<Query>>();
 
 	private static Logger _log = LogManager.getLogger(
 		CheckQueriesListener.class);
+
+	private ThreadLocal<Set<Query>> _deleteQueriesThreadLocal =
+		new ThreadLocal<>();
+	private ThreadLocal<Set<Query>> _insertQueriesThreadLocal =
+		new ThreadLocal<>();
+	private ThreadLocal<Set<Query>> _otherQueriesThreadLocal =
+		new ThreadLocal<>();
+	private ThreadLocal<Set<Query>> _updateQueriesThreadLocal =
+		new ThreadLocal<>();
+
 }
