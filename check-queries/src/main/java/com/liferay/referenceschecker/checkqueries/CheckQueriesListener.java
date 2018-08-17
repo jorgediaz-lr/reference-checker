@@ -2,64 +2,34 @@
 package com.liferay.referenceschecker.checkqueries;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
-import com.liferay.referenceschecker.checkqueries.ExecutedQuery.QueryType;
+import com.liferay.referenceschecker.checkqueries.Query.QueryType;
 import com.p6spy.engine.common.ConnectionInformation;
 import com.p6spy.engine.common.StatementInformation;
 import com.p6spy.engine.event.SimpleJdbcEventListener;
-
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.select.Select;
 
 public class CheckQueriesListener extends SimpleJdbcEventListener {
 
 	public static final CheckQueriesListener INSTANCE =
 		new CheckQueriesListener();
 
-	private boolean _debug = false;
-
-	protected CheckQueriesListener() {
-		String debugProperty = System.getProperty("debug");
-
-		_debug = (StringUtils.equalsIgnoreCase(debugProperty, "true") ||
-			StringUtils.equalsIgnoreCase(debugProperty, "1"));
-	}
-
-	private String getRequestInfo(
-		int connectionId, String category, String query, SQLException e) {
-
-		return "" + connectionId + "|" + category + "|" + query + "|" + e;
-	}
-
-	protected boolean isDebugEnabled() {
-
-		return _debug;
-	}
-
-	protected void logDebug(String message) {
-
-		if (!isDebugEnabled()) {
-			return;
-		}
-
-		System.out.println(message);
-	}
-
 	@Override
 	public void onAfterAnyAddBatch(
 		StatementInformation statementInformation, long timeElapsedNanos,
 		SQLException e) {
 
-		processStatementInformation(
-			statementInformation, "batch", e);
+		if (e != null) {
+			return;
+		}
+
+		processQuery(
+			statementInformation.getConnectionInformation(),
+			statementInformation.getSqlWithValues());
 	}
 
 	@Override
@@ -67,8 +37,13 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 		StatementInformation statementInformation, long timeElapsedNanos,
 		SQLException e) {
 
-		processStatementInformation(
-			statementInformation, "statement", e);
+		if (e != null) {
+			return;
+		}
+
+		processQuery(
+			statementInformation.getConnectionInformation(),
+			statementInformation.getSqlWithValues());
 	}
 
 	@Override
@@ -76,19 +51,26 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 		ConnectionInformation connectionInformation, long timeElapsedNanos,
 		SQLException e) {
 
-		executedQueryListThreadLocal.set(new TreeSet<ExecutedQuery>());
+		resetThreadLocals();
 
-		processConnectionInformation(
-			connectionInformation, "after-commit", e);
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"After commit. Connection-id=" +
+					connectionInformation.getConnectionId());
+		} ;
 	}
 
 	@Override
 	public void onAfterConnectionClose(
 		ConnectionInformation connectionInformation, SQLException e) {
 
-		executedQueryListThreadLocal.set(new TreeSet<ExecutedQuery>());
+		resetThreadLocals();
 
-		processConnectionInformation(connectionInformation, "connection-close", e);
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"After connection close. Connection-id=" +
+					connectionInformation.getConnectionId());
+		}
 	}
 
 	@Override
@@ -96,17 +78,26 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 		StatementInformation statementInformation, long timeElapsedNanos,
 		int[] updateCounts, SQLException e) {
 
-		processStatementInformation(statementInformation, "batch", e);
+		if (e != null) {
+			return;
+		}
+
+		processQuery(
+			statementInformation.getConnectionInformation(),
+			statementInformation.getSqlWithValues());
 	}
 
 	@Override
 	public void onAfterGetConnection(
 		ConnectionInformation connectionInformation, SQLException e) {
 
-		executedQueryListThreadLocal.set(new TreeSet<ExecutedQuery>());
+		resetThreadLocals();
 
-		processConnectionInformation(
-			connectionInformation, "get-connection", e);
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"After get connection. Connection-id=" +
+					connectionInformation.getConnectionId());
+		}
 	}
 
 	@Override
@@ -114,150 +105,131 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 		ConnectionInformation connectionInformation, long timeElapsedNanos,
 		SQLException e) {
 
-		executedQueryListThreadLocal.set(new TreeSet<ExecutedQuery>());
+		resetThreadLocals();
 
-		processConnectionInformation(
-			connectionInformation, "rollback", e);
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"After rollback. Connection-id=" +
+					connectionInformation.getConnectionId());
+		} ;;
 	}
 
 	@Override
 	public void onBeforeCommit(ConnectionInformation connectionInformation) {
 
-		processConnectionInformation(
-			connectionInformation, "before-commit", null);
-
-		handleExecutedQueriesBeforeCommit(
-			connectionInformation, executedQueryListThreadLocal.get());
-	}
-
-	protected void processConnectionInformation(
-		ConnectionInformation connectionInformation, String category,
-		SQLException e) {
-
-		int connectionId = connectionInformation.getConnectionId();
-
-		if (isDebugEnabled()) {
-			String request = getRequestInfo(
-				connectionId, category, null, e);
-
-			logDebug("Operation: " + request);
-		}
-	}
-
-	protected void handleExecutedQueriesBeforeCommit(
-		ConnectionInformation connectionInformation,
-		Set<ExecutedQuery> executedQueryList) {
-
-		Set<ExecutedQuery> addValuesQueryList = new TreeSet<ExecutedQuery>();
-		Set<ExecutedQuery> removeValuesQueryList = new TreeSet<ExecutedQuery>();
-		Set<ExecutedQuery> otherQueryList = new TreeSet<ExecutedQuery>();
-
-		for (ExecutedQuery executedQuery : executedQueryList) {
-			if (executedQuery.getQueryType() == QueryType.INSERT) {
-				addValuesQueryList.add(executedQuery);
-			}
-			else if (executedQuery.getQueryType() == QueryType.UPDATE) {
-				addValuesQueryList.add(executedQuery);
-				removeValuesQueryList.add(executedQuery);
-			}
-			else if (executedQuery.getQueryType() == QueryType.DELETE) {
-				removeValuesQueryList.add(executedQuery);
-			}
-			else {
-				otherQueryList.add(executedQuery);
-			}
-		}
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"Before commit. Connection-id=" +
+					connectionInformation.getConnectionId());
+		} ;
 
 		logQueries(
-			connectionInformation, addValuesQueryList, "Add values queries");
+			connectionInformation, insertQueryListThreadLocal.get(),
+			"Insert queries");
 		logQueries(
-			connectionInformation, removeValuesQueryList,
-			"Remove values queries");
-		logQueries(connectionInformation, otherQueryList, "Other queries");
+			connectionInformation, updateQueryListThreadLocal.get(),
+			"Update queries");
+		logQueries(
+			connectionInformation, deleteQueryListThreadLocal.get(),
+			"Delete queries");
+		logQueries(
+			connectionInformation, otherQueryListThreadLocal.get(),
+			"Other queries");
 	}
 
 	private void logQueries(
-		ConnectionInformation connectionInformation,
-		Set<ExecutedQuery> executedQueryList, String message) {
+		ConnectionInformation connectionInformation, Set<Query> queryList,
+		String message) {
 
-		if (executedQueryList.isEmpty()) {
+		if ((queryList == null) || queryList.isEmpty()) {
+
+			return;
+		}
+
+		if (!_log.isInfoEnabled()) {
+
 			return;
 		}
 
 		int connectionId = connectionInformation.getConnectionId();
 
-		System.out.println(message + " for connection " + connectionId);
+		_log.info(message + ". Connection-id=" + connectionId);
 
-		for (ExecutedQuery executedQuery : executedQueryList) {
-			System.out.println("Query : " + connectionId + "|" + executedQuery);
+		for (Query query : queryList) {
+			_log.info("Query: " + query);
+
+			if (!_log.isDebugEnabled()) {
+				continue;
+			}
+
+			_log.debug("\t modified tables: " + query.getModifiedTables());
+			_log.debug("\t where: " + query.getWhere());
 		}
 	}
 
-	protected void processStatementInformation(
-		StatementInformation statementInformation, String category,
-		SQLException e) {
-
-		ConnectionInformation connectionInformation =
-			statementInformation.getConnectionInformation();
+	protected void processQuery(
+		ConnectionInformation connectionInformation, String sql) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
-		String sql = statementInformation.getSqlWithValues();
+		Query query = new Query(sql);
 
-		sql = StringUtils.trim(sql);
+		if ((query.getQueryType() == null) ||
+			(query.getQueryType() == QueryType.SELECT)) {
 
-		if (StringUtils.isBlank(sql) || StringUtils.startsWithIgnoreCase(
-			sql, "SELECT") || StringUtils.startsWithIgnoreCase(
-				sql, "(SELECT")) {
-
-			if (isDebugEnabled()) {
-				String request = getRequestInfo(connectionId, category, sql, e);
-
-				logDebug("Ignored Query: " + request);
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Ignored Query. connectionId=" + connectionId + ", sql=" +
+						query.getSQL());
 			}
 
 			return;
 		}
 
-		Statement statement = null;
-
-		try {
-			statement = CCJSqlParserUtil.parse(sql);
+		if (query.getQueryType() == QueryType.INSERT) {
+			addQueryToThreadLocal(insertQueryListThreadLocal, query);
 		}
-		catch (JSQLParserException pe) {
-			String request = getRequestInfo(
-				connectionId, category, sql, e);
-
-			System.err.println("Error parsing query: " + request);
-
-			pe.printStackTrace(System.err);
-
-			return;
+		else if (query.getQueryType() == QueryType.UPDATE) {
+			addQueryToThreadLocal(updateQueryListThreadLocal, query);
 		}
-
-		if (statement instanceof Select) {
-			if (isDebugEnabled()) {
-				String request = getRequestInfo(
-					connectionId, category, sql, e);
-
-				logDebug("Ignored Query: " + request);
-			}
-
-			return;
+		else if (query.getQueryType() == QueryType.DELETE) {
+			addQueryToThreadLocal(deleteQueryListThreadLocal, query);
 		}
-
-		ExecutedQuery executedQuery = new ExecutedQuery(statement, category, e);
-
-		executedQueryListThreadLocal.get().add(executedQuery);
+		else {
+			addQueryToThreadLocal(otherQueryListThreadLocal, query);
+		}
 	}
 
-	private ThreadLocal<Set<ExecutedQuery>> executedQueryListThreadLocal =
-		new ThreadLocal<Set<ExecutedQuery>>() {
+	private void addQueryToThreadLocal(
+		ThreadLocal<Set<Query>> queryListThreadLocal, Query query) {
 
-			@Override
-			protected Set<ExecutedQuery> initialValue() {
+		if (queryListThreadLocal.get() == null) {
+			queryListThreadLocal.set(new TreeSet<Query>());
+		}
 
-				return new TreeSet<ExecutedQuery>();
-			}
-		};
+		queryListThreadLocal.get().add(query);
+	}
+
+	protected void resetThreadLocals() {
+
+		insertQueryListThreadLocal.set(new TreeSet<Query>());
+		updateQueryListThreadLocal.set(new TreeSet<Query>());
+		deleteQueryListThreadLocal.set(new TreeSet<Query>());
+		otherQueryListThreadLocal.set(new TreeSet<Query>());
+	}
+
+	private ThreadLocal<Set<Query>> insertQueryListThreadLocal =
+		new ThreadLocal<Set<Query>>();
+
+	private ThreadLocal<Set<Query>> updateQueryListThreadLocal =
+		new ThreadLocal<Set<Query>>();
+
+	private ThreadLocal<Set<Query>> deleteQueryListThreadLocal =
+		new ThreadLocal<Set<Query>>();
+
+	private ThreadLocal<Set<Query>> otherQueryListThreadLocal =
+		new ThreadLocal<Set<Query>>();
+
+	private static Logger _log = LogManager.getLogger(
+		CheckQueriesListener.class);
 }
