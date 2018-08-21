@@ -1,6 +1,6 @@
 rootProject.name = 'references_checker'
 
-include ':check-queries'
+include ':queries-listener'
 include ':database-access'
 include ':references-service'
 include ':references-checker'

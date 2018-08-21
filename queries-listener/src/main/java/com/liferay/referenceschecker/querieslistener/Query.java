@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.checkqueries;
+package com.liferay.referenceschecker.querieslistener;
 
 import java.util.Collections;
 import java.util.List;

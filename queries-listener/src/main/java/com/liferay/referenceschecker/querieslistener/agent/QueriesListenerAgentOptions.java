@@ -12,27 +12,34 @@
  * details.
  */
 
-package com.liferay.referenceschecker.checkqueries;
+package com.liferay.referenceschecker.querieslistener.agent;
 
-import com.p6spy.engine.event.JdbcEventListener;
-import com.p6spy.engine.logging.P6LogOptions;
-import com.p6spy.engine.spy.P6Factory;
 import com.p6spy.engine.spy.P6LoadableOptions;
 import com.p6spy.engine.spy.option.P6OptionsRepository;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * @author Jorge Díaz
  */
-public class CheckQueriesFactory implements P6Factory {
+public class QueriesListenerAgentOptions implements P6LoadableOptions {
 
-	@Override
-	public JdbcEventListener getJdbcEventListener() {
-		return CheckQueriesListener.INSTANCE;
+	public QueriesListenerAgentOptions(
+		final P6OptionsRepository optionsRepository) {
+
+		_optionsRepository = optionsRepository;
 	}
 
 	@Override
-	public P6LoadableOptions getOptions(P6OptionsRepository optionsRepository) {
-		return new P6LogOptions(optionsRepository);
+	public Map<String, String> getDefaults() {
+		return Collections.emptyMap();
 	}
+
+	@Override
+	public void load(Map<String, String> options) {
+	}
+
+	private final P6OptionsRepository _optionsRepository;
 
 }

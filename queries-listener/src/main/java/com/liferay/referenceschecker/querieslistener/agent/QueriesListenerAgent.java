@@ -12,9 +12,10 @@
  * details.
  */
 
-package com.liferay.referenceschecker.checkqueries;
+package com.liferay.referenceschecker.querieslistener.agent;
 
-import com.liferay.referenceschecker.checkqueries.Query.QueryType;
+import com.liferay.referenceschecker.querieslistener.Query;
+import com.liferay.referenceschecker.querieslistener.Query.QueryType;
 
 import com.p6spy.engine.common.ConnectionInformation;
 import com.p6spy.engine.common.StatementInformation;
@@ -31,10 +32,10 @@ import org.apache.log4j.Logger;
 /**
  * @author Jorge Díaz
  */
-public class CheckQueriesListener extends SimpleJdbcEventListener {
+public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
-	public static final CheckQueriesListener INSTANCE =
-		new CheckQueriesListener();
+	public static final QueriesListenerAgent INSTANCE =
+		new QueriesListenerAgent();
 
 	@Override
 	public void onAfterAnyAddBatch(
@@ -235,7 +236,7 @@ public class CheckQueriesListener extends SimpleJdbcEventListener {
 	}
 
 	private static Logger _log = LogManager.getLogger(
-		CheckQueriesListener.class);
+		QueriesListenerAgent.class);
 
 	private ThreadLocal<Set<Query>> _deleteQueriesThreadLocal =
 		new ThreadLocal<>();
