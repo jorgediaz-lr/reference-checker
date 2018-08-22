@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -21,15 +21,19 @@ import java.util.List;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+
+/**
+ * @author Jorge Díaz
+ */
 public class Query implements Comparable<Query> {
 
 	public static List<String> castColumnsToText(
 		String dbType, String prefix, List<String> columns,
 		List<Class<?>> columnTypes, List<Class<?>> castTypes) {
 
-		List<String> castedColumns = new ArrayList<String>();
+		List<String> castedColumns = new ArrayList<>();
 
-		for (int i = 0; i<columns.size(); i++) {
+		for (int i = 0; i < columns.size(); i++) {
 			String column = columns.get(i);
 
 			Class<?> columnType = columnTypes.get(i);
@@ -52,8 +56,8 @@ public class Query implements Comparable<Query> {
 	}
 
 	public Query(Table table, List<String> columns, String condition) {
-		this.columns = rewriteConstants(columns);
-		this.columnsString = StringUtils.join(this.columns, ",");
+		this.columns = _rewriteConstants(columns);
+		columnsString = StringUtils.join(this.columns, ",");
 		this.condition = condition;
 		this.table = table;
 
@@ -78,6 +82,7 @@ public class Query implements Comparable<Query> {
 		}
 
 		Query query = (Query)obj;
+
 		return toString().equals(query.toString());
 	}
 
@@ -109,7 +114,7 @@ public class Query implements Comparable<Query> {
 	}
 
 	public String getSQL(boolean distinct) {
-		return getSQL(distinct, this.columnsString);
+		return getSQL(distinct, columnsString);
 	}
 
 	public String getSQL(boolean distinct, String columnsString) {
@@ -140,7 +145,7 @@ public class Query implements Comparable<Query> {
 	}
 
 	public String getSQLCount() {
-		return getSQL(false, " COUNT(DISTINCT " + this.columnsString + ")");
+		return getSQL(false, " COUNT(DISTINCT " + columnsString + ")");
 	}
 
 	public Table getTable() {
@@ -160,6 +165,7 @@ public class Query implements Comparable<Query> {
 	public String toString() {
 		if (toString == null) {
 			StringBuilder sb = new StringBuilder();
+
 			sb.append(table.getTableName());
 
 			if (condition != null) {
@@ -170,6 +176,7 @@ public class Query implements Comparable<Query> {
 
 			sb.append("#");
 			sb.append(columnsString);
+
 			toString = StringUtils.lowerCase(sb.toString());
 		}
 
@@ -183,8 +190,9 @@ public class Query implements Comparable<Query> {
 	protected String tableAlias;
 	protected String toString;
 
-	private static boolean isNumeric(String str)
+	private static boolean _isNumeric(String str)
 	{
+
 		try
 		{
 			Double.parseDouble(str);
@@ -197,18 +205,22 @@ public class Query implements Comparable<Query> {
 		return true;
 	}
 
-	private List<String> rewriteConstants(List<String> columns) {
-		List<String> newColumns = new ArrayList<String>();
+	private List<String> _rewriteConstants(List<String> columns) {
+		List<String> newColumns = new ArrayList<>();
 
 		for (String column : columns) {
-			boolean isConstant =
-				(column.charAt(0) == '\'') &&
-				(column.charAt(column.length()-1) == '\'');
+			boolean constant = false;
 
-			if (isConstant) {
-				String value = column.substring(1, column.length()-1);
+			if ((column.charAt(0) == '\'') &&
+				(column.charAt(column.length() - 1) == '\'')) {
 
-				if (isNumeric(value)) {
+				constant = true;
+			}
+
+			if (constant) {
+				String value = column.substring(1, column.length() - 1);
+
+				if (_isNumeric(value)) {
 					column = value;
 				}
 			}

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -30,7 +30,8 @@ public class ConfigurationUtil {
 		long liferayVersion = liferayBuildNumber / 100;
 
 		String configurationFile = String.format(
-			CONFIGURATION_FILE, liferayVersion);
+			_CONFIGURATION_FILE, liferayVersion);
+
 		return configurationFile;
 	}
 
@@ -44,24 +45,27 @@ public class ConfigurationUtil {
 
 		if (inputStream == null) {
 			throw new RuntimeException(
-				"File " + configurationFile + " doesn't exists");
+				"File " + configurationFile + " does not exists");
 		}
 
 		Constructor constructor = new Constructor(Configuration.class);
 		TypeDescription configurationDescription = new TypeDescription(
 			Configuration.class);
+
 		configurationDescription.putListPropertyType(
 			"references", Configuration.Reference.class);
 		configurationDescription.putListPropertyType(
 			"ignoreTables", String.class);
 		configurationDescription.putMapPropertyType(
 			"tableToClassNameMapping", String.class, String.class);
+
 		constructor.addTypeDescription(configurationDescription);
+
 		Yaml yaml = new Yaml(constructor);
 
 		return (Configuration)yaml.load(inputStream);
 	}
 
-	private static final String CONFIGURATION_FILE = "configuration_%s.yml";
+	private static final String _CONFIGURATION_FILE = "configuration_%s.yml";
 
 }

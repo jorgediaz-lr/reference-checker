@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -23,7 +23,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 /**
- * @author Brian Wing Shun Chan
+ * @author Jorge Díaz
  */
 public class JDBCUtil {
 

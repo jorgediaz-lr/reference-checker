@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -56,10 +56,9 @@ public class Configuration {
 	public void setTableToClassNameMapping(
 		Map<String, String> tableToClassNameMapping) {
 
-		this.tableToClassNameMapping = new HashMap<String, String>();
+		this.tableToClassNameMapping = new HashMap<>();
 
-		for (
-			Map.Entry<String, String> entry :
+		for (Map.Entry<String, String> entry :
 				tableToClassNameMapping.entrySet()) {
 
 			this.tableToClassNameMapping.put(
@@ -73,28 +72,28 @@ public class Configuration {
 			return columns;
 		}
 
-		public void setColumns(List<String> columns) {
-			this.columns = columns;
-		}
-
 		public String getCondition() {
 			return condition;
-		}
-
-		public void setCondition(String condition) {
-			this.condition = condition;
 		}
 
 		public List<String> getConditionColumns() {
 			return conditionColumns;
 		}
 
-		public void setConditionColumns(List<String> conditionColumns) {
-			this.conditionColumns = conditionColumns;
-		}
-
 		public String getTable() {
 			return table;
+		}
+
+		public void setColumns(List<String> columns) {
+			this.columns = columns;
+		}
+
+		public void setCondition(String condition) {
+			this.condition = condition;
+		}
+
+		public void setConditionColumns(List<String> conditionColumns) {
+			this.conditionColumns = conditionColumns;
 		}
 
 		public void setTable(String table) {
@@ -106,17 +105,17 @@ public class Configuration {
 				condition;
 		}
 
-		private List<String> columns;
-		private List<String> conditionColumns;
-		private String condition;
-		private String table;
+		protected List<String> columns;
+		protected String condition;
+		protected List<String> conditionColumns;
+		protected String table;
 
 	}
 
 	public static class Reference {
 
-		public Boolean isDisplayRaw() {
-			return getDisplayRaw();
+		public Query getDest() {
+			return dest;
 		}
 
 		public Boolean getDisplayRaw() {
@@ -127,22 +126,6 @@ public class Configuration {
 			return displayRaw;
 		}
 
-		public void setDisplayRaw(Boolean displayRaw) {
-			this.displayRaw = displayRaw;
-		}
-
-		public Query getDest() {
-			return dest;
-		}
-
-		public void setDest(Query dest) {
-			this.dest = dest;
-		}
-
-		public Boolean isHidden() {
-			return getHidden();
-		}
-
 		public Boolean getHidden() {
 			if (hidden == null) {
 				return false;
@@ -151,12 +134,28 @@ public class Configuration {
 			return hidden;
 		}
 
-		public void setHidden(Boolean hidden) {
-			this.hidden = hidden;
-		}
-
 		public Query getOrigin() {
 			return origin;
+		}
+
+		public Boolean isDisplayRaw() {
+			return getDisplayRaw();
+		}
+
+		public Boolean isHidden() {
+			return getHidden();
+		}
+
+		public void setDest(Query dest) {
+			this.dest = dest;
+		}
+
+		public void setDisplayRaw(Boolean displayRaw) {
+			this.displayRaw = displayRaw;
+		}
+
+		public void setHidden(Boolean hidden) {
+			this.hidden = hidden;
 		}
 
 		public void setOrigin(Query origin) {
@@ -167,16 +166,16 @@ public class Configuration {
 			return getOrigin() + " => " + String.valueOf(getDest());
 		}
 
-		private Boolean displayRaw;
-		private Boolean hidden;
-		private Query dest;
-		private Query origin;
+		protected Query dest;
+		protected Boolean displayRaw;
+		protected Boolean hidden;
+		protected Query origin;
 
 	}
 
-	private List<String> ignoreColumns;
-	private List<String> ignoreTables;
-	private List<Reference> references;
-	private Map<String, String> tableToClassNameMapping;
+	protected List<String> ignoreColumns;
+	protected List<String> ignoreTables;
+	protected List<Reference> references;
+	protected Map<String, String> tableToClassNameMapping;
 
 }

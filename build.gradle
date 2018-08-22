@@ -1,20 +1,20 @@
 plugins {
-    id "com.liferay.source.formatter" version "2.3.237" apply false
+	id "com.liferay.source.formatter" version "2.3.237" apply false
 }
 
 allprojects {
-    apply plugin: 'java'
-    apply plugin: 'eclipse'
-    apply plugin: 'com.liferay.source.formatter'
+	apply plugin: 'java'
+	apply plugin: 'eclipse'
+	apply plugin: 'com.liferay.source.formatter'
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+	sourceCompatibility = "1.8"
+	targetCompatibility = "1.8"
 
-    repositories {
-        mavenCentral() 
-    }
+	repositories {
+		mavenCentral()
+	}
 
-    check {
-        dependsOn checkSourceFormatting
-    }
+	check {
+		dependsOn checkSourceFormatting
+	}
 }

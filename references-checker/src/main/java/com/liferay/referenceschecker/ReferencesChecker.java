@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -48,6 +48,10 @@ import java.util.TreeMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+
+/**
+ * @author Jorge Díaz
+ */
 public class ReferencesChecker {
 
 	public static long getLiferayBuildNumber(Connection connection)
@@ -89,27 +93,31 @@ public class ReferencesChecker {
 		throws IOException, SQLException {
 
 		this.checkUndefinedTables = checkUndefinedTables;
-		this.dbType = SQLUtil.getDBType(connection);
+		dbType = SQLUtil.getDBType(connection);
 		this.excludeColumns = excludeColumns;
 		this.ignoreNullValues = ignoreNullValues;
 
 		try {
-			this.configuration = getConfiguration(connection);
-			this.tableUtil = getTableUtil(connection, configuration, modelUtil);
+			configuration = getConfiguration(connection);
+
+			tableUtil = getTableUtil(connection, configuration, modelUtil);
 		}
-		catch (IOException e) {
+		catch (IOException ioe) {
 			_log.error(
-				"Error reading configuration_xx.yml file: " + e.getMessage(),
-				e);
-			throw new RuntimeException(e);
+				"Error reading configuration_xx.yml file: " + ioe.getMessage(),
+				ioe);
+
+			throw new RuntimeException(ioe);
 		}
 	}
 
 	public Collection<Reference> calculateReferences(
 		Connection connection, boolean ignoreEmptyTables) {
 
-		ReferenceUtil referenceUtil = new ReferenceUtil(
-			tableUtil, ignoreEmptyTables, checkUndefinedTables);
+		ReferenceUtil referenceUtil = new ReferenceUtil(tableUtil);
+
+		referenceUtil.setCheckUndefinedTables(checkUndefinedTables);
+		referenceUtil.setIgnoreEmptyTables(ignoreEmptyTables);
 
 		return referenceUtil.calculateReferences(connection, configuration);
 	}
@@ -117,7 +125,7 @@ public class ReferencesChecker {
 	public Map<String, Long> calculateTableCount(Connection connection)
 		throws IOException, SQLException {
 
-		Map<String, Long> mapTableCount = new TreeMap<String, Long>();
+		Map<String, Long> mapTableCount = new TreeMap<>();
 
 		for (Table table : tableUtil.getTables()) {
 			long count = TableUtil.countTable(connection, table);
@@ -131,7 +139,7 @@ public class ReferencesChecker {
 	public List<String> dumpDatabaseInfo(Connection connection)
 		throws IOException, SQLException {
 
-		List<String> output = new ArrayList<String>();
+		List<String> output = new ArrayList<>();
 
 		long liferayBuildNumber = getLiferayBuildNumber(connection);
 
@@ -151,7 +159,7 @@ public class ReferencesChecker {
 
 		output.add("");
 
-		List<String> classNamesWithoutTable = new ArrayList<String>();
+		List<String> classNamesWithoutTable = new ArrayList<>();
 
 		for (String className : tableUtil.getClassNames()) {
 			if (!className.contains(".model.")) {
@@ -178,8 +186,8 @@ public class ReferencesChecker {
 			output.add("");
 		}
 
-		List<Table> tablesWithoutClassName = new ArrayList<Table>();
-		List<Table> tablesWithClassName = new ArrayList<Table>();
+		List<Table> tablesWithoutClassName = new ArrayList<>();
+		List<Table> tablesWithClassName = new ArrayList<>();
 
 		for (Table table : tableUtil.getTables()) {
 			if (table.getClassNameId() == -1) {
@@ -212,10 +220,12 @@ public class ReferencesChecker {
 			output.add("");
 		}
 
-		List<String> missingTables = new ArrayList<String>();
+		List<String> missingTables = new ArrayList<>();
 
-		Set<String> configuredTables =
-			configuration.getTableToClassNameMapping().keySet();
+		Map<String, String> tableToClassNameMapping =
+			configuration.getTableToClassNameMapping();
+
+		Set<String> configuredTables = tableToClassNameMapping.keySet();
 
 		for (String configuredTable : configuredTables) {
 			Table table = tableUtil.getTable(configuredTable);
@@ -226,25 +236,25 @@ public class ReferencesChecker {
 		}
 
 		if (!missingTables.isEmpty()) {
-			output.add("Configured tables that doesn't exist:");
+			output.add("Configured tables that does not exist:");
 
 			Collections.sort(missingTables);
 
 			for (String missingTable : missingTables) {
 				output.add(
-					missingTable + "=" + tableUtil.getClassNameFromTableName(
-						missingTable));
+					missingTable + "=" +
+						tableUtil.getClassNameFromTableName(missingTable));
 			}
 
 			output.add("");
 		}
 
-		List<String> missingClassNames = new ArrayList<String>(
-			configuration.getTableToClassNameMapping().values());
+		List<String> missingClassNames = new ArrayList<>(
+			tableToClassNameMapping.values());
 
 		missingClassNames.removeAll(tableUtil.getClassNames());
 
-		List<String> missingClassNamesNoBlank = new ArrayList<String>();
+		List<String> missingClassNamesNoBlank = new ArrayList<>();
 
 		for (String missingClassName : missingClassNames) {
 			if (StringUtils.isNotBlank(missingClassName)) {
@@ -253,7 +263,7 @@ public class ReferencesChecker {
 		}
 
 		if (!missingClassNamesNoBlank.isEmpty()) {
-			output.add("Configured classNames that doesn't exist:");
+			output.add("Configured classNames that does not exist:");
 
 			Collections.sort(missingClassNamesNoBlank);
 
@@ -268,12 +278,10 @@ public class ReferencesChecker {
 	}
 
 	public List<MissingReferences> execute(Connection connection) {
-
 		Collection<Reference> references = calculateReferences(
 			connection, true);
 
-		List<MissingReferences> listMissingReferences =
-			new ArrayList<MissingReferences>();
+		List<MissingReferences> listMissingReferences = new ArrayList<>();
 
 		for (Reference reference : references) {
 			try {
@@ -295,7 +303,9 @@ public class ReferencesChecker {
 				Collection<Object[]> missingReferences = queryInvalidValues(
 					connection, originQuery, destinationQuery);
 
-				if ((missingReferences == null) || missingReferences.size()>0) {
+				if ((missingReferences == null) ||
+					!missingReferences.isEmpty()) {
+
 					listMissingReferences.add(
 						new MissingReferences(reference, missingReferences));
 				}
@@ -315,7 +325,7 @@ public class ReferencesChecker {
 			Connection connection, Query originQuery, Query destinationQuery)
 		throws SQLException {
 
-		Set<Object[]> invalidValuesSet = new LinkedHashSet<Object[]>();
+		Set<Object[]> invalidValuesSet = new LinkedHashSet<>();
 
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -338,8 +348,8 @@ public class ReferencesChecker {
 			while (rs.next()) {
 				Object[] result = new Object[columnsNumber];
 
-				for (int i = 0; i<columnsNumber; i++) {
-					result[i] = rs.getObject(i+1);
+				for (int i = 0; i < columnsNumber; i++) {
+					result[i] = rs.getObject(i + 1);
 				}
 
 				if (isValidValue(result)) {
@@ -359,7 +369,7 @@ public class ReferencesChecker {
 	protected Map<String, Long> getClassNameIdsMapping(Connection connection)
 		throws SQLException {
 
-		Map<String, Long> mapping = new HashMap<String, Long>();
+		Map<String, Long> mapping = new HashMap<>();
 
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -390,7 +400,7 @@ public class ReferencesChecker {
 		long liferayBuildNumber = getLiferayBuildNumber(connection);
 
 		if (liferayBuildNumber == 0) {
-			_log.error("Liferay build number couldn't be retrieved");
+			_log.error("Liferay build number could not be retrieved");
 
 			return null;
 		}
@@ -406,7 +416,10 @@ public class ReferencesChecker {
 			configurationFile);
 
 		if (excludeColumns != null) {
-			configuration.getIgnoreColumns().addAll(excludeColumns);
+			List<String> configurationIgnoreColumns =
+				configuration.getIgnoreColumns();
+
+			configurationIgnoreColumns.addAll(excludeColumns);
 		}
 
 		return configuration;
@@ -451,7 +464,7 @@ public class ReferencesChecker {
 			destinationQuery.getSQL(
 				false, StringUtils.join(destinationColumns, ",")));
 
-		for (int i = 0; i<conditionColumns.size(); i++) {
+		for (int i = 0; i < conditionColumns.size(); i++) {
 			sb.append(" AND ");
 			sb.append(conditionColumns.get(i));
 			sb.append("=");
@@ -497,28 +510,19 @@ public class ReferencesChecker {
 			ModelUtil modelUtil)
 		throws SQLException {
 
-		String dbType = SQLUtil.getDBType(connection);
-
-		DatabaseMetaData metadata = connection.getMetaData();
-
-		String catalog = connection.getCatalog();
-		String schema = null;
-
-		if ((catalog == null) && dbType.equals(SQLUtil.TYPE_ORACLE)) {
-			catalog = metadata.getUserName();
-			schema = catalog;
-		}
-
 		Map<String, String> tableToClassNameMapping =
 			configuration.getTableToClassNameMapping();
 
 		Map<String, Long> classNameToClassNameIdMapping =
 			getClassNameIdsMapping(connection);
 
-		return new TableUtil(
-			metadata, catalog, schema, tableToClassNameMapping,
-			classNameToClassNameIdMapping, configuration.getIgnoreTables(),
-			configuration.getIgnoreColumns(), modelUtil);
+		List<String> ignoreColumns = configuration.getIgnoreColumns();
+
+		List<String> ignoreTables = configuration.getIgnoreTables();
+
+		return TableUtil.getTableUtil(
+			connection, tableToClassNameMapping, classNameToClassNameIdMapping,
+			ignoreColumns, ignoreTables, modelUtil);
 	}
 
 	protected boolean isValidValue(Object[] result) {
@@ -547,6 +551,13 @@ public class ReferencesChecker {
 		return true;
 	}
 
+	protected boolean checkUndefinedTables;
+	protected Configuration configuration;
+	protected String dbType;
+	protected List<String> excludeColumns;
+	protected boolean ignoreNullValues;
+	protected TableUtil tableUtil;
+
 	private boolean _isNull(Object obj) {
 		if (obj == null) {
 			return true;
@@ -554,7 +565,12 @@ public class ReferencesChecker {
 
 		if (obj instanceof Number) {
 			Number n = (Number)obj;
-			return (n.longValue() == 0L);
+
+			if (n.longValue() == 0L) {
+				return true;
+			}
+
+			return false;
 		}
 
 		if (obj instanceof String) {
@@ -565,12 +581,5 @@ public class ReferencesChecker {
 	}
 
 	private static Logger _log = LogManager.getLogger(ReferencesChecker.class);
-
-	private boolean checkUndefinedTables;
-	private Configuration configuration;
-	private String dbType;
-	private List<String> excludeColumns;
-	private boolean ignoreNullValues;
-	private TableUtil tableUtil;
 
 }

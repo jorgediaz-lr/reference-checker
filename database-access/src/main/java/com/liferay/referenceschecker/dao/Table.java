@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -28,6 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+
+/**
+ * @author Jorge Díaz
+ */
 public class Table implements Comparable<Table> {
 
 	public static String getColumnsWithTypes(
@@ -56,31 +60,32 @@ public class Table implements Comparable<Table> {
 		String className, Long classNameId) {
 
 		this.tableName = tableName;
-		this.tableNameLowerCase = StringUtils.lowerCase(tableName);
+		tableNameLowerCase = StringUtils.lowerCase(tableName);
 
 		if (primaryKeys.size() == 1) {
-			this.primaryKey = primaryKeys.get(0);
-			this.compoundPrimaryKey = null;
+			primaryKey = primaryKeys.get(0);
+			compoundPrimaryKey = null;
 		}
 		else {
-			this.primaryKey = null;
-			this.compoundPrimaryKey = primaryKeys.toArray(new String[0]);
+			primaryKey = null;
+			compoundPrimaryKey = primaryKeys.toArray(new String[0]);
 		}
 
 		this.columnNames = columnNames.toArray(new String[0]);
-		this.columnTypes = toIntArray(columnTypes);
-		this.columnTypesClass = new Class[columnTypes.size()];
+		this.columnTypes = _toIntArray(columnTypes);
+		columnTypesClass = new Class<?>[columnTypes.size()];
 
-		for (int i = 0; i<columnTypes.size(); i++) {
+		for (int i = 0; i < columnTypes.size(); i++) {
 			int type = columnTypes.get(i);
-			this.columnTypesClass[i] = SQLUtil.getJdbcTypeClass(type);
+
+			columnTypesClass[i] = SQLUtil.getJdbcTypeClass(type);
 		}
 
 		this.columnTypesSqlName = columnTypesSqlName.toArray(new String[0]);
-		this.columnSizes = toIntArray(columnSizes);
+		this.columnSizes = _toIntArray(columnSizes);
 		this.columnNullables = new boolean[columnNullables.size()];
 
-		for (int i = 0; i<columnNullables.size(); i++) {
+		for (int i = 0; i < columnNullables.size(); i++) {
 			this.columnNullables[i] = columnNullables.get(i);
 		}
 
@@ -112,6 +117,7 @@ public class Table implements Comparable<Table> {
 		}
 
 		Table table = (Table)obj;
+
 		return getTableNameLowerCase().equals(table.getTableNameLowerCase());
 	}
 
@@ -146,8 +152,7 @@ public class Table implements Comparable<Table> {
 	}
 
 	public List<String> getColumnNames(String filter) {
-
-		List<String> list = new ArrayList<String>();
+		List<String> list = new ArrayList<>();
 
 		int pos = filter.indexOf("*");
 
@@ -248,8 +253,7 @@ public class Table implements Comparable<Table> {
 	}
 
 	public List<Class<?>> getColumnTypesClass(Collection<String> columns) {
-
-		List<Class<?>> types = new ArrayList<Class<?>>();
+		List<Class<?>> types = new ArrayList<>();
 
 		for (String column : columns) {
 			Class<?> type = getColumnTypeClass(column);
@@ -295,7 +299,11 @@ public class Table implements Comparable<Table> {
 	}
 
 	public boolean hasColumn(String columnName) {
-		return (getColumnPosition(columnName) != -1);
+		if (getColumnPosition(columnName) != -1) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public boolean hasColumns(String[] columnNames) {
@@ -309,7 +317,11 @@ public class Table implements Comparable<Table> {
 	}
 
 	public boolean hasCompoundPrimKey() {
-		return (compoundPrimaryKey != null);
+		if (compoundPrimaryKey != null) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
@@ -329,7 +341,6 @@ public class Table implements Comparable<Table> {
 	public static class Raw extends Table {
 
 		public Raw(String tableName) {
-
 			this(
 				tableName, new ArrayList<String>(), new ArrayList<String>(),
 				new ArrayList<Integer>(), new ArrayList<String>(),
@@ -360,17 +371,15 @@ public class Table implements Comparable<Table> {
 	protected String[] columnTypesSqlName;
 	protected String[] compoundPrimaryKey;
 	protected Map<String, Integer> mapColumnPosition =
-		new ConcurrentHashMap<String, Integer>();
+		new ConcurrentHashMap<>();
 	protected String primaryKey;
 	protected String tableName;
 	protected String tableNameLowerCase;
-
 	protected String toString;
 
-	/* Backward compatibility with 6.1.20: ArrayUtil.toIntArray doesn't
+	/* Backward compatibility with 6.1.20: ArrayUtil.toIntArray does not
 	 * exists */
-
-	private int[] toIntArray(List<Integer> list) {
+	private int[] _toIntArray(List<Integer> list) {
 		int[] newArray = new int[list.size()];
 
 		for (int i = 0; i < list.size(); i++) {

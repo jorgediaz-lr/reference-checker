@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -36,9 +36,11 @@ public class Reference implements Comparable<Reference>, Cloneable {
 	}
 
 	public Reference clone() {
-		Reference copy = new Reference(this.originQuery, this.destinationQuery);
-		copy.setHidden(this.isHidden());
-		copy.setRaw(this.isRaw());
+		Reference copy = new Reference(originQuery, destinationQuery);
+
+		copy.setHidden(isHidden());
+		copy.setRaw(isRaw());
+
 		return copy;
 	}
 
@@ -61,9 +63,14 @@ public class Reference implements Comparable<Reference>, Cloneable {
 
 		Reference ref = (Reference)obj;
 
-		if (this.isRaw() || ref.isRaw()) {
-			return originQuery.equals(ref.originQuery) &&
-				destinationQuery.equals(ref.destinationQuery);
+		if (isRaw() || ref.isRaw()) {
+			if (originQuery.equals(ref.originQuery) &&
+				destinationQuery.equals(ref.destinationQuery)) {
+
+				return true;
+			}
+
+			return false;
 		}
 
 		return originQuery.equals(ref.originQuery);
@@ -97,7 +104,6 @@ public class Reference implements Comparable<Reference>, Cloneable {
 	}
 
 	public String toString() {
-
 		String rawRule = isRaw() ? "raw" : StringUtils.EMPTY;
 
 		return String.valueOf(originQuery) + " => " +

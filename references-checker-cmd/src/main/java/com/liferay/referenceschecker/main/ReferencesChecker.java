@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -47,6 +47,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+
+/**
+ * @author Jorge Díaz
+ */
 public class ReferencesChecker {
 
 	public static void main(String[] args) throws Exception {
@@ -96,12 +100,12 @@ public class ReferencesChecker {
 
 		Connection connection = null;
 
-		ReferencesChecker referenceChecker;
+		ReferencesChecker referencesChecker;
 
 		try {
 			connection = DataAccess.getConnection();
 
-			referenceChecker = new ReferencesChecker(
+			referencesChecker = new ReferencesChecker(
 				connection, filenamePrefix, filenameSuffix,
 				missingReferencesLimit, checkUndefinedTables);
 		}
@@ -114,15 +118,15 @@ public class ReferencesChecker {
 		}
 
 		if (commandArguments.showInformation()) {
-			referenceChecker.dumpDatabaseInfo();
+			referencesChecker.dumpDatabaseInfo();
 		}
 
 		if (commandArguments.showRelations()) {
-			referenceChecker.calculateReferences();
+			referencesChecker.calculateReferences();
 		}
 
 		if (commandArguments.countTables()) {
-			referenceChecker.calculateTableCount();
+			referencesChecker.calculateTableCount();
 		}
 
 		if (commandArguments.showMissingReferences() ||
@@ -130,7 +134,7 @@ public class ReferencesChecker {
 			 !commandArguments.showRelations() &&
 			 !commandArguments.countTables())) {
 
-			referenceChecker.execute();
+			referencesChecker.execute();
 		}
 	}
 
@@ -145,9 +149,8 @@ public class ReferencesChecker {
 
 		ModelUtil modelUtil = new ModelUtilImpl();
 
-		this.referencesChecker =
-			new com.liferay.referenceschecker.ReferencesChecker(
-				connection, null, true, checkUndefinedTables, modelUtil);
+		referencesChecker = new com.liferay.referenceschecker.ReferencesChecker(
+			connection, null, true, checkUndefinedTables, modelUtil);
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)
@@ -205,12 +208,12 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		String[] headers = new String[] {
-			"origin table", "attributes", "destination table", "attributes"};
+		String[] headers =
+			{"origin table", "attributes", "destination table", "attributes"};
 
 		List<String> outputList =
 			ReferencesCheckerOutput.generateCSVOutputMappingList(
-					Arrays.asList(headers), references);
+				Arrays.asList(headers), references);
 
 		String outputFile = _getOutputFileName("references", "csv");
 
@@ -225,7 +228,7 @@ public class ReferencesChecker {
 		long endTime = System.currentTimeMillis();
 
 		System.out.println("");
-		System.out.println("Total time: " + (endTime-startTime) + " ms");
+		System.out.println("Total time: " + (endTime - startTime) + " ms");
 		System.out.println("Output was written to file: " + outputFile);
 	}
 
@@ -245,11 +248,10 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		String[] headers = new String[] {"table", "count"};
+		String[] headers = {"table", "count"};
 
-		List<String> outputList =
-			ReferencesCheckerOutput.generateCSVOutputMap(
-					Arrays.asList(headers), mapTableCount);
+		List<String> outputList = ReferencesCheckerOutput.generateCSVOutputMap(
+			Arrays.asList(headers), mapTableCount);
 
 		String outputFile = _getOutputFileName("tablesCount", "csv");
 
@@ -264,12 +266,11 @@ public class ReferencesChecker {
 		long endTime = System.currentTimeMillis();
 
 		System.out.println("");
-		System.out.println("Total time: " + (endTime-startTime) + " ms");
+		System.out.println("Total time: " + (endTime - startTime) + " ms");
 		System.out.println("Output was written to file: " + outputFile);
 	}
 
 	protected void dumpDatabaseInfo() throws IOException, SQLException {
-
 		long startTime = System.currentTimeMillis();
 
 		Connection connection = null;
@@ -298,12 +299,11 @@ public class ReferencesChecker {
 		long endTime = System.currentTimeMillis();
 
 		System.out.println("");
-		System.out.println("Total time: " + (endTime-startTime) + " ms");
+		System.out.println("Total time: " + (endTime - startTime) + " ms");
 		System.out.println("Output was written to file: " + outputFile);
 	}
 
 	protected void execute() throws IOException, SQLException {
-
 		long startTime = System.currentTimeMillis();
 
 		List<MissingReferences> listMissingReferences = null;
@@ -319,9 +319,10 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		String[] headers = new String[] {
+		String[] headers = {
 			"origin table", "attributes", "destination table", "attributes",
-			"#", "missing references"};
+			"#", "missing references"
+		};
 
 		List<String> outputList =
 			ReferencesCheckerOutput.generateCSVOutputCheckReferences(
@@ -341,9 +342,14 @@ public class ReferencesChecker {
 		long endTime = System.currentTimeMillis();
 
 		System.out.println("");
-		System.out.println("Total time: " + (endTime-startTime) + " ms");
+		System.out.println("Total time: " + (endTime - startTime) + " ms");
 		System.out.println("Output was written to file: " + outputFile);
 	}
+
+	protected String filenamePrefix;
+	protected String filenameSuffix;
+	protected int missingReferencesLimit;
+	protected com.liferay.referenceschecker.ReferencesChecker referencesChecker;
 
 	private static File _getJarFile() throws Exception {
 		ProtectionDomain protectionDomain =
@@ -370,10 +376,5 @@ public class ReferencesChecker {
 	private String _getOutputFileName(String name, String extension) {
 		return filenamePrefix + name + filenameSuffix + "." + extension;
 	}
-
-	private String filenamePrefix;
-	private String filenameSuffix;
-	private int missingReferencesLimit;
-	private com.liferay.referenceschecker.ReferencesChecker referencesChecker;
 
 }

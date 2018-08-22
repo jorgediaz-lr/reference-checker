@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,6 +20,7 @@ import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.dao.TableUtil;
 
 import java.sql.Connection;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,13 +42,8 @@ import org.apache.log4j.Logger;
  */
 public class ReferenceUtil {
 
-	public ReferenceUtil(
-		TableUtil tableUtil, boolean ignoreEmptyTables,
-		boolean checkUndefinedTables) {
-
+	public ReferenceUtil(TableUtil tableUtil) {
 		this.tableUtil = tableUtil;
-		this.checkUndefinedTables = checkUndefinedTables;
-		this.ignoreEmptyTables = ignoreEmptyTables;
 	}
 
 	public Collection<Reference> calculateReferences(
@@ -55,8 +51,7 @@ public class ReferenceUtil {
 
 		List<Reference> references = getReferences(connection, configuration);
 
-		Map<Reference, Reference> referencesMap =
-			new TreeMap<Reference, Reference>();
+		Map<Reference, Reference> referencesMap = new TreeMap<>();
 
 		for (Reference reference : references) {
 			referencesMap.put(reference, reference);
@@ -77,7 +72,7 @@ public class ReferenceUtil {
 	}
 
 	public Set<String> getNotCheckedColumns(Collection<Reference> references) {
-		Set<String> idColumns = new TreeSet<String>();
+		Set<String> idColumns = new TreeSet<>();
 
 		for (Table table : tableUtil.getTables()) {
 			String tableName = StringUtils.lowerCase(table.getTableName());
@@ -100,7 +95,7 @@ public class ReferenceUtil {
 				if (columnName.contains("id") || columnName.contains("pk") ||
 					columnName.contains("key")) {
 
-					idColumns.add(tableName+"."+columnName);
+					idColumns.add(tableName + "." + columnName);
 				}
 			}
 		}
@@ -111,11 +106,16 @@ public class ReferenceUtil {
 			}
 
 			Query query = reference.getOriginQuery();
-			String tableName = query.getTable().getTableName();
+
+			Table table = query.getTable();
+
+			String tableName = table.getTableName();
 
 			for (String columnName : query.getColumns()) {
 				String idColumn = tableName + "." + columnName;
+
 				idColumn = StringUtils.lowerCase(idColumn);
+
 				idColumns.remove(idColumn);
 			}
 		}
@@ -124,9 +124,9 @@ public class ReferenceUtil {
 	}
 
 	public List<Reference> getReferences(
-			Connection connection, Configuration configuration) {
+		Connection connection, Configuration configuration) {
 
-		List<Reference> referencesList = new ArrayList<Reference>();
+		List<Reference> referencesList = new ArrayList<>();
 
 		for (Configuration.Reference referenceConfig :
 				configuration.getReferences()) {
@@ -144,7 +144,8 @@ public class ReferenceUtil {
 			catch (Exception e) {
 				_log.error(
 					"Error parsing reference config: " + referenceConfig +
-					" EXCEPTION: " + e.getClass() + " - " + e.getMessage(), e);
+						" EXCEPTION: " + e.getClass() + " - " + e.getMessage(),
+					e);
 			}
 		}
 
@@ -171,7 +172,7 @@ public class ReferenceUtil {
 			referenceConfig.getDest());
 
 		/* generate references */
-		List<Reference> listReferences = new ArrayList<Reference>();
+		List<Reference> listReferences = new ArrayList<>();
 
 		for (Table originTable : originTables) {
 			if (!checkUndefinedTables && (originTable.getClassNameId() == -1)) {
@@ -198,18 +199,20 @@ public class ReferenceUtil {
 			listReferences.addAll(
 				getReferences(
 					connection, referenceConfig, originTable,
-						destinationTables));
+					destinationTables));
 		}
 
 		return listReferences;
 	}
 
 	protected <T> List<List<T>> cartesianProduct(List<List<T>> lists) {
-		List<List<T>> resultLists = new ArrayList<List<T>>();
+		List<List<T>> resultLists = new ArrayList<>();
 
-		if (lists.size() == 0) {
+		if (lists.isEmpty()) {
 			List<T> emptyList = Collections.emptyList();
+
 			resultLists.add(emptyList);
+
 			return resultLists;
 		}
 
@@ -219,9 +222,11 @@ public class ReferenceUtil {
 
 		for (T condition : firstList) {
 			for (List<T> remainingList : remainingLists) {
-				ArrayList<T> resultList = new ArrayList<T>();
+				ArrayList<T> resultList = new ArrayList<>();
+
 				resultList.add(condition);
 				resultList.addAll(remainingList);
+
 				resultLists.add(resultList);
 			}
 		}
@@ -232,10 +237,10 @@ public class ReferenceUtil {
 	protected List<Reference> filterReferencesByDestinationClassName(
 		List<Reference> references, String filter) {
 
-		List<Reference> selectedReferences = new ArrayList<Reference>();
+		List<Reference> selectedReferences = new ArrayList<>();
 
 		for (Reference reference : references) {
-			Table destinationTable = getDestinationTable(reference);
+			Table destinationTable = _getDestinationTable(reference);
 
 			String className = null;
 
@@ -244,8 +249,7 @@ public class ReferenceUtil {
 			}
 
 			if (StringUtils.equals(filter, className) ||
-				(_STAR.equals(filter) &&
-				 StringUtils.isNotBlank(className))) {
+				(_STAR.equals(filter) && StringUtils.isNotBlank(className))) {
 
 				selectedReferences.add(reference);
 			}
@@ -277,7 +281,7 @@ public class ReferenceUtil {
 	protected Collection<Reference> getBestMatchingReferences2(
 		Query originQuery, Collection<Reference> references) {
 
-		if (references.size() == 0) {
+		if (references.isEmpty()) {
 			return Collections.emptyList();
 		}
 
@@ -288,23 +292,23 @@ public class ReferenceUtil {
 		Table originTable = originQuery.getTable();
 
 		String commonPrefix = StringUtils.EMPTY;
-		List<Reference> bestReferences = new ArrayList<Reference>();
+		List<Reference> bestReferences = new ArrayList<>();
 
 		for (Reference reference : references) {
-			Table destinationTable = getDestinationTable(reference);
+			Table destinationTable = _getDestinationTable(reference);
 
 			if (destinationTable == null) {
 				continue;
 			}
 
-			String newCommonPrefix = getGreatestCommonPrefix(
+			String newCommonPrefix = _getGreatestCommonPrefix(
 				originTable.getTableName(), destinationTable.getTableName());
 
 			if ((commonPrefix.length() < newCommonPrefix.length()) &&
 				(newCommonPrefix.length() >= 2)) {
 
 				commonPrefix = newCommonPrefix;
-				bestReferences = new ArrayList<Reference>();
+				bestReferences = new ArrayList<>();
 			}
 
 			if (commonPrefix.length() == newCommonPrefix.length()) {
@@ -318,7 +322,7 @@ public class ReferenceUtil {
 	protected List<List<String>> getListColumns(
 		Table table, List<String> columnsFilters) {
 
-		List<List<String>> valuesAllColumns = new ArrayList<List<String>>();
+		List<List<String>> valuesAllColumns = new ArrayList<>();
 
 		for (String column : columnsFilters) {
 			List<String> valuesColumns = table.getColumnNames(column);
@@ -339,7 +343,9 @@ public class ReferenceUtil {
 			originQueryConf.getCondition());
 
 		Configuration.Query destinationQueryConf = referenceConfig.getDest();
+
 		String destinationTableName = destinationQueryConf.getTable();
+
 		Table destinationTable = tableUtil.getTable(destinationTableName);
 
 		if (destinationTable == null) {
@@ -394,8 +400,8 @@ public class ReferenceUtil {
 			originColumns.equals(destinationColumns)) {
 
 			_log.debug(
-				"Ignoring reference because origin and destination " +
-					"tables and columns are the same ones");
+				"Ignoring reference because origin and destination tables " +
+					"and columns are the same ones");
 
 			return null;
 		}
@@ -435,8 +441,8 @@ public class ReferenceUtil {
 			}
 			else if (_log.isDebugEnabled()) {
 				_log.debug(
-					"Ignoring destinationTable because className is undefined" +
-						": " + destinationTable);
+					"Ignoring destinationTable because className is " +
+						"undefined: " + destinationTable);
 			}
 		}
 
@@ -469,8 +475,7 @@ public class ReferenceUtil {
 				null, null);
 		}
 
-		Map<Query, List<Reference>> mapReferences =
-			new HashMap<Query, List<Reference>>();
+		Map<Query, List<Reference>> mapReferences = new HashMap<>();
 
 		List<String> destinationColumns = destinationConfig.getColumns();
 		String destinationCondition = destinationConfig.getCondition();
@@ -499,11 +504,13 @@ public class ReferenceUtil {
 					mapReferences.put(originQuery, new ArrayList<Reference>());
 				}
 
-				mapReferences.get(originQuery).add(reference);
+				List<Reference> list = mapReferences.get(originQuery);
+
+				list.add(reference);
 			}
 		}
 
-		List<Reference> listReferences = new ArrayList<Reference>();
+		List<Reference> listReferences = new ArrayList<>();
 
 		for (Entry<Query, List<Reference>> entry : mapReferences.entrySet()) {
 			Collection<Reference> bestReferences = getBestMatchingReferences(
@@ -546,7 +553,7 @@ public class ReferenceUtil {
 			destinationCondition = null;
 		}
 
-		List<Reference> listReferences = new ArrayList<Reference>();
+		List<Reference> listReferences = new ArrayList<>();
 
 		for (List<String> originColumnsReplaced : listOriginColumnsReplaced) {
 			Reference reference = getReference(
@@ -581,11 +588,11 @@ public class ReferenceUtil {
 				return false;
 			}
 
-			boolean isConstant =
+			boolean constant =
 				(column.charAt(0) == '\'') &&
-				(column.charAt(column.length()-1) == '\'');
+				(column.charAt(column.length() - 1) == '\'');
 
-			if (isConstant || table.hasColumn(column)) {
+			if (constant || table.hasColumn(column)) {
 				continue;
 			}
 
@@ -595,9 +602,28 @@ public class ReferenceUtil {
 		return true;
 	}
 
+	public boolean isCheckUndefinedTables() {
+
+		return checkUndefinedTables;
+	}
+
+	public void setCheckUndefinedTables(boolean checkUndefinedTables) {
+		this.checkUndefinedTables = checkUndefinedTables;
+	}
+
+	public boolean isIgnoreEmptyTables() {
+		return ignoreEmptyTables;
+	}
+
+	public void setIgnoreEmptyTables(boolean ignoreEmptyTables) {
+		this.ignoreEmptyTables = ignoreEmptyTables;
+	}
+
 	protected String replaceVars(String text) {
 		int pos = text.indexOf("${");
-		String substring = text.substring(pos+2);
+
+		String substring = text.substring(pos + 2);
+
 		pos = substring.indexOf("}");
 
 		if (pos == -1) {
@@ -629,23 +655,26 @@ public class ReferenceUtil {
 
 		if (primaryKeyColumn != null) {
 			primaryKeyColumnFirstUpper = WordUtils.capitalize(
-				primaryKeyColumn, new char[]{});
+				primaryKeyColumn, new char[0]);
 		}
 
 		String className = table.getClassName();
 		long classNameId = table.getClassNameId();
 		String tableName = table.getTableName();
+
 		return StringUtils.replaceEach(
-				text,
-				new String[] {
-					"${" + varPrefix + ".className}",
-					"${" + varPrefix + ".classNameId}",
-					"${" + varPrefix + ".primaryKey}",
-					"${" + varPrefix + ".PrimaryKey}",
-					"${" + varPrefix + ".tableName}"},
-				new String[] {
-					className, Long.toString(classNameId), primaryKeyColumn,
-					primaryKeyColumnFirstUpper, tableName });
+			text,
+			new String[] {
+				"${" + varPrefix + ".className}",
+				"${" + varPrefix + ".classNameId}",
+				"${" + varPrefix + ".primaryKey}",
+				"${" + varPrefix + ".PrimaryKey}",
+				"${" + varPrefix + ".tableName}"
+			},
+			new String[] {
+				className, String.valueOf(classNameId), primaryKeyColumn,
+				primaryKeyColumnFirstUpper, tableName
+			});
 	}
 
 	protected List<String> replaceVars(
@@ -655,7 +684,7 @@ public class ReferenceUtil {
 			return null;
 		}
 
-		List<String> newList = new ArrayList<String>();
+		List<String> newList = new ArrayList<>();
 
 		for (String text : list) {
 			text = replaceVars(originTable, destinationTable, text);
@@ -688,7 +717,7 @@ public class ReferenceUtil {
 		return text;
 	}
 
-	private Table getDestinationTable(Reference reference) {
+	private Table _getDestinationTable(Reference reference) {
 		Query destinationQuery = reference.getDestinationQuery();
 
 		if (destinationQuery == null) {
@@ -698,7 +727,7 @@ public class ReferenceUtil {
 		return destinationQuery.getTable();
 	}
 
-	private String getGreatestCommonPrefix(String a, String b) {
+	private String _getGreatestCommonPrefix(String a, String b) {
 		int minLength = Math.min(a.length(), b.length());
 
 		for (int i = 0; i < minLength; i++) {
@@ -714,8 +743,9 @@ public class ReferenceUtil {
 
 	private static Logger _log = LogManager.getLogger(ReferenceUtil.class);
 
-	private boolean checkUndefinedTables;
-	private boolean ignoreEmptyTables;
-	private TableUtil tableUtil;
+	protected boolean checkUndefinedTables;
+
+	protected boolean ignoreEmptyTables;
+	protected TableUtil tableUtil;
 
 }

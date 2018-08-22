@@ -1,7 +1,5 @@
-package com.liferay.referenceschecker.portal;
-
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,6 +11,8 @@ package com.liferay.referenceschecker.portal;
  * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
  * details.
  */
+
+package com.liferay.referenceschecker.portal;
 
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 
@@ -75,10 +75,11 @@ public class ReflectionUtil {
 
 			return method.invoke(object, arg);
 		}
-		catch (NoSuchMethodException e) {
+		catch (NoSuchMethodException nsme) {
 			throw new RuntimeException(
 				"invokeMethod: " + methodName + " method not found for " +
-				object, e);
+					object,
+				nsme);
 		}
 		catch (Exception e) {
 			String cause = null;
@@ -89,8 +90,10 @@ public class ReflectionUtil {
 			}
 
 			throw new RuntimeException(
-				"invokeMethod: " + methodName + " method for " +
-				object + ": " + cause, e);
+				"invokeMethod: " + methodName + " method for " + object + ": " +
+					cause,
+				e);
 		}
 	}
+
 }

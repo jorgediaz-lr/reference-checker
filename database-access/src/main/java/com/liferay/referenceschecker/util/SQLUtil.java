@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,12 +14,21 @@
 
 package com.liferay.referenceschecker.util;
 
+import java.math.BigDecimal;
+
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
 
 import org.apache.commons.lang3.StringUtils;
+
+/**
+ * @author Jorge Díaz
+ */
 public class SQLUtil {
 
 	public static final String TYPE_DB2 = "db2";
@@ -77,8 +86,9 @@ public class SQLUtil {
 
 		String dbName = databaseMetaData.getDatabaseProductName();
 
-		if (StringUtils.startsWithIgnoreCase(dbName, "DB2"))
+		if (StringUtils.startsWithIgnoreCase(dbName, "DB2")) {
 			return TYPE_DB2;
+		}
 
 		if (StringUtils.startsWithIgnoreCase(dbName, "HSQL")) {
 			return TYPE_HYPERSONIC;
@@ -124,59 +134,72 @@ public class SQLUtil {
 			case Types.LONGVARCHAR:
 			case Types.CLOB:
 				result = String.class;
+
 				break;
 
 			case Types.NUMERIC:
 			case Types.DECIMAL:
-				result = java.math.BigDecimal.class;
+				result = BigDecimal.class;
+
 				break;
 
 			case Types.BIT:
 			case Types.BOOLEAN:
 				result = Boolean.class;
+
 				break;
 
 			case Types.TINYINT:
 				result = Byte.class;
+
 				break;
 
 			case Types.SMALLINT:
 				result = Short.class;
+
 				break;
 
 			case Types.INTEGER:
 				result = Integer.class;
+
 				break;
 
 			case Types.BIGINT:
 				result = Long.class;
+
 				break;
 
 			case Types.REAL:
 			case Types.FLOAT:
 				result = Float.class;
+
 				break;
 
 			case Types.DOUBLE:
 				result = Double.class;
+
 				break;
 
 			case Types.BINARY:
 			case Types.VARBINARY:
 			case Types.LONGVARBINARY:
 				result = Byte[].class;
+
 				break;
 
 			case Types.DATE:
-				result = java.sql.Date.class;
+				result = Date.class;
+
 				break;
 
 			case Types.TIME:
-				result = java.sql.Time.class;
+				result = Time.class;
+
 				break;
 
 			case Types.TIMESTAMP:
-				result = java.sql.Timestamp.class;
+				result = Timestamp.class;
+
 				break;
 		}
 

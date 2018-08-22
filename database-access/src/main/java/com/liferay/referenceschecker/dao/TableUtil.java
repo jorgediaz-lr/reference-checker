@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -16,6 +16,7 @@ package com.liferay.referenceschecker.dao;
 
 import com.liferay.referenceschecker.model.ModelUtil;
 import com.liferay.referenceschecker.util.JDBCUtil;
+import com.liferay.referenceschecker.util.SQLUtil;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -37,6 +38,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+
+/**
+ * @author Jorge Díaz
+ */
 public class TableUtil {
 
 	public static long countTable(Connection connection, Table table) {
@@ -90,38 +95,54 @@ public class TableUtil {
 		return count;
 	}
 
-	public TableUtil(
-			DatabaseMetaData databaseMetaData, String catalog, String schema,
-			Map<String, String> tableToClassNameMapping,
+	public static TableUtil getTableUtil(
+			Connection connection, Map<String, String> tableToClassNameMapping,
 			Map<String, Long> classNameToClassNameIdMapping,
-			List<String> ignoreTables, List<String> ignoreColumns,
+			List<String> ignoreColumns, List<String> ignoreTables,
 			ModelUtil modelUtil)
 		throws SQLException {
 
-		this.tableToClassNameMapping = new HashMap<String, String>(
-			tableToClassNameMapping);
+		String dbType = SQLUtil.getDBType(connection);
 
-		this.classNameToTableMapping = initClassNameToTableMapping(
-			tableToClassNameMapping);
+		DatabaseMetaData databaseMetaData = connection.getMetaData();
 
-		this.classNameToClassNameIdMapping = new HashMap<String, Long>(
-			classNameToClassNameIdMapping);
+		String catalog = connection.getCatalog();
+		String schema = null;
 
-		this.ignoreColumns = initIgnoreColumns(ignoreColumns);
+		if ((catalog == null) && dbType.equals(SQLUtil.TYPE_ORACLE)) {
+			catalog = databaseMetaData.getUserName();
 
-		this.ignoreTables = new ArrayList<String>(ignoreTables);
-
-		this.modelUtil = modelUtil;
-
-		if (this.modelUtil != null) {
-			this.modelUtil.initModelMappings(
-				classNameToClassNameIdMapping.keySet());
+			schema = catalog;
 		}
 
-		Set<String> tableNames = getTableNames(
+		TableUtil tableUtil = new TableUtil();
+
+		tableUtil.tableToClassNameMapping = new HashMap<>(
+			tableToClassNameMapping);
+
+		tableUtil.initClassNameToTableMapping(tableToClassNameMapping);
+
+		tableUtil.classNameToClassNameIdMapping = new HashMap<>(
+			classNameToClassNameIdMapping);
+
+		tableUtil.initIgnoreColumns(ignoreColumns);
+
+		tableUtil.ignoreTables = new ArrayList<>(ignoreTables);
+
+		tableUtil.modelUtil = modelUtil;
+
+		if (modelUtil != null) {
+			modelUtil.initModelMappings(classNameToClassNameIdMapping.keySet());
+
+			tableUtil.modelUtil = modelUtil;
+		}
+
+		Set<String> tableNames = tableUtil.getTableNames(
 			databaseMetaData, catalog, schema, "%");
 
-		addTables(databaseMetaData, catalog, schema, tableNames);
+		tableUtil.addTables(databaseMetaData, catalog, schema, tableNames);
+
+		return tableUtil;
 	}
 
 	public void addTable(
@@ -137,7 +158,7 @@ public class TableUtil {
 		DatabaseMetaData databaseMetaData, String catalog, String schema,
 		Collection<String> tableNames) {
 
-		this.tableMap.putAll(
+		tableMap.putAll(
 			initTableMap(databaseMetaData, catalog, schema, tableNames));
 		this.tableNames.addAll(tableNames);
 	}
@@ -170,13 +191,12 @@ public class TableUtil {
 	}
 
 	public List<Table> getTables() {
-		return new ArrayList<Table>(tableMap.values());
+		return new ArrayList<>(tableMap.values());
 	}
 
 	public List<Table> getTables(String filter) {
-
 		if (StringUtils.isBlank(filter) || "*".equals(filter)) {
-			return this.getTables();
+			return getTables();
 		}
 
 		if (filter.endsWith("*")) {
@@ -184,7 +204,7 @@ public class TableUtil {
 
 			tablePrefix = StringUtils.lowerCase(tablePrefix);
 
-			List<Table> tableList = new ArrayList<Table>();
+			List<Table> tableList = new ArrayList<>();
 
 			for (Table table : getTables()) {
 				String tableNameLowerCase = table.getTableNameLowerCase();
@@ -203,7 +223,7 @@ public class TableUtil {
 
 			tableSuffix = StringUtils.lowerCase(tableSuffix);
 
-			List<Table> tableList = new ArrayList<Table>();
+			List<Table> tableList = new ArrayList<>();
 
 			for (Table table : getTables()) {
 				String tableNameLowerCase = table.getTableNameLowerCase();
@@ -216,7 +236,7 @@ public class TableUtil {
 			return tableList;
 		}
 
-		Table table = this.getTable(filter);
+		Table table = getTable(filter);
 
 		if (table == null) {
 			return Collections.emptyList();
@@ -271,7 +291,7 @@ public class TableUtil {
 	}
 
 	public boolean isTableEmpty(
-			Connection connection, Table table, String whereClause) {
+		Connection connection, Table table, String whereClause) {
 
 		String key = table.getTableNameLowerCase();
 
@@ -279,27 +299,26 @@ public class TableUtil {
 			key = key.concat("_").concat(whereClause);
 		}
 
-		Boolean isTableEmpty = emptyTableCache.get(key);
+		Boolean tableEmpty = emptyTableCache.get(key);
 
-		if (isTableEmpty != null) {
-			return isTableEmpty;
+		if (tableEmpty != null) {
+			return tableEmpty;
 		}
 
 		if (whereClause == null) {
-			isTableEmpty = (TableUtil.countTable(connection, table, null) <= 0);
+			tableEmpty = countTable(connection, table, null) <= 0;
 		}
 		else {
-			isTableEmpty = isTableEmpty(connection, table);
+			tableEmpty = isTableEmpty(connection, table);
 
-			if (!isTableEmpty) {
-				isTableEmpty =
-					(TableUtil.countTable(connection, table, whereClause) <= 0);
+			if (!tableEmpty) {
+				tableEmpty = countTable(connection, table, whereClause) <= 0;
 			}
 		}
 
-		emptyTableCache.put(key, isTableEmpty);
+		emptyTableCache.put(key, tableEmpty);
 
-		return isTableEmpty;
+		return tableEmpty;
 	}
 
 	public void removeTable(String tableName) {
@@ -320,7 +339,7 @@ public class TableUtil {
 			String tableName)
 		throws SQLException {
 
-		List<String> primaryKeys = new ArrayList<String>();
+		List<String> primaryKeys = new ArrayList<>();
 
 		ResultSet rsPK = null;
 
@@ -349,11 +368,11 @@ public class TableUtil {
 			JDBCUtil.cleanUp(rsPK);
 		}
 
-		List<String> columnNames = new ArrayList<String>();
-		List<Integer> columnDataTypes = new ArrayList<Integer>();
-		List<String> columnTypeNames = new ArrayList<String>();
-		List<Integer> columnSizes = new ArrayList<Integer>();
-		List<Boolean> columnNullables = new ArrayList<Boolean>();
+		List<String> columnNames = new ArrayList<>();
+		List<Integer> columnDataTypes = new ArrayList<>();
+		List<String> columnTypeNames = new ArrayList<>();
+		List<Integer> columnSizes = new ArrayList<>();
+		List<Boolean> columnNullables = new ArrayList<>();
 
 		ResultSet rsCols = null;
 
@@ -390,7 +409,7 @@ public class TableUtil {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
 						columnName + " " + dataType + " " + typeName + " " +
-						columnSize + " " + nullable);
+							columnSize + " " + nullable);
 				}
 			}
 		}
@@ -402,7 +421,7 @@ public class TableUtil {
 			return null;
 		}
 
-		String className = this.getClassNameFromTableName(tableName);
+		String className = getClassNameFromTableName(tableName);
 
 		if (className == null) {
 			if (modelUtil != null) {
@@ -415,7 +434,7 @@ public class TableUtil {
 			else {
 				_log.warn(
 					"Mapping " + tableName + " => " + className +
-					" was retrieved from model");
+						" was retrieved from model");
 			}
 		}
 
@@ -430,7 +449,7 @@ public class TableUtil {
 			String tableNamePattern)
 		throws SQLException {
 
-		Set<String> tableNames = new TreeSet<String>();
+		Set<String> tableNames = new TreeSet<>();
 
 		ResultSet rs = null;
 
@@ -464,14 +483,12 @@ public class TableUtil {
 		return tableNames;
 	}
 
-	protected Map<String, String> initClassNameToTableMapping(
+	protected void initClassNameToTableMapping(
 		Map<String, String> tableToClassNameMapping) {
 
-		Map<String, String> classNameToTableMapping =
-			new HashMap<String, String>();
+		Map<String, String> classNameToTableMapping = new HashMap<>();
 
-		for (
-			Map.Entry<String, String> entry :
+		for (Map.Entry<String, String> entry :
 				tableToClassNameMapping.entrySet()) {
 
 			if (StringUtils.isBlank(entry.getValue())) {
@@ -482,11 +499,11 @@ public class TableUtil {
 				entry.getValue(), StringUtils.lowerCase(entry.getKey()));
 		}
 
-		return classNameToTableMapping;
+		this.classNameToTableMapping = classNameToTableMapping;
 	}
 
-	protected List<String[]> initIgnoreColumns(List<String> ignoreColumns) {
-		List<String[]> ignoreColumnsArray = new ArrayList<String[]>();
+	protected void initIgnoreColumns(List<String> ignoreColumns) {
+		List<String[]> ignoreColumnsArray = new ArrayList<>();
 
 		for (String ignoreColumn : ignoreColumns) {
 			if (ignoreColumn == null) {
@@ -496,6 +513,7 @@ public class TableUtil {
 			ignoreColumn = StringUtils.lowerCase(ignoreColumn);
 
 			int pos = ignoreColumn.indexOf('.');
+
 			String[] ignoreColumnArray = new String[4];
 
 			if (pos == -1) {
@@ -503,8 +521,13 @@ public class TableUtil {
 				ignoreColumnArray[2] = ignoreColumn.trim();
 			}
 			else {
-				ignoreColumnArray[0] = ignoreColumn.substring(0, pos).trim();
-				ignoreColumnArray[2] = ignoreColumn.substring(pos+1).trim();
+				String table = ignoreColumn.substring(0, pos);
+
+				ignoreColumnArray[0] = table.trim();
+
+				String column = ignoreColumn.substring(pos + 1);
+
+				ignoreColumnArray[2] = column.trim();
 			}
 
 			manageStar(ignoreColumnArray, 0);
@@ -513,14 +536,14 @@ public class TableUtil {
 			ignoreColumnsArray.add(ignoreColumnArray);
 		}
 
-		return ignoreColumnsArray;
+		this.ignoreColumns = ignoreColumnsArray;
 	}
 
 	protected Map<String, Table> initTableMap(
 		DatabaseMetaData databaseMetaData, String catalog, String schema,
 		Collection<String> tableNames) {
 
-		Map<String, Table> tableMap = new TreeMap<String, Table>();
+		Map<String, Table> tableMap = new TreeMap<>();
 
 		for (String tableName : tableNames) {
 			try {
@@ -531,8 +554,8 @@ public class TableUtil {
 					tableMap.put(table.getTableNameLowerCase(), table);
 				}
 			}
-			catch (SQLException e) {
-				_log.error(e, e);
+			catch (SQLException sqle) {
+				_log.error(sqle, sqle);
 			}
 		}
 
@@ -561,11 +584,11 @@ public class TableUtil {
 
 		if (column.endsWith("*")) {
 			ignoreColumnArray[i] = column.substring(0, pos);
-			ignoreColumnArray[i+1] = "prefix";
+			ignoreColumnArray[i + 1] = "prefix";
 		}
 		else if (column.startsWith("*")) {
 			ignoreColumnArray[i] = column.substring(pos + 1, column.length());
-			ignoreColumnArray[i+1] = "suffix";
+			ignoreColumnArray[i + 1] = "suffix";
 		}
 	}
 
@@ -591,18 +614,19 @@ public class TableUtil {
 		return false;
 	}
 
-	protected Map<String, Boolean> emptyTableCache =
-		new ConcurrentHashMap<String, Boolean>();
+	protected Map<String, Long> classNameToClassNameIdMapping;
+	protected Map<String, String> classNameToTableMapping;
+	protected Map<String, Boolean> emptyTableCache = new ConcurrentHashMap<>();
+	protected List<String[]> ignoreColumns;
+	protected List<String> ignoreTables;
 	protected ModelUtil modelUtil;
-	protected Map<String, Table> tableMap = new TreeMap<String, Table>();
-	protected Set<String> tableNames = new TreeSet<String>();;
+	protected Map<String, Table> tableMap = new TreeMap<>();
+	protected Set<String> tableNames = new TreeSet<>();
+	protected Map<String, String> tableToClassNameMapping;
+
+	private TableUtil() {
+	}
 
 	private static Logger _log = LogManager.getLogger(TableUtil.class);
-
-	private Map<String, Long> classNameToClassNameIdMapping;
-	private Map<String, String> classNameToTableMapping;
-	private List<String[]> ignoreColumns;
-	private List<String> ignoreTables;
-	private Map<String, String> tableToClassNameMapping;
 
 }

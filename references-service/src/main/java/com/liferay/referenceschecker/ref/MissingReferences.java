@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -22,13 +22,11 @@ import java.util.Collection;
 public class MissingReferences {
 
 	public MissingReferences(Reference reference, Collection<Object[]> values) {
-
 		this.reference = reference;
 		this.values = values;
 	}
 
 	public MissingReferences(Reference reference, Throwable throwable) {
-
 		this.reference = reference;
 		this.throwable = throwable;
 	}

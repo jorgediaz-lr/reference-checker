@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -69,14 +69,12 @@ public class CommandArguments {
 	}
 
 	@Parameter(
-		description = "Check undefined tables",
-		names = {"--checkUndefinedTables"}
+		description = "Check undefined tables", names = "--checkUndefinedTables"
 	)
 	private boolean _checkUndefinedTables;
 
 	@Parameter(
-		description = "Count all tables.",
-		names = {"-c", "--countTables"}
+		description = "Count all tables.", names = {"-c", "--countTables"}
 	)
 	private boolean _countTables;
 
@@ -105,12 +103,12 @@ public class CommandArguments {
 	private String _missingReferencesLimit;
 
 	@Parameter(
-		description = "Output files prefix", names = {"--outputFilesPrefix"}
+		description = "Output files prefix", names = "--outputFilesPrefix"
 	)
 	private String _outputFilesPrefix;
 
 	@Parameter(
-		description = "Output files suffix", names = {"--outputFilesSuffix"}
+		description = "Output files suffix", names = "--outputFilesSuffix"
 	)
 	private String _outputFilesSuffix;
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -39,8 +39,6 @@ import javax.portlet.RenderRequest;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 /**
  * @author Jorge Díaz
@@ -51,7 +49,7 @@ public class ReferencesCheckerOutput {
 		List<String> headers, List<MissingReferences> listMissingReferences,
 		int missingReferencesLimit) {
 
-		List<String> out = new ArrayList<String>();
+		List<String> out = new ArrayList<>();
 
 		out.add(getCSVRow(headers));
 
@@ -69,13 +67,13 @@ public class ReferencesCheckerOutput {
 
 			if (throwable != null) {
 				line.add(
-					"EXCEPTION: " +throwable.getClass() + " - " +
-					throwable.getMessage());
+					"EXCEPTION: " + throwable.getClass() + " - " +
+						throwable.getMessage());
 			}
 			else if (missingValues != null) {
 				line.add(String.valueOf(missingValues.size()));
 
-				String missingReferencesString = concatenate(
+				String missingReferencesString = _concatenate(
 					missingValues, missingReferencesLimit);
 
 				line.add(missingReferencesString);
@@ -90,12 +88,13 @@ public class ReferencesCheckerOutput {
 	public static List<String> generateCSVOutputMap(
 		List<String> headers, Map<String, ?> mapTableCount) {
 
-		List<String> out = new ArrayList<String>();
+		List<String> out = new ArrayList<>();
 
 		out.add(getCSVRow(headers));
 
 		for (Entry<String, ?> entry : mapTableCount.entrySet()) {
-			List<String> line = new ArrayList<String>();
+			List<String> line = new ArrayList<>();
+
 			line.add(entry.getKey());
 
 			String valueString;
@@ -112,6 +111,7 @@ public class ReferencesCheckerOutput {
 			}
 
 			line.add(valueString);
+
 			out.add(getCSVRow(line));
 		}
 
@@ -121,7 +121,7 @@ public class ReferencesCheckerOutput {
 	public static List<String> generateCSVOutputMappingList(
 		List<String> headers, Collection<Reference> references) {
 
-		List<String> out = new ArrayList<String>();
+		List<String> out = new ArrayList<>();
 
 		out.add(getCSVRow(headers));
 
@@ -143,11 +143,11 @@ public class ReferencesCheckerOutput {
 			List<MissingReferences> listMissingReferences) {
 
 		SearchContainer<MissingReferences> searchContainer =
-			new SearchContainer<MissingReferences>(
+			new SearchContainer<>(
 				renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM,
 				SearchContainer.MAX_DELTA, serverURL, headers, null);
 
-		listMissingReferences = subList(
+		listMissingReferences = _sublist(
 			listMissingReferences, searchContainer.getStart(),
 			searchContainer.getEnd());
 
@@ -169,7 +169,7 @@ public class ReferencesCheckerOutput {
 				}
 			}
 			catch (Exception e) {
-				throw new RuntimeException (e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -178,17 +178,15 @@ public class ReferencesCheckerOutput {
 		return searchContainer;
 	}
 
-	public static SearchContainer<Reference>
-		generateSearchContainerMappingList(
-			RenderRequest renderRequest, PortletURL serverURL,
-			List<String> headers, List<Reference> referecesList) {
+	public static SearchContainer<Reference> generateSearchContainerMappingList(
+		RenderRequest renderRequest, PortletURL serverURL, List<String> headers,
+		List<Reference> referecesList) {
 
-		SearchContainer<Reference> searchContainer =
-			new SearchContainer<Reference>(
-				renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM,
-				SearchContainer.MAX_DELTA, serverURL, headers, null);
+		SearchContainer<Reference> searchContainer = new SearchContainer<>(
+			renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM,
+			SearchContainer.MAX_DELTA, serverURL, headers, null);
 
-		List<Reference> filteredReferencesList = new ArrayList<Reference>();
+		List<Reference> filteredReferencesList = new ArrayList<>();
 
 		for (Reference reference : referecesList) {
 			if (!reference.isHidden()) {
@@ -196,7 +194,7 @@ public class ReferencesCheckerOutput {
 			}
 		}
 
-		filteredReferencesList = subList(
+		filteredReferencesList = _sublist(
 			filteredReferencesList, searchContainer.getStart(),
 			searchContainer.getEnd());
 
@@ -229,7 +227,6 @@ public class ReferencesCheckerOutput {
 	}
 
 	public static String getCSVRow(List<String> rowData, String sep) {
-
 		String row = StringUtils.EMPTY;
 
 		for (String aux : rowData) {
@@ -243,7 +240,7 @@ public class ReferencesCheckerOutput {
 		Object obj, String primaryKey, int pos) {
 
 		try {
-			return (ResultRow)resultRowConstructor.newInstance(
+			return (ResultRow)_resultRowConstructor.newInstance(
 				obj, primaryKey, pos);
 		}
 		catch (Exception e) {
@@ -269,9 +266,11 @@ public class ReferencesCheckerOutput {
 	protected static List<String> generateReferenceCells(
 		Query query, boolean withTypes) {
 
-		List<String> line = new ArrayList<String>();
+		List<String> line = new ArrayList<>();
 
-		String tableWithCondition = query.getTable().getTableName();
+		Table table = query.getTable();
+
+		String tableWithCondition = table.getTableName();
 
 		if (query.getCondition() != null) {
 			StringBuilder sb = new StringBuilder();
@@ -302,7 +301,7 @@ public class ReferencesCheckerOutput {
 	protected static List<String> generateReferenceCells(
 		Reference reference, boolean withTypes) {
 
-		List<String> line = new ArrayList<String>();
+		List<String> line = new ArrayList<>();
 
 		Query originQuery = reference.getOriginQuery();
 		Query destinationQuery = reference.getDestinationQuery();
@@ -317,7 +316,9 @@ public class ReferencesCheckerOutput {
 			MissingReferences missingReferences, int numberOfRows, int maxSize)
 		throws Exception {
 
-		Query originQuery = missingReferences.getReference().getOriginQuery();
+		Reference reference = missingReferences.getReference();
+
+		Query originQuery = reference.getOriginQuery();
 
 		Object row = newResultRow(
 			missingReferences, originQuery.toString(), numberOfRows);
@@ -325,11 +326,12 @@ public class ReferencesCheckerOutput {
 		List<String> line = generateReferenceCells(
 			missingReferences.getReference(), false);
 
-		Method addTextMethod =
-			row.getClass().getMethod("addText", String.class);
+		Class<?> rowClass = row.getClass();
+
+		Method addTextMethod = rowClass.getMethod("addText", String.class);
 
 		for (String cell : line) {
-			addTextMethod.invoke(row, escapeText(cell));
+			addTextMethod.invoke(row, _escapeText(cell));
 		}
 
 		Throwable throwable = missingReferences.getThrowable();
@@ -340,16 +342,16 @@ public class ReferencesCheckerOutput {
 				row,
 				StringEscapeUtils.escapeHtml4(
 					"Error checking references, EXCEPTION: " +
-					throwable.getClass() + " - " + throwable.getMessage()));
+						throwable.getClass() + " - " + throwable.getMessage()));
 		}
 		else if (missingValues == null) {
 			addTextMethod.invoke(
 				row,
-				(StringEscapeUtils.escapeHtml4("Error checking references")));
+				StringEscapeUtils.escapeHtml4("Error checking references"));
 		}
 		else {
 			String outputString = getOutput(
-					missingValues, numberOfRows, maxSize);
+				missingValues, numberOfRows, maxSize);
 
 			addTextMethod.invoke(row, outputString);
 		}
@@ -361,25 +363,28 @@ public class ReferencesCheckerOutput {
 			Reference reference, int numberOfRows)
 		throws Exception {
 
+		Query originQuery = reference.getOriginQuery();
+
 		Object row = newResultRow(
-			reference, reference.getOriginQuery().toString(), numberOfRows);
+			reference, originQuery.toString(), numberOfRows);
 
 		List<String> line = generateReferenceCells(reference, true);
 
-		Method addTextMethod =
-			row.getClass().getMethod("addText", String.class);
+		Class<?> rowClass = row.getClass();
+
+		Method addTextMethod = rowClass.getMethod("addText", String.class);
 
 		for (String cell : line) {
-			addTextMethod.invoke(row, escapeText(cell));
+			addTextMethod.invoke(row, _escapeText(cell));
 		}
 
 		return row;
 	}
 
 	protected static String getOutput(
-			Collection<Object[]> missingValues, int numberOfRows, int maxSize) {
+		Collection<Object[]> missingValues, int numberOfRows, int maxSize) {
 
-		String outputString = concatenate(missingValues);
+		String outputString = _concatenate(missingValues);
 
 		outputString = StringEscapeUtils.escapeHtml4(
 			outputString.replace(",", ", "));
@@ -389,15 +394,17 @@ public class ReferencesCheckerOutput {
 		int overflow = missingValues.size() - maxSize;
 
 		if (overflow > 0) {
-			outputStringTrimmed = concatenate(missingValues, maxSize);
+			outputStringTrimmed = _concatenate(missingValues, maxSize);
 
 			outputStringTrimmed = StringEscapeUtils.escapeHtml4(
 				outputStringTrimmed.replace(",", ", "));
 
 			String tagId =
 				RandomStringUtils.randomAlphabetic(4) + "_" + numberOfRows;
+
 			String onClick =
 				"onclick=\"showHide('" + tagId + "');return false;\"";
+
 			String linkMore =
 				"<a href=\"#\"" + onClick + " >(" + overflow + " more)</a>";
 			String linkCollapse =
@@ -405,24 +412,24 @@ public class ReferencesCheckerOutput {
 
 			outputString =
 				"<span id=\"" + tagId + "-show\" >" + outputStringTrimmed +
-				" " + linkMore + "</span><span id=\"" + tagId +
-				"\" style=\"display: none;\" >" + outputString + " " +
-				linkCollapse + "</span>";
+					" " + linkMore + "</span><span id=\"" + tagId +
+						"\" style=\"display: none;\" >" + outputString + " " +
+							linkCollapse + "</span>";
 		}
 
 		return outputString;
 	}
 
-	private static String concatenate(Collection<Object[]> values) {
-		return concatenate(values, -1);
+	private static String _concatenate(Collection<Object[]> values) {
+		return _concatenate(values, -1);
 	}
 
-	private static String concatenate(Collection<Object[]> values, int limit) {
+	private static String _concatenate(Collection<Object[]> values, int limit) {
 		if ((limit == 0) || (values == null) || values.isEmpty()) {
 			return StringUtils.EMPTY;
 		}
 
-		StringBuilder sb = new StringBuilder(values.size()*2);
+		StringBuilder sb = new StringBuilder(values.size() * 2);
 
 		int i = 0;
 
@@ -456,10 +463,13 @@ public class ReferencesCheckerOutput {
 		return sb.toString();
 	}
 
-	private static String escapeText(String text) {
+	private static String _escapeText(String text) {
 		text = text.replace(",", ", ");
+
 		text = text.replace("=", " = ");
+
 		int textLength = text.length();
+
 		while (true) {
 			text = text.replace("  ", " ");
 
@@ -473,7 +483,7 @@ public class ReferencesCheckerOutput {
 		return StringEscapeUtils.escapeHtml4(text);
 	}
 
-	private static <E> List<E> subList(List<E> list, int start, int end) {
+	private static <E> List<E> _sublist(List<E> list, int start, int end) {
 		if (start < 0) {
 			start = 0;
 		}
@@ -489,19 +499,17 @@ public class ReferencesCheckerOutput {
 		return Collections.emptyList();
 	}
 
-	private static Logger _log = LogManager.getLogger(
-		ReferencesCheckerOutput.class);
-	private static Constructor<?> resultRowConstructor;
+	private static Constructor<?> _resultRowConstructor;
 
 	static {
 		try {
-			resultRowConstructor = ResultRow.class.getConstructor(
+			_resultRowConstructor = ResultRow.class.getConstructor(
 				Object.class, String.class, int.class);
 		}
 		catch (Throwable t) {
 		}
 
-		if (resultRowConstructor == null) {
+		if (_resultRowConstructor == null) {
 			try {
 				ClassLoader classLoader =
 					PortalClassLoaderUtil.getClassLoader();
@@ -509,7 +517,7 @@ public class ReferencesCheckerOutput {
 				Class<?> resultRowTagLib = classLoader.loadClass(
 					"com.liferay.taglib.search.ResultRow");
 
-				resultRowConstructor = resultRowTagLib.getConstructor(
+				_resultRowConstructor = resultRowTagLib.getConstructor(
 					Object.class, String.class, int.class);
 			}
 			catch (Throwable t) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -107,7 +107,7 @@ public class InitPortal {
 
 		fastDateFormatFactoryUtil.setFastDateFormatFactory(
 			(FastDateFormatFactory)ReflectionUtil.newPortalObject(
-			"com.liferay.portal.util.FastDateFormatFactoryImpl"));
+				"com.liferay.portal.util.FastDateFormatFactoryImpl"));
 
 		FileUtil fileUtil = new FileUtil();
 
@@ -176,8 +176,10 @@ public class InitPortal {
 				(PortalCacheManager)ReflectionUtil.newPortalObject(
 					"com.liferay.portal.cache.memory.MemoryPortalCacheManager");
 
-			Method afterPropertiesSet =
-				portalCacheManager.getClass().getMethod("afterPropertiesSet");
+			Class<?> portalCacheManagerClass = portalCacheManager.getClass();
+
+			Method afterPropertiesSet = portalCacheManagerClass.getMethod(
+				"afterPropertiesSet");
 
 			afterPropertiesSet.invoke(portalCacheManager);
 
@@ -185,12 +187,15 @@ public class InitPortal {
 				(MultiVMPool)ReflectionUtil.newPortalObject(
 					"com.liferay.portal.cache.MultiVMPoolImpl");
 
-			Method setPortalCacheManager = multiVMPool.getClass().getMethod(
+			Class<?> multiVMPoolClass = multiVMPool.getClass();
+
+			Method setPortalCacheManager = multiVMPoolClass.getMethod(
 				"setPortalCacheManager", PortalCacheManager.class);
 
 			setPortalCacheManager.invoke(multiVMPool, portalCacheManager);
 
 			MultiVMPoolUtil multiVMPoolUtil = new MultiVMPoolUtil();
+
 			multiVMPoolUtil.setMultiVMPool(multiVMPool);
 		}
 		catch (Throwable t) {
@@ -259,8 +264,7 @@ public class InitPortal {
 		}
 
 		System.out.println(
-			"Please enter your database host (" + dataSource.getHost() +
-				"): ");
+			"Please enter your database host (" + dataSource.getHost() + "): ");
 
 		response = _consoleReader.readLine();
 
@@ -286,13 +290,17 @@ public class InitPortal {
 				dataSource.setPort(0);
 			}
 			else {
-				dataSource.setPort(Integer.parseInt(response));
+				try {
+					dataSource.setPort(Integer.parseInt(response));
+				}
+				catch (NumberFormatException nfe) {
+				}
 			}
 		}
 
 		System.out.println(
-			"Please enter your database name (" +
-				dataSource.getDatabaseName() + "): ");
+			"Please enter your database name (" + dataSource.getDatabaseName() +
+				"): ");
 
 		response = _consoleReader.readLine();
 
@@ -320,9 +328,9 @@ public class InitPortal {
 	}
 
 	private void _initDatabase(
-		String driverClassName, String url, String userName, String password,
-		String jndiName)
-	throws Exception {
+			String driverClassName, String url, String userName,
+			String password, String jndiName)
+		throws Exception {
 
 		/* DBFactoryUtil.setDBFactory(
 			(DBFactory)getPortalObject(
@@ -349,6 +357,7 @@ public class InitPortal {
 
 		Class<?> dialectDectector = ReflectionUtil.getPortalClass(
 			"com.liferay.portal.spring.hibernate.DialectDetector");
+
 		Method getDialectMethod = dialectDectector.getMethod(
 			"getDialect", DataSource.class);
 
@@ -405,12 +414,9 @@ public class InitPortal {
 		return properties;
 	}
 
-	private static final Map<String, Database> _databases =
-		new HashMap<String, Database>();
-
 	private static Logger _log = LogManager.getLogger(InitPortal.class);
 
-	private static File _jarDir;
+	private static final Map<String, Database> _databases = new HashMap<>();
 
 	static {
 		_databases.put(SQLUtil.TYPE_DB2, Database.getDB2Database());

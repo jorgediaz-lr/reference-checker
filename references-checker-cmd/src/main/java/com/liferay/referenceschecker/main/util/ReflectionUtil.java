@@ -1,7 +1,5 @@
-package com.liferay.referenceschecker.main.util;
-
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,6 +11,8 @@ package com.liferay.referenceschecker.main.util;
  * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
  * details.
  */
+
+package com.liferay.referenceschecker.main.util;
 
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 
@@ -42,8 +42,8 @@ public class ReflectionUtil {
 	}
 
 	public static void initFactory(
-			String util, String methodName, String interfaceName,
-			String implementation) {
+		String util, String methodName, String interfaceName,
+		String implementation) {
 
 		try {
 			Class<?> utilClass = getPortalClass(util);

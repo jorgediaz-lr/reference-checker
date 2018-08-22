@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -34,6 +34,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+
+/**
+ * @author Jorge Díaz
+ */
 public class ModelUtilImpl implements ModelUtil {
 
 	public String getClassName(String tableName) {
@@ -61,7 +65,10 @@ public class ModelUtilImpl implements ModelUtil {
 			service = groupService;
 		}
 		else {
-			classLoader = service.getClass().getClassLoader();
+			Class<?> serviceClass = service.getClass();
+
+			classLoader = serviceClass.getClassLoader();
+
 			dynamicQuery = newDynamicQuery(service);
 		}
 
@@ -69,10 +76,10 @@ public class ModelUtilImpl implements ModelUtil {
 			return null;
 		}
 
-		String liferayModelImpl = ModelUtilImpl.getLiferayModelImplClassName(
+		String liferayModelImpl = getLiferayModelImplClassName(
 			service, dynamicQuery);
 
-		return ModelUtilImpl.getLiferayModelImplClass(
+		return getLiferayModelImplClass(
 			classLoader, liferayModelImpl);
 	}
 
@@ -149,7 +156,8 @@ public class ModelUtilImpl implements ModelUtil {
 			catch (Exception e) {
 				_log.error(
 					"Error accessing to " + classLiferayModelImpl.getName() +
-					"#TABLE_NAME", e);
+						"#TABLE_NAME",
+					e);
 
 				continue;
 			}
@@ -169,7 +177,7 @@ public class ModelUtilImpl implements ModelUtil {
 	}
 
 	protected static Class<?> getLiferayModelImplClass(
-			ClassLoader classloader, String liferayModelImpl)
+			ClassLoader classLoader, String liferayModelImpl)
 		throws ClassNotFoundException {
 
 		if (liferayModelImpl == null) {
@@ -181,12 +189,12 @@ public class ModelUtilImpl implements ModelUtil {
 		liferayModelImpl = liferayModelImpl.replace(
 			"ImplModelImpl", "ModelImpl");
 
-		Class<?> clazz = classloader.loadClass(liferayModelImpl);
+		Class<?> clazz = classLoader.loadClass(liferayModelImpl);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
 				"loaded class: " + clazz + " from classloader: " +
-					classloader);
+					classLoader);
 		}
 
 		return clazz;
@@ -210,12 +218,14 @@ public class ModelUtilImpl implements ModelUtil {
 
 			Object obj = null;
 
-			if ((list != null) && (list.size() > 0)) {
+			if ((list != null) && !list.isEmpty()) {
 				obj = list.get(0);
 			}
 
 			if (obj != null) {
-				return obj.getClass().getName();
+				Class<?> clazz = obj.getClass();
+
+				return clazz.getName();
 			}
 		}
 		catch (Exception e) {
@@ -271,7 +281,7 @@ public class ModelUtilImpl implements ModelUtil {
 			/* 7.x */
 			persistedModelLocalServiceRegistryUtil = classLoader.loadClass(
 				"com.liferay.portal.kernel.service." +
-				"PersistedModelLocalServiceRegistryUtil");
+					"PersistedModelLocalServiceRegistryUtil");
 		}
 		catch (Throwable t) {
 			if (_log.isDebugEnabled()) {
@@ -284,7 +294,7 @@ public class ModelUtilImpl implements ModelUtil {
 				/* 6.x */
 				persistedModelLocalServiceRegistryUtil = classLoader.loadClass(
 					"com.liferay.portal.service." +
-					"PersistedModelLocalServiceRegistryUtil");
+						"PersistedModelLocalServiceRegistryUtil");
 			}
 			catch (Throwable t) {
 				if (_log.isDebugEnabled()) {

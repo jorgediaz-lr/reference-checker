@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -34,7 +34,7 @@ import java.util.Set;
 public class Properties {
 
 	public Properties() {
-		_properties = new LinkedHashMap<String, String>();
+		_properties = new LinkedHashMap<>();
 	}
 
 	public String getProperty(String key) {

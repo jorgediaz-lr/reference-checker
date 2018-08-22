@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -41,6 +41,12 @@ import java.util.List;
 import java.util.Map;
 
 import jline.console.ConsoleReader;
+
+import org.apache.commons.lang3.StringUtils;
+
+/**
+ * @author Jorge Díaz
+ */
 public class Launcher {
 
 	//0 => app-server.properties;
@@ -52,7 +58,7 @@ public class Launcher {
 		if (args.length < 3) {
 			System.err.println(
 				"ERROR, missing parameters: <app-server.properties> " +
-				"<className> <method> [parameters]");
+					"<className> <method> [parameters]");
 
 			System.exit(-1);
 		}
@@ -64,9 +70,13 @@ public class Launcher {
 		int removeArgs = 3;
 		boolean debug = false;
 
-		if ((args.length>= 4) && args[3].trim().equals("debug")) {
-			debug = true;
-			removeArgs = 4;
+		if (args.length >= 4) {
+			String debugString = args[3].trim();
+
+			if (StringUtils.equalsIgnoreCase(debugString, "debug")) {
+				debug = true;
+				removeArgs = 4;
+			}
 		}
 
 		args = Arrays.copyOfRange(args, removeArgs, args.length);
@@ -80,7 +90,9 @@ public class Launcher {
 
 		currentDir = currentDir.getAbsoluteFile();
 
-		URL url = currentDir.toURI().toURL();
+		URI uri = currentDir.toURI();
+
+		URL url = uri.toURL();
 
 		classLoaderUrls.add(0, url);
 
@@ -172,25 +184,25 @@ public class Launcher {
 	}
 
 	protected void execute(String className, String methodName, String[] args) {
-
 		Thread currentThread = Thread.currentThread();
 
 		currentThread.setContextClassLoader(urlClassLoader);
 
 		Class<?> referencesCheckerClazz;
+
 		try {
 			referencesCheckerClazz = urlClassLoader.loadClass(className);
 
 			Method main = referencesCheckerClazz.getMethod(
 				methodName, String[].class);
 
-			main.invoke(null, ((Object)args));
+			main.invoke(null, (Object)args);
 		}
 		catch (Throwable t) {
 			if (debug) {
 				System.err.println(
-					"Classloader URLs: " + Arrays.toString(
-						urlClassLoader.getURLs()));
+					"Classloader URLs: " +
+						Arrays.toString(urlClassLoader.getURLs()));
 				System.err.println();
 			}
 
@@ -246,9 +258,7 @@ public class Launcher {
 		response = null;
 		File dir = null;
 
-		while (((response == null) || response.trim().isEmpty()) &&
-			   (dir == null)) {
-
+		while (StringUtils.isBlank(response) && (dir == null)) {
 			dir = appServer.getDir();
 			String dirName = appServer.getDirName();
 
@@ -270,7 +280,8 @@ public class Launcher {
 				dir = appServer.getDir();
 
 				if (dir == null) {
-					System.err.println("ERROR " + response + " doesn't exists");
+					System.err.println(
+						"ERROR " + response + " does not exists");
 
 					appServer.setDirName(dirName);
 
@@ -281,8 +292,7 @@ public class Launcher {
 
 		System.out.println(
 			"Please enter your extra library directories in application " +
-				"server directory (" + appServer.getExtraLibDirNames() +
-					"): ");
+				"server directory (" + appServer.getExtraLibDirNames() + "): ");
 
 		response = consoleReader.readLine();
 
@@ -292,8 +302,7 @@ public class Launcher {
 
 		System.out.println(
 			"Please enter your global library directory in application " +
-				"server directory (" + appServer.getGlobalLibDirName() +
-					"): ");
+				"server directory (" + appServer.getGlobalLibDirName() + "): ");
 
 		response = consoleReader.readLine();
 
@@ -337,7 +346,7 @@ public class Launcher {
 	protected List<URL> getClassLoaderURLs(AppServer appServer)
 		throws IOException, MalformedURLException {
 
-		List<File> classPath = new ArrayList<File>();
+		List<File> classPath = new ArrayList<>();
 
 		_appendClassPath(classPath, _jarDir);
 		_appendClassPath(classPath, appServer.getGlobalLibDir());
@@ -347,12 +356,12 @@ public class Launcher {
 
 		_appendClassPath(classPath, appServer.getPortalLibDir());
 
-		List<URL> urls = new ArrayList<URL>();
+		List<URL> urls = new ArrayList<>();
 
 		for (File file : classPath) {
 			if (!file.exists()) {
 				throw new RuntimeException(
-					"ERROR: " + file + " doesn't exists");
+					"ERROR: " + file + " does not exists");
 			}
 
 			URI uri = file.toURI();
@@ -379,7 +388,7 @@ public class Launcher {
 
 		File dir = appServer.getDir();
 
-		if ((dir == null)||!dir.exists()) {
+		if ((dir == null) || !dir.exists()) {
 			return;
 		}
 
@@ -403,13 +412,14 @@ public class Launcher {
 		}
 	}
 
+	protected boolean debug;
 	protected URLClassLoader urlClassLoader = null;
 
 	private void _appendClassPath(List<File> classPath, File dir)
 		throws IOException {
 
 		if (!dir.exists()) {
-			throw new RuntimeException("ERROR: " + dir + " doesn't exists");
+			throw new RuntimeException("ERROR: " + dir + " does not exists");
 		}
 
 		if (!dir.isDirectory()) {
@@ -452,7 +462,8 @@ public class Launcher {
 	}
 
 	private static final Map<String, AppServer> _appServers =
-		new LinkedHashMap<String, AppServer>();
+		new LinkedHashMap<>();
+	private static File _jarDir;
 
 	static {
 		_appServers.put("jboss", AppServer.getJBossEAPAppServer());
@@ -466,9 +477,5 @@ public class Launcher {
 
 		_jarDir = getReferencesCheckerLibFolder();
 	}
-
-	private static File _jarDir;
-
-	private boolean debug;
 
 }
