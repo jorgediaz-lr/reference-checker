@@ -14,20 +14,17 @@
 
 package com.liferay.referenceschecker.querieslistener.agent;
 
+import com.liferay.referenceschecker.querieslistener.DebugListener;
+import com.liferay.referenceschecker.querieslistener.EventListener;
+import com.liferay.referenceschecker.querieslistener.EventListenerRegistry;
 import com.liferay.referenceschecker.querieslistener.Query;
-import com.liferay.referenceschecker.querieslistener.Query.QueryType;
 
 import com.p6spy.engine.common.ConnectionInformation;
 import com.p6spy.engine.common.StatementInformation;
 import com.p6spy.engine.event.SimpleJdbcEventListener;
 
+import java.sql.Connection;
 import java.sql.SQLException;
-
-import java.util.Set;
-import java.util.TreeSet;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 /**
  * @author Jorge Díaz
@@ -42,13 +39,9 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		StatementInformation statementInformation, long timeElapsedNanos,
 		SQLException e) {
 
-		if (e != null) {
-			return;
-		}
-
-		processQuery(
+		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues());
+			statementInformation.getSqlWithValues(), e);
 	}
 
 	@Override
@@ -56,13 +49,9 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		StatementInformation statementInformation, long timeElapsedNanos,
 		SQLException e) {
 
-		if (e != null) {
-			return;
-		}
-
-		processQuery(
+		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues());
+			statementInformation.getSqlWithValues(), e);
 	}
 
 	@Override
@@ -70,25 +59,29 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		ConnectionInformation connectionInformation, long timeElapsedNanos,
 		SQLException e) {
 
-		resetThreadLocals();
+		int connectionId = connectionInformation.getConnectionId();
 
-		if (_log.isDebugEnabled()) {
-			_log.debug(
-				"After commit. Connection-id=" +
-					connectionInformation.getConnectionId());
-		};
+		Connection connection = connectionInformation.getConnection();
+
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
+
+			eventListener.afterCommit(connectionId, connection, e);
+		}
 	}
 
 	@Override
 	public void onAfterConnectionClose(
 		ConnectionInformation connectionInformation, SQLException e) {
 
-		resetThreadLocals();
+		int connectionId = connectionInformation.getConnectionId();
 
-		if (_log.isDebugEnabled()) {
-			_log.debug(
-				"After connection close. Connection-id=" +
-					connectionInformation.getConnectionId());
+		Connection connection = connectionInformation.getConnection();
+
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
+
+			eventListener.afterConnectionClose(connectionId, connection, e);
 		}
 	}
 
@@ -97,25 +90,23 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		StatementInformation statementInformation, long timeElapsedNanos,
 		int[] updateCounts, SQLException e) {
 
-		if (e != null) {
-			return;
-		}
-
-		processQuery(
+		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues());
+			statementInformation.getSqlWithValues(), e);
 	}
 
 	@Override
 	public void onAfterGetConnection(
 		ConnectionInformation connectionInformation, SQLException e) {
 
-		resetThreadLocals();
+		int connectionId = connectionInformation.getConnectionId();
 
-		if (_log.isDebugEnabled()) {
-			_log.debug(
-				"After get connection. Connection-id=" +
-					connectionInformation.getConnectionId());
+		Connection connection = connectionInformation.getConnection();
+
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
+
+			eventListener.afterGetConnection(connectionId, connection, e);
 		}
 	}
 
@@ -124,127 +115,121 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		ConnectionInformation connectionInformation, long timeElapsedNanos,
 		SQLException e) {
 
-		resetThreadLocals();
+		int connectionId = connectionInformation.getConnectionId();
 
-		if (_log.isDebugEnabled()) {
-			_log.debug(
-				"After rollback. Connection-id=" +
-					connectionInformation.getConnectionId());
-		};
+		Connection connection = connectionInformation.getConnection();
+
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
+
+			eventListener.afterRollback(connectionId, connection, e);
+		}
+	}
+
+	@Override
+	public void onBeforeAnyAddBatch(StatementInformation statementInformation) {
+		beforeQuery(
+			statementInformation.getConnectionInformation(),
+			statementInformation.getSqlWithValues());
+	}
+
+	@Override
+	public void onBeforeAnyExecute(StatementInformation statementInformation) {
+		beforeQuery(
+			statementInformation.getConnectionInformation(),
+			statementInformation.getSqlWithValues());
 	}
 
 	@Override
 	public void onBeforeCommit(ConnectionInformation connectionInformation) {
-		if (_log.isDebugEnabled()) {
-			_log.debug(
-				"Before commit. Connection-id=" +
-					connectionInformation.getConnectionId());
-		};
+		int connectionId = connectionInformation.getConnectionId();
 
-		logQueries(
-			connectionInformation, _insertQueriesThreadLocal.get(),
-			"Insert queries");
-		logQueries(
-			connectionInformation, _updateQueriesThreadLocal.get(),
-			"Update queries");
-		logQueries(
-			connectionInformation, _deleteQueriesThreadLocal.get(),
-			"Delete queries");
-		logQueries(
-			connectionInformation, _otherQueriesThreadLocal.get(),
-			"Other queries");
+		Connection connection = connectionInformation.getConnection();
+
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
+
+			eventListener.beforeCommit(connectionId, connection);
+		}
 	}
 
-	protected void addQueryToThreadLocal(
-		ThreadLocal<Set<Query>> queriesThreadLocal, Query query) {
+	@Override
+	public void onBeforeExecuteBatch(
+		StatementInformation statementInformation) {
 
-		if (queriesThreadLocal.get() == null) {
-			queriesThreadLocal.set(new TreeSet<Query>());
-		}
-
-		Set<Query> queries = queriesThreadLocal.get();
-
-		queries.add(query);
+		beforeQuery(
+			statementInformation.getConnectionInformation(),
+			statementInformation.getSqlWithValues());
 	}
 
-	protected void logQueries(
-		ConnectionInformation connectionInformation, Set<Query> queriesSet,
-		String message) {
-
-		if ((queriesSet == null) || queriesSet.isEmpty()) {
-			return;
-		}
-
-		if (!_log.isInfoEnabled()) {
-			return;
-		}
+	@Override
+	public void onBeforeGetConnection(
+		ConnectionInformation connectionInformation) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
-		_log.info(message + ". Connection-id=" + connectionId);
+		Connection connection = connectionInformation.getConnection();
 
-		for (Query query : queriesSet) {
-			_log.info("Query: " + query);
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
 
-			if (!_log.isDebugEnabled()) {
-				continue;
-			}
-
-			_log.debug("\t modified tables: " + query.getModifiedTables());
-			_log.debug("\t where: " + query.getWhere());
+			eventListener.beforeGetConnection(connectionId, connection);
 		}
 	}
 
-	protected void processQuery(
+	@Override
+	public void onBeforeRollback(ConnectionInformation connectionInformation) {
+		int connectionId = connectionInformation.getConnectionId();
+
+		Connection connection = connectionInformation.getConnection();
+
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
+
+			eventListener.beforeRollback(connectionId, connection);
+		}
+	}
+
+	protected void afterQuery(
+		ConnectionInformation connectionInformation, String sql,
+		SQLException e) {
+
+		int connectionId = connectionInformation.getConnectionId();
+
+		Connection connection = connectionInformation.getConnection();
+
+		Query query = new Query(sql);
+
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
+
+			eventListener.afterQuery(connectionId, connection, query, e);
+		}
+	}
+
+	protected void beforeQuery(
 		ConnectionInformation connectionInformation, String sql) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
+		Connection connection = connectionInformation.getConnection();
+
 		Query query = new Query(sql);
 
-		if ((query.getQueryType() == null) ||
-			(query.getQueryType() == QueryType.SELECT)) {
+		for (EventListener eventListener :
+				_eventListenerRegistry.getEventListeners()) {
 
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Ignored Query. connectionId=" + connectionId + ", sql=" +
-						query.getSQL());
-			}
-
-			return;
-		}
-
-		if (query.getQueryType() == QueryType.INSERT) {
-			addQueryToThreadLocal(_insertQueriesThreadLocal, query);
-		}
-		else if (query.getQueryType() == QueryType.UPDATE) {
-			addQueryToThreadLocal(_updateQueriesThreadLocal, query);
-		}
-		else if (query.getQueryType() == QueryType.DELETE) {
-			addQueryToThreadLocal(_deleteQueriesThreadLocal, query);
-		}
-		else {
-			addQueryToThreadLocal(_otherQueriesThreadLocal, query);
+			eventListener.beforeQuery(connectionId, connection, query);
 		}
 	}
 
-	protected void resetThreadLocals() {
-		_insertQueriesThreadLocal.set(new TreeSet<Query>());
-		_updateQueriesThreadLocal.set(new TreeSet<Query>());
-		_deleteQueriesThreadLocal.set(new TreeSet<Query>());
-		_otherQueriesThreadLocal.set(new TreeSet<Query>());
+	private QueriesListenerAgent() {
+		_eventListenerRegistry =
+			EventListenerRegistry.getEventListenerRegistry();
+
+		_eventListenerRegistry.register(new DebugListener());
 	}
 
-	private static Logger _log = LogManager.getLogger(
-		QueriesListenerAgent.class);
-
-	private ThreadLocal<Set<Query>> _deleteQueriesThreadLocal =
-		new ThreadLocal<>();
-	private ThreadLocal<Set<Query>> _insertQueriesThreadLocal =
-		new ThreadLocal<>();
-	private ThreadLocal<Set<Query>> _otherQueriesThreadLocal =
-		new ThreadLocal<>();
-	private ThreadLocal<Set<Query>> _updateQueriesThreadLocal =
-		new ThreadLocal<>();
+	private EventListenerRegistry _eventListenerRegistry;
 
 }

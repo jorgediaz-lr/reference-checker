@@ -6,7 +6,6 @@ dependencies {
 	compile group: "com.github.jsqlparser", name: "jsqlparser", version: "1.2"
 	compile group: "log4j", name: "log4j", version: "1.2.17"
 	compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
-	compile group: "org.apache.commons", name: "commons-text", version: "1.4"
 	compile group: "p6spy", name: "p6spy", version: "3.7.0"
 }
 
