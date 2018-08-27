@@ -18,6 +18,7 @@ import com.liferay.referenceschecker.config.Configuration;
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.dao.TableUtil;
+import com.liferay.referenceschecker.model.ModelUtil;
 
 import java.sql.Connection;
 
@@ -42,8 +43,9 @@ import org.apache.log4j.Logger;
  */
 public class ReferenceUtil {
 
-	public ReferenceUtil(TableUtil tableUtil) {
+	public ReferenceUtil(TableUtil tableUtil, ModelUtil modelUtil) {
 		this.tableUtil = tableUtil;
+		this.modelUtil = modelUtil;
 	}
 
 	public Collection<Reference> calculateReferences(
@@ -175,7 +177,10 @@ public class ReferenceUtil {
 		List<Reference> listReferences = new ArrayList<>();
 
 		for (Table originTable : originTables) {
-			if (!checkUndefinedTables && (originTable.getClassNameId() == -1)) {
+			String originTableClassModel = modelUtil.getClassName(
+				originTable.getTableName());
+
+			if (!checkUndefinedTables && (originTableClassModel == null)) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
 						"Ignoring table because className is undefined: " +
@@ -245,7 +250,8 @@ public class ReferenceUtil {
 			String className = null;
 
 			if (destinationTable != null) {
-				className = destinationTable.getClassName();
+				className = modelUtil.getClassName(
+					destinationTable.getTableName());
 			}
 
 			if (StringUtils.equals(filter, className) ||
@@ -406,7 +412,10 @@ public class ReferenceUtil {
 			return null;
 		}
 
-		if (!checkUndefinedTables && (originTable.getClassNameId() == -1)) {
+		String originTableClassModel = modelUtil.getClassName(
+			originTable.getTableName());
+
+		if (!checkUndefinedTables && (originTableClassModel == null)) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
 					"Ignoring originTable because className is undefined: " +
@@ -433,9 +442,7 @@ public class ReferenceUtil {
 		Query destinationQuery = null;
 
 		if (destinationTable != null) {
-			if (checkUndefinedTables ||
-				(destinationTable.getClassNameId() != -1)) {
-
+			if (checkUndefinedTables || (originTableClassModel != null)) {
 				destinationQuery = new Query(
 					destinationTable, destinationColumns, destinationCondition);
 			}
@@ -658,9 +665,11 @@ public class ReferenceUtil {
 				primaryKeyColumn, new char[0]);
 		}
 
-		String className = table.getClassName();
-		long classNameId = table.getClassNameId();
 		String tableName = table.getTableName();
+
+		String className = modelUtil.getClassName(tableName);
+
+		Long classNameId = modelUtil.getClassNameId(className);
 
 		return StringUtils.replaceEach(
 			text,
@@ -747,5 +756,6 @@ public class ReferenceUtil {
 
 	protected boolean ignoreEmptyTables;
 	protected TableUtil tableUtil;
+	protected ModelUtil modelUtil;
 
 }

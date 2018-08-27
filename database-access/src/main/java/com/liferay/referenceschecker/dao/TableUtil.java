@@ -27,7 +27,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -95,56 +94,6 @@ public class TableUtil {
 		return count;
 	}
 
-	public static TableUtil getTableUtil(
-			Connection connection, Map<String, String> tableToClassNameMapping,
-			Map<String, Long> classNameToClassNameIdMapping,
-			List<String> ignoreColumns, List<String> ignoreTables,
-			ModelUtil modelUtil)
-		throws SQLException {
-
-		String dbType = SQLUtil.getDBType(connection);
-
-		DatabaseMetaData databaseMetaData = connection.getMetaData();
-
-		String catalog = connection.getCatalog();
-		String schema = null;
-
-		if ((catalog == null) && dbType.equals(SQLUtil.TYPE_ORACLE)) {
-			catalog = databaseMetaData.getUserName();
-
-			schema = catalog;
-		}
-
-		TableUtil tableUtil = new TableUtil();
-
-		tableUtil.tableToClassNameMapping = new HashMap<>(
-			tableToClassNameMapping);
-
-		tableUtil.initClassNameToTableMapping(tableToClassNameMapping);
-
-		tableUtil.classNameToClassNameIdMapping = new HashMap<>(
-			classNameToClassNameIdMapping);
-
-		tableUtil.initIgnoreColumns(ignoreColumns);
-
-		tableUtil.ignoreTables = new ArrayList<>(ignoreTables);
-
-		tableUtil.modelUtil = modelUtil;
-
-		if (modelUtil != null) {
-			modelUtil.initModelMappings(classNameToClassNameIdMapping.keySet());
-
-			tableUtil.modelUtil = modelUtil;
-		}
-
-		Set<String> tableNames = tableUtil.getTableNames(
-			databaseMetaData, catalog, schema, "%");
-
-		tableUtil.addTables(databaseMetaData, catalog, schema, tableNames);
-
-		return tableUtil;
-	}
-
 	public void addTable(
 		DatabaseMetaData databaseMetaData, String catalog, String schema,
 		String tableName) {
@@ -163,27 +112,10 @@ public class TableUtil {
 		this.tableNames.addAll(tableNames);
 	}
 
-	public String getClassNameFromTableName(String tableName) {
-		return tableToClassNameMapping.get(StringUtils.lowerCase(tableName));
-	}
-
-	public Long getClassNameId(String className) {
-		return classNameToClassNameIdMapping.get(className);
-	}
-
-	public Set<String> getClassNames() {
-		return Collections.unmodifiableSet(
-			classNameToClassNameIdMapping.keySet());
-	}
-
 	public Table getTable(String tableName) {
 		String key = StringUtils.lowerCase(tableName);
 
 		return tableMap.get(key);
-	}
-
-	public String getTableNameFromClassName(String className) {
-		return classNameToTableMapping.get(className);
 	}
 
 	public Set<String> getTableNames() {
@@ -284,6 +216,32 @@ public class TableUtil {
 		}
 
 		return false;
+	}
+
+	public void init(
+			Connection connection, List<String> ignoreColumns,
+			List<String> ignoreTables)
+		throws SQLException {
+
+		initIgnore(ignoreTables, ignoreColumns);
+
+		String dbType = SQLUtil.getDBType(connection);
+
+		DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+		String catalog = connection.getCatalog();
+		String schema = null;
+
+		if ((catalog == null) && dbType.equals(SQLUtil.TYPE_ORACLE)) {
+			catalog = databaseMetaData.getUserName();
+
+			schema = catalog;
+		}
+
+		Set<String> tableNames = getTableNames(
+			databaseMetaData, catalog, schema, "%");
+
+		addTables(databaseMetaData, catalog, schema, tableNames);
 	}
 
 	public boolean isTableEmpty(Connection connection, Table table) {
@@ -421,27 +379,9 @@ public class TableUtil {
 			return null;
 		}
 
-		String className = getClassNameFromTableName(tableName);
-
-		if (className == null) {
-			if (modelUtil != null) {
-				className = modelUtil.getClassName(tableName);
-			}
-
-			if (className == null) {
-				_log.warn(tableName + " has no className");
-			}
-			else {
-				_log.warn(
-					"Mapping " + tableName + " => " + className +
-						" was retrieved from model");
-			}
-		}
-
 		return new Table(
 			tableName, primaryKeys, columnNames, columnDataTypes,
-			columnTypeNames, columnSizes, columnNullables, className,
-			getClassNameId(className));
+			columnTypeNames, columnSizes, columnNullables);
 	}
 
 	protected Set<String> getTableNames(
@@ -483,26 +423,9 @@ public class TableUtil {
 		return tableNames;
 	}
 
-	protected void initClassNameToTableMapping(
-		Map<String, String> tableToClassNameMapping) {
+	protected void initIgnore(
+		List<String> ignoreTables, List<String> ignoreColumns) {
 
-		Map<String, String> classNameToTableMapping = new HashMap<>();
-
-		for (Map.Entry<String, String> entry :
-				tableToClassNameMapping.entrySet()) {
-
-			if (StringUtils.isBlank(entry.getValue())) {
-				continue;
-			}
-
-			classNameToTableMapping.put(
-				entry.getValue(), StringUtils.lowerCase(entry.getKey()));
-		}
-
-		this.classNameToTableMapping = classNameToTableMapping;
-	}
-
-	protected void initIgnoreColumns(List<String> ignoreColumns) {
 		List<String[]> ignoreColumnsArray = new ArrayList<>();
 
 		for (String ignoreColumn : ignoreColumns) {
@@ -530,13 +453,15 @@ public class TableUtil {
 				ignoreColumnArray[2] = column.trim();
 			}
 
-			manageStar(ignoreColumnArray, 0);
-			manageStar(ignoreColumnArray, 2);
+			_manageStar(ignoreColumnArray, 0);
+			_manageStar(ignoreColumnArray, 2);
 
 			ignoreColumnsArray.add(ignoreColumnArray);
 		}
 
 		this.ignoreColumns = ignoreColumnsArray;
+
+		this.ignoreTables = new ArrayList<>(ignoreTables);
 	}
 
 	protected Map<String, Table> initTableMap(
@@ -562,7 +487,36 @@ public class TableUtil {
 		return tableMap;
 	}
 
-	protected void manageStar(String[] ignoreColumnArray, int i) {
+	protected boolean matchesValue(
+		String value, String match, String matchType) {
+
+		if ("*".equals(match)) {
+			return true;
+		}
+
+		if ("prefix".equals(matchType)) {
+			return value.startsWith(match);
+		}
+
+		if ("suffix".equals(matchType)) {
+			return value.endsWith(match);
+		}
+
+		if (matchType == null) {
+			return StringUtils.equals(match, value);
+		}
+
+		return false;
+	}
+
+	protected Map<String, Boolean> emptyTableCache = new ConcurrentHashMap<>();
+	protected List<String[]> ignoreColumns;
+	protected List<String> ignoreTables;
+	protected ModelUtil modelUtil;
+	protected Map<String, Table> tableMap = new TreeMap<>();
+	protected Set<String> tableNames = new TreeSet<>();
+
+	private void _manageStar(String[] ignoreColumnArray, int i) {
 		String column = ignoreColumnArray[i];
 
 		if (column == null) {
@@ -590,41 +544,6 @@ public class TableUtil {
 			ignoreColumnArray[i] = column.substring(pos + 1, column.length());
 			ignoreColumnArray[i + 1] = "suffix";
 		}
-	}
-
-	protected boolean matchesValue(
-		String value, String match, String matchType) {
-
-		if ("*".equals(match)) {
-			return true;
-		}
-
-		if ("prefix".equals(matchType)) {
-			return value.startsWith(match);
-		}
-
-		if ("suffix".equals(matchType)) {
-			return value.endsWith(match);
-		}
-
-		if (matchType == null) {
-			return StringUtils.equals(match, value);
-		}
-
-		return false;
-	}
-
-	protected Map<String, Long> classNameToClassNameIdMapping;
-	protected Map<String, String> classNameToTableMapping;
-	protected Map<String, Boolean> emptyTableCache = new ConcurrentHashMap<>();
-	protected List<String[]> ignoreColumns;
-	protected List<String> ignoreTables;
-	protected ModelUtil modelUtil;
-	protected Map<String, Table> tableMap = new TreeMap<>();
-	protected Set<String> tableNames = new TreeSet<>();
-	protected Map<String, String> tableToClassNameMapping;
-
-	private TableUtil() {
 	}
 
 	private static Logger _log = LogManager.getLogger(TableUtil.class);

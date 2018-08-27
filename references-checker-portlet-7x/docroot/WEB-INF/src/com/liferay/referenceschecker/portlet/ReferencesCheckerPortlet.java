@@ -355,12 +355,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		String excludeColumnsParam = ParamUtil.getString(
 			request, "excludeColumns");
 
-		List<String> excludeColumns = null;
-
-		if (excludeColumnsParam != null) {
-			excludeColumns = Arrays.asList(excludeColumnsParam.split(","));
-		}
-
 		Connection connection = null;
 
 		List<MissingReferences> listMissingReferences = null;
@@ -371,7 +365,18 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			ModelUtil modelUtil = new ModelUtilImpl();
 
 			ReferencesChecker referencesChecker = new ReferencesChecker(
-				connection, excludeColumns, ignoreNullValues, false, modelUtil);
+				connection);
+
+			if (excludeColumnsParam != null) {
+				List<String> excludeColumns =
+					Arrays.asList(excludeColumnsParam.split(","));
+
+				referencesChecker.addExcludeColumns(excludeColumns);
+			}
+
+			referencesChecker.setIgnoreNullValues(ignoreNullValues);
+			referencesChecker.initModelUtil(connection, modelUtil);
+			referencesChecker.initTableUtil(connection);
 
 			listMissingReferences = referencesChecker.execute(connection);
 		}
@@ -399,12 +404,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		String excludeColumnsParam = ParamUtil.getString(
 			request, "excludeColumns");
 
-		List<String> excludeColumns = null;
-
-		if (excludeColumnsParam != null) {
-			excludeColumns = Arrays.asList(excludeColumnsParam.split(","));
-		}
-
 		Connection connection = null;
 
 		Collection<Reference> references = null;
@@ -415,7 +414,18 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			ModelUtil modelUtil = new ModelUtilImpl();
 
 			ReferencesChecker referencesChecker = new ReferencesChecker(
-				connection, excludeColumns, true, false, modelUtil);
+				connection);
+
+			if (excludeColumnsParam != null) {
+				List<String> excludeColumns =
+					Arrays.asList(excludeColumnsParam.split(","));
+
+				referencesChecker.addExcludeColumns(excludeColumns);
+			}
+
+			referencesChecker.initModelUtil(connection, modelUtil);
+			referencesChecker.initTableUtil(connection);
+
 
 			references = referencesChecker.calculateReferences(
 				connection, ignoreEmptyTables);

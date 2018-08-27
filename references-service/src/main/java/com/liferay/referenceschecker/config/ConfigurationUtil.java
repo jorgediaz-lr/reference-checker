@@ -35,10 +35,9 @@ public class ConfigurationUtil {
 		return configurationFile;
 	}
 
-	public static Configuration readConfigurationFile(String configurationFile)
+	public static Configuration readConfigurationFile(
+			ClassLoader classLoader, String configurationFile)
 		throws IOException {
-
-		ClassLoader classLoader = ConfigurationUtil.class.getClassLoader();
 
 		InputStream inputStream = classLoader.getResourceAsStream(
 			configurationFile);

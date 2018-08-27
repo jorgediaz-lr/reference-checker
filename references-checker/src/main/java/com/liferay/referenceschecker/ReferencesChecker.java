@@ -20,6 +20,7 @@ import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.dao.TableUtil;
 import com.liferay.referenceschecker.model.ModelUtil;
+import com.liferay.referenceschecker.model.ModelUtilImpl;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.ref.ReferenceUtil;
@@ -38,7 +39,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -86,21 +86,11 @@ public class ReferencesChecker {
 		return buildNumber;
 	}
 
-	public ReferencesChecker(
-			Connection connection, List<String> excludeColumns,
-			boolean ignoreNullValues, boolean checkUndefinedTables,
-			ModelUtil modelUtil)
-		throws IOException, SQLException {
-
-		this.checkUndefinedTables = checkUndefinedTables;
+	public ReferencesChecker(Connection connection) throws SQLException {
 		dbType = SQLUtil.getDBType(connection);
-		this.excludeColumns = excludeColumns;
-		this.ignoreNullValues = ignoreNullValues;
 
 		try {
 			configuration = getConfiguration(connection);
-
-			tableUtil = getTableUtil(connection, configuration, modelUtil);
 		}
 		catch (IOException ioe) {
 			_log.error(
@@ -111,12 +101,19 @@ public class ReferencesChecker {
 		}
 	}
 
+	public void addExcludeColumns(List<String> excludeColumns) {
+		List<String> configurationIgnoreColumns =
+			configuration.getIgnoreColumns();
+
+		configurationIgnoreColumns.addAll(excludeColumns);
+	}
+
 	public Collection<Reference> calculateReferences(
 		Connection connection, boolean ignoreEmptyTables) {
 
-		ReferenceUtil referenceUtil = new ReferenceUtil(tableUtil);
+		ReferenceUtil referenceUtil = new ReferenceUtil(tableUtil, modelUtil);
 
-		referenceUtil.setCheckUndefinedTables(checkUndefinedTables);
+		referenceUtil.setCheckUndefinedTables(isCheckUndefinedTables());
 		referenceUtil.setIgnoreEmptyTables(ignoreEmptyTables);
 
 		return referenceUtil.calculateReferences(connection, configuration);
@@ -161,12 +158,12 @@ public class ReferencesChecker {
 
 		List<String> classNamesWithoutTable = new ArrayList<>();
 
-		for (String className : tableUtil.getClassNames()) {
+		for (String className : modelUtil.getClassNames()) {
 			if (!className.contains(".model.")) {
 				continue;
 			}
 
-			String tableName = tableUtil.getTableNameFromClassName(className);
+			String tableName = modelUtil.getTableName(className);
 
 			if (tableName == null) {
 				classNamesWithoutTable.add(className);
@@ -180,29 +177,35 @@ public class ReferencesChecker {
 
 			for (String className : classNamesWithoutTable) {
 				output.add(
-					className + "=" + tableUtil.getClassNameId(className));
+					className + "=" + modelUtil.getClassNameId(className));
 			}
 
 			output.add("");
 		}
 
-		List<Table> tablesWithoutClassName = new ArrayList<>();
-		List<Table> tablesWithClassName = new ArrayList<>();
+		List<String> tablesWithoutClassName = new ArrayList<>();
+		List<String> tablesWithClassName = new ArrayList<>();
 
 		for (Table table : tableUtil.getTables()) {
-			if (table.getClassNameId() == -1) {
-				tablesWithoutClassName.add(table);
+			String tableName = table.getTableName();
+
+			String className = modelUtil.getClassName(tableName);
+
+			Long classNameId = modelUtil.getClassNameId(className);
+
+			if ((className == null) || (classNameId == null)) {
+				tablesWithoutClassName.add(tableName);
 			}
-			else if (table.getClassNameId() != 0) {
-				tablesWithClassName.add(table);
+			else if (!StringUtils.isEmpty(className)) {
+				tablesWithClassName.add(tableName);
 			}
 		}
 
 		if (!tablesWithoutClassName.isEmpty()) {
 			output.add("Tables without className information:");
 
-			for (Table table : tablesWithoutClassName) {
-				output.add(table.getTableName());
+			for (String tableName : tablesWithoutClassName) {
+				output.add(tableName);
 			}
 
 			output.add("");
@@ -211,10 +214,12 @@ public class ReferencesChecker {
 		if (!tablesWithClassName.isEmpty()) {
 			output.add("Table-className mapping information:");
 
-			for (Table t : tablesWithClassName) {
-				output.add(
-					t.getTableName() + "=" + t.getClassName() + "," +
-						t.getClassNameId());
+			for (String tableName : tablesWithClassName) {
+				String className = modelUtil.getClassName(tableName);
+
+				Long classNameId = modelUtil.getClassNameId(className);
+
+				output.add(tableName + "=" + className + "," + classNameId);
 			}
 
 			output.add("");
@@ -242,8 +247,7 @@ public class ReferencesChecker {
 
 			for (String missingTable : missingTables) {
 				output.add(
-					missingTable + "=" +
-						tableUtil.getClassNameFromTableName(missingTable));
+					missingTable + "=" + modelUtil.getClassName(missingTable));
 			}
 
 			output.add("");
@@ -252,7 +256,7 @@ public class ReferencesChecker {
 		List<String> missingClassNames = new ArrayList<>(
 			tableToClassNameMapping.values());
 
-		missingClassNames.removeAll(tableUtil.getClassNames());
+		missingClassNames.removeAll(modelUtil.getClassNames());
 
 		List<String> missingClassNamesNoBlank = new ArrayList<>();
 
@@ -321,6 +325,41 @@ public class ReferencesChecker {
 		return listMissingReferences;
 	}
 
+	public void initModelUtil(Connection connection) throws SQLException {
+		ModelUtil modelUtil = new ModelUtilImpl();
+
+		initModelUtil(connection, modelUtil);
+	}
+
+	public void initModelUtil(Connection connection, ModelUtil modelUtil)
+		throws SQLException {
+
+		Map<String, String> tableNameToClassNameMapping =
+			configuration.getTableToClassNameMapping();
+
+		modelUtil.init(connection, tableNameToClassNameMapping);
+
+		this.modelUtil = modelUtil;
+	}
+
+	public void initTableUtil(Connection connection) throws SQLException {
+		List<String> ignoreColumns = configuration.getIgnoreColumns();
+
+		List<String> ignoreTables = configuration.getIgnoreTables();
+
+		tableUtil = new TableUtil();
+
+		tableUtil.init(connection, ignoreColumns, ignoreTables);
+	}
+
+	public boolean isCheckUndefinedTables() {
+		return checkUndefinedTables;
+	}
+
+	public boolean isIgnoreNullValues() {
+		return ignoreNullValues;
+	}
+
 	public Collection<Object[]> queryInvalidValues(
 			Connection connection, Query originQuery, Query destinationQuery)
 		throws SQLException {
@@ -366,32 +405,12 @@ public class ReferencesChecker {
 		return invalidValuesSet;
 	}
 
-	protected Map<String, Long> getClassNameIdsMapping(Connection connection)
-		throws SQLException {
+	public void setCheckUndefinedTables(boolean checkUndefinedTables) {
+		this.checkUndefinedTables = checkUndefinedTables;
+	}
 
-		Map<String, Long> mapping = new HashMap<>();
-
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
-		try {
-			ps = connection.prepareStatement(
-				"select classNameId, value from ClassName_");
-
-			rs = ps.executeQuery();
-
-			while (rs.next()) {
-				long classNameId = rs.getLong("classNameId");
-				String value = rs.getString("value");
-
-				mapping.put(value, classNameId);
-			}
-		}
-		finally {
-			JDBCUtil.cleanUp(ps, rs);
-		}
-
-		return mapping;
+	public void setIgnoreNullValues(boolean ignoreNullValues) {
+		this.ignoreNullValues = ignoreNullValues;
 	}
 
 	protected Configuration getConfiguration(Connection connection)
@@ -412,15 +431,10 @@ public class ReferencesChecker {
 		String configurationFile = ConfigurationUtil.getConfigurationFileName(
 			liferayBuildNumber);
 
+		Class<?> clazz = getClass();
+
 		Configuration configuration = ConfigurationUtil.readConfigurationFile(
-			configurationFile);
-
-		if (excludeColumns != null) {
-			List<String> configurationIgnoreColumns =
-				configuration.getIgnoreColumns();
-
-			configurationIgnoreColumns.addAll(excludeColumns);
-		}
+			clazz.getClassLoader(), configurationFile);
 
 		return configuration;
 	}
@@ -505,28 +519,8 @@ public class ReferencesChecker {
 		return sb.toString();
 	}
 
-	protected TableUtil getTableUtil(
-			Connection connection, Configuration configuration,
-			ModelUtil modelUtil)
-		throws SQLException {
-
-		Map<String, String> tableToClassNameMapping =
-			configuration.getTableToClassNameMapping();
-
-		Map<String, Long> classNameToClassNameIdMapping =
-			getClassNameIdsMapping(connection);
-
-		List<String> ignoreColumns = configuration.getIgnoreColumns();
-
-		List<String> ignoreTables = configuration.getIgnoreTables();
-
-		return TableUtil.getTableUtil(
-			connection, tableToClassNameMapping, classNameToClassNameIdMapping,
-			ignoreColumns, ignoreTables, modelUtil);
-	}
-
 	protected boolean isValidValue(Object[] result) {
-		if (!ignoreNullValues) {
+		if (!isIgnoreNullValues()) {
 			return false;
 		}
 
@@ -551,11 +545,11 @@ public class ReferencesChecker {
 		return true;
 	}
 
-	protected boolean checkUndefinedTables;
+	protected boolean checkUndefinedTables = false;
 	protected Configuration configuration;
 	protected String dbType;
-	protected List<String> excludeColumns;
-	protected boolean ignoreNullValues;
+	protected boolean ignoreNullValues = true;
+	protected ModelUtil modelUtil;
 	protected TableUtil tableUtil;
 
 	private boolean _isNull(Object obj) {

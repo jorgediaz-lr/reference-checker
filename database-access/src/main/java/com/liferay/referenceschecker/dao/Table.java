@@ -56,8 +56,7 @@ public class Table implements Comparable<Table> {
 	public Table(
 		String tableName, List<String> primaryKeys, List<String> columnNames,
 		List<Integer> columnTypes, List<String> columnTypesSqlName,
-		List<Integer> columnSizes, List<Boolean> columnNullables,
-		String className, Long classNameId) {
+		List<Integer> columnSizes, List<Boolean> columnNullables) {
 
 		this.tableName = tableName;
 		tableNameLowerCase = StringUtils.lowerCase(tableName);
@@ -88,21 +87,6 @@ public class Table implements Comparable<Table> {
 		for (int i = 0; i < columnNullables.size(); i++) {
 			this.columnNullables[i] = columnNullables.get(i);
 		}
-
-		if (className == null) {
-			this.className = null;
-			this.classNameId = -1;
-		}
-		else if (StringUtils.isBlank(className) || (classNameId == null) ||
-				 (classNameId == 0L)) {
-
-			this.className = StringUtils.EMPTY;
-			this.classNameId = 0;
-		}
-		else {
-			this.className = className;
-			this.classNameId = classNameId;
-		}
 	}
 
 	@Override
@@ -119,14 +103,6 @@ public class Table implements Comparable<Table> {
 		Table table = (Table)obj;
 
 		return getTableNameLowerCase().equals(table.getTableNameLowerCase());
-	}
-
-	public String getClassName() {
-		return className;
-	}
-
-	public long getClassNameId() {
-		return classNameId;
 	}
 
 	public boolean getColumnIsNullable(int i) {
@@ -344,25 +320,22 @@ public class Table implements Comparable<Table> {
 			this(
 				tableName, new ArrayList<String>(), new ArrayList<String>(),
 				new ArrayList<Integer>(), new ArrayList<String>(),
-				new ArrayList<Integer>(), new ArrayList<Boolean>(), null, null);
+				new ArrayList<Integer>(), new ArrayList<Boolean>());
 		}
 
 		public Raw(
 			String tableName, List<String> primaryKeys,
 			List<String> columnNames, List<Integer> columnTypes,
 			List<String> columnTypesSqlName, List<Integer> columnSizes,
-			List<Boolean> columnNullables, String className, Long classNameId) {
+			List<Boolean> columnNullables) {
 
 			super(
 				tableName, primaryKeys, columnNames, columnTypes,
-				columnTypesSqlName, columnSizes, columnNullables, className,
-				classNameId);
+				columnTypesSqlName, columnSizes, columnNullables);
 		}
 
 	}
 
-	protected String className;
-	protected long classNameId;
 	protected String[] columnNames;
 	protected boolean[] columnNullables;
 	protected int[] columnSizes;

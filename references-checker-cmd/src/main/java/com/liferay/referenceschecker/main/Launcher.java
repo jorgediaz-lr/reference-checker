@@ -462,19 +462,21 @@ public class Launcher {
 	}
 
 	private static final Map<String, AppServer> _appServers =
-		new LinkedHashMap<>();
+		new LinkedHashMap<String, AppServer>() {
+			{
+				put("jboss", AppServer.getJBossEAPAppServer());
+				put("jonas", AppServer.getJOnASAppServer());
+				put("resin", AppServer.getResinAppServer());
+				put("tcserver", AppServer.getTCServerAppServer());
+				put("tomcat", AppServer.getTomcatAppServer());
+				put("weblogic", AppServer.getWebLogicAppServer());
+				put("websphere", AppServer.getWebSphereAppServer());
+				put("wildfly", AppServer.getWildFlyAppServer());
+			}
+		};
 	private static File _jarDir;
 
 	static {
-		_appServers.put("jboss", AppServer.getJBossEAPAppServer());
-		_appServers.put("jonas", AppServer.getJOnASAppServer());
-		_appServers.put("resin", AppServer.getResinAppServer());
-		_appServers.put("tcserver", AppServer.getTCServerAppServer());
-		_appServers.put("tomcat", AppServer.getTomcatAppServer());
-		_appServers.put("weblogic", AppServer.getWebLogicAppServer());
-		_appServers.put("websphere", AppServer.getWebSphereAppServer());
-		_appServers.put("wildfly", AppServer.getWildFlyAppServer());
-
 		_jarDir = getReferencesCheckerLibFolder();
 	}
 

@@ -28,7 +28,6 @@ import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.Html;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsUtil;
@@ -58,7 +57,7 @@ public class InitPortal {
 	public InitPortal() throws IOException {
 	}
 
-	public void connectToDatabase(String databaseCfg) throws Exception {
+	public DataSource connectToDatabase(String databaseCfg) throws Exception {
 		File databasePropertiesFile = new File(databaseCfg);
 
 		Properties databaseProperties = new Properties();
@@ -91,10 +90,12 @@ public class InitPortal {
 		String username = databaseProperties.getProperty(
 			"jdbc.default.username");
 
-		_initDatabase(
+		DataSource dataSource = _initDatabase(
 			driverClassName, url, username, password, StringUtils.EMPTY);
 
 		databaseProperties.store(databasePropertiesFile);
+
+		return dataSource;
 	}
 
 	public void initLiferayClasses() throws Exception {
@@ -327,7 +328,7 @@ public class InitPortal {
 		return databaseProperties;
 	}
 
-	private void _initDatabase(
+	private DataSource _initDatabase(
 			String driverClassName, String url, String userName,
 			String password, String jndiName)
 		throws Exception {
@@ -396,7 +397,7 @@ public class InitPortal {
 			}
 		}
 
-		(new InfrastructureUtil()).setDataSource(dataSource);
+		return dataSource;
 	}
 
 	private Properties _readProperties(File file) {
@@ -416,18 +417,18 @@ public class InitPortal {
 
 	private static Logger _log = LogManager.getLogger(InitPortal.class);
 
-	private static final Map<String, Database> _databases = new HashMap<>();
-
-	static {
-		_databases.put(SQLUtil.TYPE_DB2, Database.getDB2Database());
-		_databases.put(SQLUtil.TYPE_MARIADB, Database.getMariaDBDatabase());
-		_databases.put(SQLUtil.TYPE_MYSQL, Database.getMySQLDatabase());
-		_databases.put(SQLUtil.TYPE_ORACLE, Database.getOracleDataSource());
-		_databases.put(
-			SQLUtil.TYPE_POSTGRESQL, Database.getPostgreSQLDatabase());
-		_databases.put(SQLUtil.TYPE_SQLSERVER, Database.getSQLServerDatabase());
-		_databases.put(SQLUtil.TYPE_SYBASE, Database.getSybaseDatabase());
-	}
+	private static final Map<String, Database> _databases =
+		new HashMap<String, Database>() {
+			{
+				put(SQLUtil.TYPE_DB2, Database.getDB2Database());
+				put(SQLUtil.TYPE_MARIADB, Database.getMariaDBDatabase());
+				put(SQLUtil.TYPE_MYSQL, Database.getMySQLDatabase());
+				put(SQLUtil.TYPE_ORACLE, Database.getOracleDataSource());
+				put(SQLUtil.TYPE_POSTGRESQL, Database.getPostgreSQLDatabase());
+				put(SQLUtil.TYPE_SQLSERVER, Database.getSQLServerDatabase());
+				put(SQLUtil.TYPE_SYBASE, Database.getSybaseDatabase());
+			}
+		};
 
 	private final ConsoleReader _consoleReader = new ConsoleReader();
 

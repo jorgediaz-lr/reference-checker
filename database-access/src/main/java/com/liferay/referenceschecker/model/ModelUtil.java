@@ -14,7 +14,10 @@
 
 package com.liferay.referenceschecker.model;
 
-import java.util.Collection;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -24,12 +27,15 @@ public interface ModelUtil {
 
 	public String getClassName(String tableName);
 
-	public String getClassNameId(String className);
+	public Long getClassNameId(String className);
 
 	public Set<String> getClassNames();
 
 	public String getTableName(String className);
 
-	public void initModelMappings(Collection<String> classNames);
+	public void init(
+			Connection connection,
+			Map<String, String> tableNameToClassNameMapping)
+		throws SQLException;
 
 }

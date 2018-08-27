@@ -17,12 +17,9 @@ package com.liferay.referenceschecker.main;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
-import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.referenceschecker.main.util.CommandArguments;
 import com.liferay.referenceschecker.main.util.InitPortal;
 import com.liferay.referenceschecker.main.util.TeePrintStream;
-import com.liferay.referenceschecker.model.ModelUtil;
-import com.liferay.referenceschecker.portal.ModelUtilImpl;
 import com.liferay.referenceschecker.portal.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
@@ -45,6 +42,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import javax.sql.DataSource;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -94,19 +93,15 @@ public class ReferencesChecker {
 
 		initPortal.initLiferayClasses();
 
-		initPortal.connectToDatabase(databaseCfg);
+		DataSource dataSource = initPortal.connectToDatabase(databaseCfg);
 
 		boolean checkUndefinedTables = commandArguments.checkUndefinedTables();
-
-		Connection connection = null;
 
 		ReferencesChecker referencesChecker;
 
 		try {
-			connection = DataAccess.getConnection();
-
 			referencesChecker = new ReferencesChecker(
-				connection, filenamePrefix, filenameSuffix,
+				dataSource, filenamePrefix, filenameSuffix,
 				missingReferencesLimit, checkUndefinedTables);
 		}
 		catch (Throwable t) {
@@ -139,18 +134,30 @@ public class ReferencesChecker {
 	}
 
 	public ReferencesChecker(
-			Connection connection, String filenamePrefix, String filenameSuffix,
+			DataSource dataSource, String filenamePrefix, String filenameSuffix,
 			int missingReferencesLimit, boolean checkUndefinedTables)
 		throws Exception {
 
+		this.dataSource = dataSource;
 		this.filenamePrefix = filenamePrefix;
 		this.filenameSuffix = filenameSuffix;
 		this.missingReferencesLimit = missingReferencesLimit;
 
-		ModelUtil modelUtil = new ModelUtilImpl();
+		Connection connection = null;
 
-		referencesChecker = new com.liferay.referenceschecker.ReferencesChecker(
-			connection, null, true, checkUndefinedTables, modelUtil);
+		try {
+			connection = dataSource.getConnection();
+
+			referencesChecker =
+				new com.liferay.referenceschecker.ReferencesChecker(connection);
+
+			referencesChecker.setCheckUndefinedTables(checkUndefinedTables);
+			referencesChecker.initModelUtil(connection);
+			referencesChecker.initTableUtil(connection);
+		}
+		finally {
+			JDBCUtil.cleanUp(connection);
+		}
 	}
 
 	protected static CommandArguments getCommandArguments(String[] args)
@@ -199,7 +206,7 @@ public class ReferencesChecker {
 		Collection<Reference> references;
 
 		try {
-			connection = DataAccess.getConnection();
+			connection = dataSource.getConnection();
 
 			references = referencesChecker.calculateReferences(
 				connection, false);
@@ -240,7 +247,7 @@ public class ReferencesChecker {
 		Map<String, Long> mapTableCount;
 
 		try {
-			connection = DataAccess.getConnection();
+			connection = dataSource.getConnection();
 
 			mapTableCount = referencesChecker.calculateTableCount(connection);
 		}
@@ -278,7 +285,7 @@ public class ReferencesChecker {
 		List<String> outputList;
 
 		try {
-			connection = DataAccess.getConnection();
+			connection = dataSource.getConnection();
 
 			outputList = referencesChecker.dumpDatabaseInfo(connection);
 		}
@@ -311,7 +318,7 @@ public class ReferencesChecker {
 		Connection connection = null;
 
 		try {
-			connection = DataAccess.getConnection();
+			connection = dataSource.getConnection();
 
 			listMissingReferences = referencesChecker.execute(connection);
 		}
@@ -346,6 +353,7 @@ public class ReferencesChecker {
 		System.out.println("Output was written to file: " + outputFile);
 	}
 
+	protected DataSource dataSource;
 	protected String filenamePrefix;
 	protected String filenameSuffix;
 	protected int missingReferencesLimit;
