@@ -36,6 +36,7 @@ import com.liferay.portlet.documentlibrary.NoSuchFileEntryException;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
 import com.liferay.portlet.documentlibrary.service.DLAppLocalServiceUtil;
 import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
+import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
@@ -50,9 +51,7 @@ import com.liferay.util.bridges.mvc.MVCPortlet;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
 import java.sql.Connection;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -72,7 +71,6 @@ import javax.portlet.RenderResponse;
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
 import javax.portlet.ResourceURL;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
@@ -154,7 +152,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
 
-		return ReferencesCheckerOutput.generateCSVOutputCheckReferences(
+		return OutputUtil.generateCSVOutputCheckReferences(
 			headers, listMissingReferences, -1);
 	}
 
@@ -172,8 +170,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
 
-		return ReferencesCheckerOutput.generateCSVOutputMappingList(
-			headers, references);
+		return OutputUtil.generateCSVOutputMappingList(headers, references);
 	}
 
 	public static SearchContainer<MissingReferences>

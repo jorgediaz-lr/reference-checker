@@ -39,6 +39,7 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
@@ -163,7 +164,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
 
-		return ReferencesCheckerOutput.generateCSVOutputCheckReferences(
+		return OutputUtil.generateCSVOutputCheckReferences(
 			headers, listMissingReferences, -1);
 	}
 
@@ -181,8 +182,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
 
-		return ReferencesCheckerOutput.generateCSVOutputMappingList(
-			headers, references);
+		return OutputUtil.generateCSVOutputMappingList(headers, references);
 	}
 
 	public static SearchContainer<MissingReferences>

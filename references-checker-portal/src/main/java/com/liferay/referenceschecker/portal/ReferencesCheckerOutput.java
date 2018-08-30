@@ -17,8 +17,8 @@ package com.liferay.referenceschecker.portal;
 import com.liferay.portal.kernel.dao.search.ResultRow;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.dao.Query;
-import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 
@@ -26,115 +26,20 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.portlet.PortletURL;
 import javax.portlet.RenderRequest;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * @author Jorge Díaz
  */
 public class ReferencesCheckerOutput {
-
-	public static List<String> generateCSVOutputCheckReferences(
-		List<String> headers, List<MissingReferences> listMissingReferences,
-		int missingReferencesLimit) {
-
-		List<String> out = new ArrayList<>();
-
-		out.add(getCSVRow(headers));
-
-		for (MissingReferences missingReferences : listMissingReferences) {
-			List<String> line = generateReferenceCells(
-				missingReferences.getReference(), false);
-
-			Throwable throwable = missingReferences.getThrowable();
-			Collection<Object[]> missingValues = missingReferences.getValues();
-
-			if ((throwable != null) || (missingValues == null)) {
-				line.add("-1");
-				line.add("Error checking references");
-			}
-
-			if (throwable != null) {
-				line.add(
-					"EXCEPTION: " + throwable.getClass() + " - " +
-						throwable.getMessage());
-			}
-			else if (missingValues != null) {
-				line.add(String.valueOf(missingValues.size()));
-
-				String missingReferencesString = _concatenate(
-					missingValues, missingReferencesLimit);
-
-				line.add(missingReferencesString);
-			}
-
-			out.add(getCSVRow(line));
-		}
-
-		return out;
-	}
-
-	public static List<String> generateCSVOutputMap(
-		List<String> headers, Map<String, ?> mapTableCount) {
-
-		List<String> out = new ArrayList<>();
-
-		out.add(getCSVRow(headers));
-
-		for (Entry<String, ?> entry : mapTableCount.entrySet()) {
-			List<String> line = new ArrayList<>();
-
-			line.add(entry.getKey());
-
-			String valueString;
-
-			Object value = entry.getValue();
-
-			if (value instanceof List) {
-				List<?> list = (List<?>)value;
-
-				valueString = Arrays.toString(list.toArray());
-			}
-			else {
-				valueString = String.valueOf(value);
-			}
-
-			line.add(valueString);
-
-			out.add(getCSVRow(line));
-		}
-
-		return out;
-	}
-
-	public static List<String> generateCSVOutputMappingList(
-		List<String> headers, Collection<Reference> references) {
-
-		List<String> out = new ArrayList<>();
-
-		out.add(getCSVRow(headers));
-
-		for (Reference reference : references) {
-			if (!reference.isHidden()) {
-				List<String> line = generateReferenceCells(reference, false);
-
-				out.add(getCSVRow(line));
-			}
-		}
-
-		return out;
-	}
 
 	public static SearchContainer<MissingReferences>
 		generateSearchContainerCheckReferences(
@@ -222,20 +127,6 @@ public class ReferencesCheckerOutput {
 		return searchContainer;
 	}
 
-	public static String getCSVRow(List<String> rowData) {
-		return getCSVRow(rowData, ",");
-	}
-
-	public static String getCSVRow(List<String> rowData, String sep) {
-		String row = StringUtils.EMPTY;
-
-		for (String aux : rowData) {
-			row = addCell(row, aux, sep);
-		}
-
-		return row;
-	}
-
 	public static ResultRow newResultRow(
 		Object obj, String primaryKey, int pos) {
 
@@ -246,70 +137,6 @@ public class ReferencesCheckerOutput {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	protected static String addCell(String line, String cell, String sep) {
-		if (cell.contains(StringUtils.SPACE) || cell.contains(sep)) {
-			cell = "\"" + cell + "\"";
-		}
-
-		if (StringUtils.isBlank(line)) {
-			line = cell;
-		}
-		else {
-			line += sep + cell;
-		}
-
-		return line;
-	}
-
-	protected static List<String> generateReferenceCells(
-		Query query, boolean withTypes) {
-
-		List<String> line = new ArrayList<>();
-
-		Table table = query.getTable();
-
-		String tableWithCondition = table.getTableName();
-
-		if (query.getCondition() != null) {
-			StringBuilder sb = new StringBuilder();
-
-			sb.append(tableWithCondition);
-			sb.append(" WHERE ");
-			sb.append(query.getCondition());
-
-			tableWithCondition = sb.toString();
-		}
-
-		String attributes;
-
-		if (withTypes) {
-			attributes = Table.getColumnsWithTypes(
-				query.getTable(), query.getColumns());
-		}
-		else {
-			attributes = StringUtils.join(query.getColumns(), ",");
-		}
-
-		line.add(tableWithCondition);
-		line.add(attributes);
-
-		return line;
-	}
-
-	protected static List<String> generateReferenceCells(
-		Reference reference, boolean withTypes) {
-
-		List<String> line = new ArrayList<>();
-
-		Query originQuery = reference.getOriginQuery();
-		Query destinationQuery = reference.getDestinationQuery();
-
-		line.addAll(generateReferenceCells(originQuery, withTypes));
-		line.addAll(generateReferenceCells(destinationQuery, withTypes));
-
-		return line;
 	}
 
 	protected static Object generateSearchContainerRowCheckReferences(
@@ -323,7 +150,7 @@ public class ReferencesCheckerOutput {
 		Object row = newResultRow(
 			missingReferences, originQuery.toString(), numberOfRows);
 
-		List<String> line = generateReferenceCells(
+		List<String> line = OutputUtil.generateReferenceCells(
 			missingReferences.getReference(), false);
 
 		Class<?> rowClass = row.getClass();
@@ -368,7 +195,7 @@ public class ReferencesCheckerOutput {
 		Object row = newResultRow(
 			reference, originQuery.toString(), numberOfRows);
 
-		List<String> line = generateReferenceCells(reference, true);
+		List<String> line = OutputUtil.generateReferenceCells(reference, true);
 
 		Class<?> rowClass = row.getClass();
 
@@ -384,7 +211,7 @@ public class ReferencesCheckerOutput {
 	protected static String getOutput(
 		Collection<Object[]> missingValues, int numberOfRows, int maxSize) {
 
-		String outputString = _concatenate(missingValues);
+		String outputString = OutputUtil.concatenate(missingValues);
 
 		outputString = StringEscapeUtils.escapeHtml4(
 			outputString.replace(",", ", "));
@@ -394,7 +221,8 @@ public class ReferencesCheckerOutput {
 		int overflow = missingValues.size() - maxSize;
 
 		if (overflow > 0) {
-			outputStringTrimmed = _concatenate(missingValues, maxSize);
+			outputStringTrimmed = OutputUtil.concatenate(
+				missingValues, maxSize);
 
 			outputStringTrimmed = StringEscapeUtils.escapeHtml4(
 				outputStringTrimmed.replace(",", ", "));
@@ -418,49 +246,6 @@ public class ReferencesCheckerOutput {
 		}
 
 		return outputString;
-	}
-
-	private static String _concatenate(Collection<Object[]> values) {
-		return _concatenate(values, -1);
-	}
-
-	private static String _concatenate(Collection<Object[]> values, int limit) {
-		if ((limit == 0) || (values == null) || values.isEmpty()) {
-			return StringUtils.EMPTY;
-		}
-
-		StringBuilder sb = new StringBuilder(values.size() * 2);
-
-		int i = 0;
-
-		for (Object[] value : values) {
-			if (i != 0) {
-				sb.append(",");
-			}
-
-			String string;
-
-			if (value.length == 1) {
-				string = String.valueOf(value[0]);
-			}
-			else {
-				string = Arrays.toString(value);
-			}
-
-			sb.append(string);
-
-			i++;
-
-			if ((limit >= 0) && (i >= limit)) {
-				break;
-			}
-		}
-
-		if ((limit > 0) && (values.size() >= limit)) {
-			sb.append("...");
-		}
-
-		return sb.toString();
 	}
 
 	private static String _escapeText(String text) {

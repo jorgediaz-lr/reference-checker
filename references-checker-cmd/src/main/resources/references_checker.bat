@@ -14,7 +14,7 @@ if %JAVA_VERSION% LSS 18 (
 
 set "PT_OPTS=%PT_OPTS% -Xmx1024m -Xms512m -Dfile.encoding=UTF8"
 
-java %PT_OPTS% -cp "lib\*" com.liferay.referenceschecker.main.Launcher app-server.properties com.liferay.referenceschecker.main.ReferencesChecker main %*
+java %PT_OPTS% -cp ".;lib\*" com.liferay.referenceschecker.main.ReferencesChecker %*
 
 popd
 

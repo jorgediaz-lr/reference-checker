@@ -17,10 +17,10 @@ package com.liferay.referenceschecker.main;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
+import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.main.util.CommandArguments;
-import com.liferay.referenceschecker.main.util.InitPortal;
+import com.liferay.referenceschecker.main.util.InitDatabase;
 import com.liferay.referenceschecker.main.util.TeePrintStream;
-import com.liferay.referenceschecker.portal.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.JDBCUtil;
@@ -89,17 +89,16 @@ public class ReferencesChecker {
 		System.setOut(
 			new TeePrintStream(new FileOutputStream(logFile), System.out));
 
-		InitPortal initPortal = new InitPortal();
-
-		initPortal.initLiferayClasses();
-
-		DataSource dataSource = initPortal.connectToDatabase(databaseCfg);
-
-		boolean checkUndefinedTables = commandArguments.checkUndefinedTables();
-
 		ReferencesChecker referencesChecker;
 
 		try {
+			InitDatabase initDB = new InitDatabase();
+
+			DataSource dataSource = initDB.connectToDatabase(databaseCfg);
+
+			boolean checkUndefinedTables =
+				commandArguments.checkUndefinedTables();
+
 			referencesChecker = new ReferencesChecker(
 				dataSource, filenamePrefix, filenameSuffix,
 				missingReferencesLimit, checkUndefinedTables);
@@ -218,9 +217,8 @@ public class ReferencesChecker {
 		String[] headers =
 			{"origin table", "attributes", "destination table", "attributes"};
 
-		List<String> outputList =
-			ReferencesCheckerOutput.generateCSVOutputMappingList(
-				Arrays.asList(headers), references);
+		List<String> outputList = OutputUtil.generateCSVOutputMappingList(
+			Arrays.asList(headers), references);
 
 		String outputFile = _getOutputFileName("references", "csv");
 
@@ -257,7 +255,7 @@ public class ReferencesChecker {
 
 		String[] headers = {"table", "count"};
 
-		List<String> outputList = ReferencesCheckerOutput.generateCSVOutputMap(
+		List<String> outputList = OutputUtil.generateCSVOutputMap(
 			Arrays.asList(headers), mapTableCount);
 
 		String outputFile = _getOutputFileName("tablesCount", "csv");
@@ -331,10 +329,9 @@ public class ReferencesChecker {
 			"#", "missing references"
 		};
 
-		List<String> outputList =
-			ReferencesCheckerOutput.generateCSVOutputCheckReferences(
-				Arrays.asList(headers), listMissingReferences,
-				missingReferencesLimit);
+		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
+			Arrays.asList(headers), listMissingReferences,
+			missingReferencesLimit);
 
 		String outputFile = _getOutputFileName("missing-references", "csv");
 

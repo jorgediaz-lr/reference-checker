@@ -145,8 +145,11 @@ public class Query implements Comparable<Query> {
 
 		Stream<Table> stream = tableList.stream();
 
-		return stream.map(table -> table.getName()).collect(
-			Collectors.toList());
+		return stream.map(
+			table -> table.getName()
+		).collect(
+			Collectors.toList()
+		);
 	}
 
 	public QueryType getQueryType() {

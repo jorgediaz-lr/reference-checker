@@ -4,13 +4,12 @@ plugins {
 
 dependencies {
 	compile group: "com.beust", name: "jcommander", version: "1.72"
-	compile group: "com.liferay.portal", name: "portal-service", version: "6.2.5"
+	compile group: "com.zaxxer", name: "HikariCP", version: "3.2.0"
 	compile group: "jline", name: "jline", version: "2.14.6"
 	compile group: "log4j", name: "log4j", version: "1.2.17"
 	compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
 	compile group: "org.apache.commons", name: "commons-text", version: "1.4"
 	compile project(":references-checker")
-	compile project(":references-checker-portal")
 }
 
 version = '0.1.0'

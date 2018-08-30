@@ -19,4 +19,4 @@ PT_OPTS="$PT_OPTS -Xmx1024m -Xms512m -Dfile.encoding=UTF8"
 
 cd "$(dirname "$scriptpath")"
 
-java $PT_OPTS -cp "lib/*" com.liferay.referenceschecker.main.Launcher app-server.properties com.liferay.referenceschecker.main.ReferencesChecker main "$@"
+java $PT_OPTS -cp ".:lib/*" com.liferay.referenceschecker.main.ReferencesChecker "$@"

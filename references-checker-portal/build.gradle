@@ -10,6 +10,7 @@ dependencies {
 	compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
 	compile group: "org.apache.commons", name: "commons-text", version: "1.4"
 	compile project(":database-access")
+	compile project(":references-checker")
 	compile project(":references-service")
 }
 
