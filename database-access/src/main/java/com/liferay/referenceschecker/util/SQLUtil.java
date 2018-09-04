@@ -24,6 +24,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -49,7 +52,35 @@ public class SQLUtil {
 
 	public static final String TYPE_UNKNOWN = "unknown";
 
-	public static String castTextColumn(String dbType, String column) {
+	public static List<String> castColumnsToText(
+		String dbType, String prefix, List<String> columns,
+		List<Class<?>> columnTypes, List<Class<?>> castTypes) {
+
+		List<String> castedColumns = new ArrayList<>();
+
+		for (int i = 0; i < columns.size(); i++) {
+			String column = columns.get(i);
+
+			Class<?> columnType = columnTypes.get(i);
+			Class<?> castType = castTypes.get(i);
+
+			if (StringUtils.isNotBlank(prefix)) {
+				column = prefix + "." + column;
+			}
+
+			if (!columnType.equals(castType) && String.class.equals(castType) &&
+				!Object.class.equals(columnType)) {
+
+				column = castColumnToText(dbType, column);
+			}
+
+			castedColumns.add(column);
+		}
+
+		return castedColumns;
+	}
+
+	public static String castColumnToText(String dbType, String column) {
 		if (dbType.equals(TYPE_DB2)) {
 			return "CAST(" + column + " AS VARCHAR(254))";
 		}

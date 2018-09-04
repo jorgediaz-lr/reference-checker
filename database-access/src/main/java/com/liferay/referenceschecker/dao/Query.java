@@ -27,34 +27,6 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Query implements Comparable<Query> {
 
-	public static List<String> castColumnsToText(
-		String dbType, String prefix, List<String> columns,
-		List<Class<?>> columnTypes, List<Class<?>> castTypes) {
-
-		List<String> castedColumns = new ArrayList<>();
-
-		for (int i = 0; i < columns.size(); i++) {
-			String column = columns.get(i);
-
-			Class<?> columnType = columnTypes.get(i);
-			Class<?> castType = castTypes.get(i);
-
-			if (StringUtils.isNotBlank(prefix)) {
-				column = prefix + "." + column;
-			}
-
-			if (!columnType.equals(castType) && String.class.equals(castType) &&
-				!Object.class.equals(columnType)) {
-
-				column = SQLUtil.castTextColumn(dbType, column);
-			}
-
-			castedColumns.add(column);
-		}
-
-		return castedColumns;
-	}
-
 	public Query(Table table, List<String> columns, String condition) {
 		this.columns = _rewriteConstants(columns);
 		columnsString = StringUtils.join(this.columns, ",");
@@ -101,7 +73,7 @@ public class Query implements Comparable<Query> {
 		List<Class<?>> destinationTypes = destinationTable.getColumnTypesClass(
 			destinationColumns);
 
-		return castColumnsToText(
+		return SQLUtil.castColumnsToText(
 			dbType, tableAlias, columns, columnTypes, destinationTypes);
 	}
 
