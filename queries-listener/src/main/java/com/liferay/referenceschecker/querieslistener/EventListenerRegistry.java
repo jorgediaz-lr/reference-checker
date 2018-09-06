@@ -31,6 +31,10 @@ public class EventListenerRegistry {
 		return INSTANCE;
 	}
 
+	public EventListener getEventListener(String className) {
+		return _eventListeners.get(className);
+	}
+
 	public Set<EventListener> getEventListeners() {
 		return new HashSet<>(_eventListeners.values());
 	}

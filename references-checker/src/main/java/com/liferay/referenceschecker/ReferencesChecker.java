@@ -86,8 +86,16 @@ public class ReferencesChecker {
 		return buildNumber;
 	}
 
-	public ReferencesChecker(Connection connection) throws SQLException {
-		dbType = SQLUtil.getDBType(connection);
+	public ReferencesChecker(Connection connection) {
+		try {
+			dbType = SQLUtil.getDBType(connection);
+		}
+		catch (SQLException sqle) {
+			_log.error(
+				"Error getting database type: " + sqle.getMessage(), sqle);
+
+			throw new RuntimeException(sqle);
+		}
 
 		try {
 			configuration = getConfiguration(connection);
@@ -99,6 +107,12 @@ public class ReferencesChecker {
 
 			throw new RuntimeException(ioe);
 		}
+		catch (SQLException sqle) {
+			_log.error(
+				"Error getting liferay version: " + sqle.getMessage(), sqle);
+
+			throw new RuntimeException(sqle);
+		}
 	}
 
 	public void addExcludeColumns(List<String> excludeColumns) {
@@ -106,6 +120,12 @@ public class ReferencesChecker {
 			configuration.getIgnoreColumns();
 
 		configurationIgnoreColumns.addAll(excludeColumns);
+	}
+
+	public void addTables(Connection connection, Collection<String> tableNames)
+		throws SQLException {
+
+		tableUtil.addTables(connection, tableNames);
 	}
 
 	public Collection<Reference> calculateReferences(
@@ -403,6 +423,14 @@ public class ReferencesChecker {
 		}
 
 		return invalidValuesSet;
+	}
+
+	public void reloadModelUtil(Connection connection) throws SQLException {
+		initModelUtil(connection, modelUtil);
+	}
+
+	public void removeTables(Collection<String> tableNames) {
+		tableUtil.removeTables(tableNames);
 	}
 
 	public void setCheckUndefinedTables(boolean checkUndefinedTables) {

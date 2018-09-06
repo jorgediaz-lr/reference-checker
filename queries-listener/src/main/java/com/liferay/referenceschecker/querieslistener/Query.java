@@ -88,27 +88,17 @@ public class Query implements Comparable<Query> {
 
 	public Query(String sql) {
 		if (StringUtils.isBlank(sql)) {
+			_sql = StringUtils.EMPTY;
+
 			return;
 		}
 
-		sql = StringUtils.trim(sql);
-
-		try {
-			_statement = CCJSqlParserUtil.parse(sql);
-		}
-		catch (JSQLParserException jsqlpe) {
-			_statement = null;
-			_sql = sql;
-
-			_log.error("Error parsing query: " + sql, jsqlpe);
-		}
-
-		_queryType = getQueryType(_statement);
+		_sql = StringUtils.trim(sql);
 	}
 
 	@Override
 	public int compareTo(Query query) {
-		int equals = ObjectUtils.compare(_queryType, query._queryType);
+		int equals = ObjectUtils.compare(getQueryType(), query.getQueryType());
 
 		if (equals == 0) {
 			equals = ObjectUtils.compare(getSQL(), query.getSQL());
@@ -153,18 +143,63 @@ public class Query implements Comparable<Query> {
 	}
 
 	public QueryType getQueryType() {
+		if (_queryType != null) {
+			return _queryType;
+		}
+
+		String sqlAux = _sql;
+
+		while (sqlAux.charAt(0) == '(') {
+			sqlAux = sqlAux.substring(1);
+
+			sqlAux = sqlAux.trim();
+		}
+
+		if (StringUtils.startsWithIgnoreCase(sqlAux, "SELECT")) {
+			_queryType = QueryType.SELECT;
+
+			return _queryType;
+		}
+
+		Statement statement = getStatement();
+
+		_queryType = getQueryType(statement);
+
 		return _queryType;
 	}
 
 	public String getSQL() {
-		if (_sql == null) {
-			_sql = String.valueOf(_statement);
-		}
-
 		return _sql;
 	}
 
 	public Statement getStatement() {
+		if (_cannot_parse_sql) {
+			return null;
+		}
+
+		if (_statement != null) {
+			return _statement;
+		}
+
+		try {
+			_statement = CCJSqlParserUtil.parse(_sql);
+		}
+		catch (JSQLParserException jsqlpe) {
+			_cannot_parse_sql = true;
+
+			Throwable rootCause = jsqlpe.getCause();
+
+			String rootCauseMsg = String.valueOf(rootCause);
+
+			_log.error(
+				"Error parsing query: " + _sql + ", root cause: " +
+					rootCauseMsg);
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(rootCauseMsg, rootCause);
+			}
+		}
+
 		return _statement;
 	}
 
@@ -177,10 +212,20 @@ public class Query implements Comparable<Query> {
 	@Override
 	public int hashCode() {
 		if (_hashCode == -1) {
-			_hashCode = Objects.hash(_queryType, getSQL());
+			_hashCode = Objects.hash(getQueryType(), getSQL());
 		}
 
 		return _hashCode;
+	}
+
+	public boolean isReadOnly() {
+		QueryType queryType = getQueryType();
+
+		if ((queryType == null) || (queryType == QueryType.SELECT)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
@@ -195,52 +240,58 @@ public class Query implements Comparable<Query> {
 	}
 
 	protected List<Table> getModifiedTablesObject() {
-		if (_statement == null) {
+		if (isReadOnly()) {
 			return Collections.emptyList();
 		}
 
-		if (_statement instanceof Alter) {
-			Alter alter = (Alter)_statement;
+		Statement statement = getStatement();
+
+		if (statement == null) {
+			return Collections.emptyList();
+		}
+
+		if (statement instanceof Alter) {
+			Alter alter = (Alter)statement;
 
 			Table table = alter.getTable();
 
 			return Collections.singletonList(table);
 		}
 
-		if (_statement instanceof CreateTable) {
-			CreateTable createTable = (CreateTable)_statement;
+		if (statement instanceof CreateTable) {
+			CreateTable createTable = (CreateTable)statement;
 
 			Table table = createTable.getTable();
 
 			return Collections.singletonList(table);
 		}
 
-		if (_statement instanceof Delete) {
-			Delete delete = (Delete)_statement;
+		if (statement instanceof Delete) {
+			Delete delete = (Delete)statement;
 
 			Table table = delete.getTable();
 
 			return Collections.singletonList(table);
 		}
 
-		if (_statement instanceof Drop) {
-			Drop drop = (Drop)_statement;
+		if (statement instanceof Drop) {
+			Drop drop = (Drop)statement;
 
 			Table table = drop.getName();
 
 			return Collections.singletonList(table);
 		}
 
-		if (_statement instanceof Insert) {
-			Insert insert = (Insert)_statement;
+		if (statement instanceof Insert) {
+			Insert insert = (Insert)statement;
 
 			Table table = insert.getTable();
 
 			return Collections.singletonList(table);
 		}
 
-		if (_statement instanceof Update) {
-			Update update = (Update)_statement;
+		if (statement instanceof Update) {
+			Update update = (Update)statement;
 
 			return update.getTables();
 		}
@@ -249,24 +300,26 @@ public class Query implements Comparable<Query> {
 	}
 
 	protected Expression getWhereExpression() {
-		if (_statement == null) {
+		Statement statement = getStatement();
+
+		if (statement == null) {
 			return null;
 		}
 
-		if (_statement instanceof Delete) {
-			Delete delete = (Delete)_statement;
+		if (statement instanceof Delete) {
+			Delete delete = (Delete)statement;
 
 			return delete.getWhere();
 		}
 
-		if (_statement instanceof Update) {
-			Update update = (Update)_statement;
+		if (statement instanceof Update) {
+			Update update = (Update)statement;
 
 			return update.getWhere();
 		}
 
-		if (_statement instanceof Select) {
-			Select select = (Select)_statement;
+		if (statement instanceof Select) {
+			Select select = (Select)statement;
 
 			SelectBody selectBody = select.getSelectBody();
 
@@ -282,6 +335,7 @@ public class Query implements Comparable<Query> {
 
 	private static Logger _log = LogManager.getLogger(Query.class);
 
+	private boolean _cannot_parse_sql = false;
 	private int _hashCode = -1;
 	private QueryType _queryType = null;
 	private String _sql = null;

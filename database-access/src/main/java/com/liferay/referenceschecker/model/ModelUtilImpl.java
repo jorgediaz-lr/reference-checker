@@ -75,7 +75,8 @@ public class ModelUtilImpl implements ModelUtil {
 			Map<String, String> tableNameToClassNameMapping)
 		throws SQLException {
 
-		this.tableNameToClassNameMapping = new ConcurrentHashMap<>();
+		Map<String, String> tableNameToClassNameMappingAux =
+			new ConcurrentHashMap<>();
 
 		for (Entry<String, String> entry :
 				tableNameToClassNameMapping.entrySet()) {
@@ -83,12 +84,11 @@ public class ModelUtilImpl implements ModelUtil {
 			String key = StringUtils.lowerCase(entry.getKey());
 			String value = entry.getValue();
 
-			this.tableNameToClassNameMapping.put(key, value);
+			tableNameToClassNameMappingAux.put(key, value);
 		}
 
-		classNameToClassNameIdMapping = getClassNameIdsMapping(connection);
-
-		classNameToTableNameMapping = new ConcurrentHashMap<>();
+		Map<String, String> classNameToTableNameMappingAux =
+			new ConcurrentHashMap<>();
 
 		for (Map.Entry<String, String> entry :
 				tableNameToClassNameMapping.entrySet()) {
@@ -97,8 +97,15 @@ public class ModelUtilImpl implements ModelUtil {
 				continue;
 			}
 
-			classNameToTableNameMapping.put(entry.getValue(), entry.getKey());
+			classNameToTableNameMappingAux.put(
+				entry.getValue(), entry.getKey());
 		}
+
+		this.tableNameToClassNameMapping = tableNameToClassNameMappingAux;
+
+		classNameToClassNameIdMapping = getClassNameIdsMapping(connection);
+
+		classNameToTableNameMapping = classNameToTableNameMappingAux;
 	}
 
 	protected Map<String, Long> getClassNameIdsMapping(Connection connection)

@@ -34,8 +34,6 @@ public class DebugListener implements EventListener {
 	public void afterCommit(
 		int connectionId, Connection connection, SQLException e) {
 
-		resetThreadLocals();
-
 		if (_log.isDebugEnabled()) {
 			_log.debug("After commit. Connection-id=" + connectionId);
 		};
@@ -45,8 +43,6 @@ public class DebugListener implements EventListener {
 	public void afterConnectionClose(
 		int connectionId, Connection connection, SQLException e) {
 
-		resetThreadLocals();
-
 		if (_log.isDebugEnabled()) {
 			_log.debug("After connection close. Connection-id=" + connectionId);
 		}
@@ -55,8 +51,6 @@ public class DebugListener implements EventListener {
 	@Override
 	public void afterGetConnection(
 		int connectionId, Connection connection, SQLException e) {
-
-		resetThreadLocals();
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("After get connection. Connection-id=" + connectionId);
@@ -73,8 +67,6 @@ public class DebugListener implements EventListener {
 	@Override
 	public void afterRollback(
 		int connectionId, Connection connection, SQLException e) {
-
-		resetThreadLocals();
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("After rollback. Connection-id=" + connectionId);
@@ -111,6 +103,14 @@ public class DebugListener implements EventListener {
 
 	@Override
 	public void beforeRollback(int connectionId, Connection connection) {
+	}
+
+	@Override
+	public void resetThreadLocals() {
+		_insertQueriesThreadLocal.set(new TreeSet<Query>());
+		_updateQueriesThreadLocal.set(new TreeSet<Query>());
+		_deleteQueriesThreadLocal.set(new TreeSet<Query>());
+		_otherQueriesThreadLocal.set(new TreeSet<Query>());
 	}
 
 	protected void addQueryToThreadLocal(
@@ -155,9 +155,7 @@ public class DebugListener implements EventListener {
 			return;
 		}
 
-		if ((query.getQueryType() == null) ||
-			(query.getQueryType() == QueryType.SELECT)) {
-
+		if (query.isReadOnly()) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
 					"Ignored Query. connectionId=" + connectionId + ", sql=" +
@@ -179,13 +177,6 @@ public class DebugListener implements EventListener {
 		else {
 			addQueryToThreadLocal(_otherQueriesThreadLocal, query);
 		}
-	}
-
-	protected void resetThreadLocals() {
-		_insertQueriesThreadLocal.set(new TreeSet<Query>());
-		_updateQueriesThreadLocal.set(new TreeSet<Query>());
-		_deleteQueriesThreadLocal.set(new TreeSet<Query>());
-		_otherQueriesThreadLocal.set(new TreeSet<Query>());
 	}
 
 	private static Logger _log = LogManager.getLogger(DebugListener.class);

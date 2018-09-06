@@ -27,12 +27,15 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
@@ -103,12 +106,42 @@ public class TableUtil {
 			Collections.singleton(tableName));
 	}
 
+	public void addTables(Connection connection, Collection<String> tableNames)
+		throws SQLException {
+
+		if (tableNames.isEmpty()) {
+			return;
+		}
+
+		String dbType = SQLUtil.getDBType(connection);
+
+		DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+		String catalog = connection.getCatalog();
+		String schema = null;
+
+		if ((catalog == null) && dbType.equals(SQLUtil.TYPE_ORACLE)) {
+			catalog = databaseMetaData.getUserName();
+
+			schema = catalog;
+		}
+
+		addTables(databaseMetaData, catalog, schema, tableNames);
+	}
+
 	public void addTables(
 		DatabaseMetaData databaseMetaData, String catalog, String schema,
 		Collection<String> tableNames) {
 
-		tableMap.putAll(
-			initTableMap(databaseMetaData, catalog, schema, tableNames));
+		Map<String, Table> tableMap = initTableMap(
+			databaseMetaData, catalog, schema, tableNames);
+
+		Collection<Table> tables = tableMap.values();
+
+		tableNames = _getTableNames(tables);
+
+		this.tableMap.putAll(tableMap);
+
 		this.tableNames.addAll(tableNames);
 	}
 
@@ -384,6 +417,38 @@ public class TableUtil {
 			columnTypeNames, columnSizes, columnNullables);
 	}
 
+	protected String getSanitizedTableName(
+			DatabaseMetaData databaseMetaData, String catalog, String schema,
+			String tableName)
+		throws SQLException {
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("getting sanitized name of " + tableName);
+		}
+
+		String[] tableNameChecks = {
+			tableName, StringUtils.lowerCase(tableName),
+			StringUtils.upperCase(tableName)
+		};
+
+		for (String tableNameCheck : tableNameChecks) {
+			Set<String> tableNamesAux = getTableNames(
+				databaseMetaData, catalog, schema, tableNameCheck);
+
+			if (tableNamesAux.isEmpty() || (tableNamesAux.size() > 1)) {
+				continue;
+			}
+
+			Iterator<String> iterator = tableNamesAux.iterator();
+
+			return iterator.next();
+		}
+
+		_log.warn(tableName + " was not found");
+
+		return null;
+	}
+
 	protected Set<String> getTableNames(
 			DatabaseMetaData databaseMetaData, String catalog, String schema,
 			String tableNamePattern)
@@ -472,6 +537,13 @@ public class TableUtil {
 
 		for (String tableName : tableNames) {
 			try {
+				tableName = getSanitizedTableName(
+					databaseMetaData, catalog, schema, tableName);
+
+				if (tableName == null) {
+					continue;
+				}
+
 				Table table = createTable(
 					databaseMetaData, catalog, schema, tableName);
 
@@ -515,6 +587,16 @@ public class TableUtil {
 	protected ModelUtil modelUtil;
 	protected Map<String, Table> tableMap = new TreeMap<>();
 	protected Set<String> tableNames = new TreeSet<>();
+
+	private Collection<String> _getTableNames(Collection<Table> tables) {
+		Stream<Table> stream = tables.stream();
+
+		return stream.map(
+			table -> table.getTableName()
+		).collect(
+			Collectors.toList()
+		);
+	}
 
 	private void _manageStar(String[] ignoreColumnArray, int i) {
 		String column = ignoreColumnArray[i];

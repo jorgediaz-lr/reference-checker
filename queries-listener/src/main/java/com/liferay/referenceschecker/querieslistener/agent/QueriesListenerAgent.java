@@ -14,7 +14,6 @@
 
 package com.liferay.referenceschecker.querieslistener.agent;
 
-import com.liferay.referenceschecker.querieslistener.DebugListener;
 import com.liferay.referenceschecker.querieslistener.EventListener;
 import com.liferay.referenceschecker.querieslistener.EventListenerRegistry;
 import com.liferay.referenceschecker.querieslistener.Query;
@@ -25,6 +24,11 @@ import com.p6spy.engine.event.SimpleJdbcEventListener;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import java.util.Set;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 /**
  * @author Jorge Díaz
@@ -37,27 +41,27 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 	@Override
 	public void onAfterAnyAddBatch(
 		StatementInformation statementInformation, long timeElapsedNanos,
-		SQLException e) {
+		SQLException sqle) {
 
 		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues(), e);
+			statementInformation.getSqlWithValues(), sqle);
 	}
 
 	@Override
 	public void onAfterAnyExecute(
 		StatementInformation statementInformation, long timeElapsedNanos,
-		SQLException e) {
+		SQLException sqle) {
 
 		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues(), e);
+			statementInformation.getSqlWithValues(), sqle);
 	}
 
 	@Override
 	public void onAfterCommit(
 		ConnectionInformation connectionInformation, long timeElapsedNanos,
-		SQLException e) {
+		SQLException sqle) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -66,13 +70,21 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		for (EventListener eventListener :
 				_eventListenerRegistry.getEventListeners()) {
 
-			eventListener.afterCommit(connectionId, connection, e);
+			try {
+				eventListener.afterCommit(connectionId, connection, sqle);
+			}
+			catch (Exception e) {
+				_log.error(e, e);
+			}
+			finally {
+				eventListener.resetThreadLocals();
+			}
 		}
 	}
 
 	@Override
 	public void onAfterConnectionClose(
-		ConnectionInformation connectionInformation, SQLException e) {
+		ConnectionInformation connectionInformation, SQLException sqle) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -81,23 +93,32 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		for (EventListener eventListener :
 				_eventListenerRegistry.getEventListeners()) {
 
-			eventListener.afterConnectionClose(connectionId, connection, e);
+			try {
+				eventListener.afterConnectionClose(
+					connectionId, connection, sqle);
+			}
+			catch (Exception e) {
+				_log.error(e, e);
+			}
+			finally {
+				eventListener.resetThreadLocals();
+			}
 		}
 	}
 
 	@Override
 	public void onAfterExecuteBatch(
 		StatementInformation statementInformation, long timeElapsedNanos,
-		int[] updateCounts, SQLException e) {
+		int[] updateCounts, SQLException sqle) {
 
 		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues(), e);
+			statementInformation.getSqlWithValues(), sqle);
 	}
 
 	@Override
 	public void onAfterGetConnection(
-		ConnectionInformation connectionInformation, SQLException e) {
+		ConnectionInformation connectionInformation, SQLException sqle) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -106,14 +127,23 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		for (EventListener eventListener :
 				_eventListenerRegistry.getEventListeners()) {
 
-			eventListener.afterGetConnection(connectionId, connection, e);
+			try {
+				eventListener.afterGetConnection(
+					connectionId, connection, sqle);
+			}
+			catch (Exception e) {
+				_log.error(e, e);
+			}
+			finally {
+				eventListener.resetThreadLocals();
+			}
 		}
 	}
 
 	@Override
 	public void onAfterRollback(
 		ConnectionInformation connectionInformation, long timeElapsedNanos,
-		SQLException e) {
+		SQLException sqle) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -122,7 +152,15 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		for (EventListener eventListener :
 				_eventListenerRegistry.getEventListeners()) {
 
-			eventListener.afterRollback(connectionId, connection, e);
+			try {
+				eventListener.afterRollback(connectionId, connection, sqle);
+			}
+			catch (Exception e) {
+				_log.error(e, e);
+			}
+			finally {
+				eventListener.resetThreadLocals();
+			}
 		}
 	}
 
@@ -192,7 +230,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
 	protected void afterQuery(
 		ConnectionInformation connectionInformation, String sql,
-		SQLException e) {
+		SQLException sqle) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -203,7 +241,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		for (EventListener eventListener :
 				_eventListenerRegistry.getEventListeners()) {
 
-			eventListener.afterQuery(connectionId, connection, query, e);
+			eventListener.afterQuery(connectionId, connection, query, sqle);
 		}
 	}
 
@@ -224,11 +262,41 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 	}
 
 	private QueriesListenerAgent() {
+		if (_log == null) {
+			_log = LogManager.getLogger(QueriesListenerAgent.class);
+		}
+
+		QueriesListenerAgentOptions queriesListenerAgentOptions =
+			QueriesListenerAgentOptions.getActiveInstance();
+
+		Set<String> eventListenerList =
+			queriesListenerAgentOptions.getEventListeners();
+
+		if (eventListenerList == null) {
+			return;
+		}
+
 		_eventListenerRegistry =
 			EventListenerRegistry.getEventListenerRegistry();
 
-		_eventListenerRegistry.register(new DebugListener());
+		for (String eventListenerClassName : eventListenerList) {
+			try {
+				Class<?> eventListenerClass = Class.forName(
+					eventListenerClassName);
+
+				EventListener eventListener =
+					(EventListener)eventListenerClass.newInstance();
+
+				_eventListenerRegistry.register(eventListener);
+			}
+			catch (Throwable t) {
+				_log.error("Error loading class: " + eventListenerClassName, t);
+			}
+		}
 	}
+
+	private static Logger _log = LogManager.getLogger(
+		QueriesListenerAgent.class);
 
 	private EventListenerRegistry _eventListenerRegistry;
 
