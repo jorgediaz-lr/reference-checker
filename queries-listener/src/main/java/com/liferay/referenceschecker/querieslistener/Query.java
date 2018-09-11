@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
@@ -130,6 +131,18 @@ public class Query implements Comparable<Query> {
 		return false;
 	}
 
+	public List<String> getModifiedColumns() {
+		List<Column> columnsList = getModifiedColumnsObject();
+
+		Stream<Column> stream = columnsList.stream();
+
+		return stream.map(
+			column -> column.getColumnName()
+		).collect(
+			Collectors.toList()
+		);
+	}
+
 	public List<String> getModifiedTables() {
 		List<Table> tableList = getModifiedTablesObject();
 
@@ -137,6 +150,22 @@ public class Query implements Comparable<Query> {
 
 		return stream.map(
 			table -> table.getName()
+		).collect(
+			Collectors.toList()
+		);
+	}
+
+	public List<String> getModifiedTablesLowerCase() {
+		List<Table> tableList = getModifiedTablesObject();
+
+		Stream<Table> stream = tableList.stream();
+
+		return stream.map(
+			table -> {
+				String tableName = table.getName();
+
+				return tableName.toLowerCase();
+			}
 		).collect(
 			Collectors.toList()
 		);
@@ -237,6 +266,32 @@ public class Query implements Comparable<Query> {
 
 		ALTER, CREATE_INDEX, CREATE_TABLE, DELETE, DROP, INSERT, SELECT, UPDATE
 
+	}
+
+	protected List<Column> getModifiedColumnsObject() {
+		if (isReadOnly()) {
+			return Collections.emptyList();
+		}
+
+		Statement statement = getStatement();
+
+		if (statement == null) {
+			return Collections.emptyList();
+		}
+
+		if (statement instanceof Insert) {
+			Insert insert = (Insert)statement;
+
+			return insert.getColumns();
+		}
+
+		if (statement instanceof Update) {
+			Update update = (Update)statement;
+
+			return update.getColumns();
+		}
+
+		return Collections.emptyList();
 	}
 
 	protected List<Table> getModifiedTablesObject() {

@@ -14,15 +14,25 @@
 
 package com.liferay.referenceschecker.listener;
 
+import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
+import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.querieslistener.EventListener;
 import com.liferay.referenceschecker.querieslistener.EventListenerRegistry;
 import com.liferay.referenceschecker.querieslistener.Query;
 import com.liferay.referenceschecker.querieslistener.Query.QueryType;
+import com.liferay.referenceschecker.ref.MissingReferences;
+import com.liferay.referenceschecker.ref.Reference;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -39,11 +49,60 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	@Override
 	public void afterCommit(
-		int connectionId, Connection connection, SQLException e) {
+		int connectionId, Connection connection, SQLException sqle) {
+
+		if (sqle != null) {
+			return;
+		}
+
+		if (referencesChecker == null) {
+			try {
+				initReferencesChecker(connection);
+			}
+			catch (Exception e) {
+				_log.error(
+					"Error creating ReferencesChecker instance: " +
+						e.getMessage(),
+					e);
+			}
+		}
+
+		if (referencesChecker == null) {
+			return;
+		}
 
 		refreshReferencesChecker(
-			connection, _updatedTables.get(), _deletedTables.get(),
+			connection, _modifiedTables.get(), _droppedTables.get(),
 			_regenerateModelUtil.get());
+
+		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get();
+		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
+		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
+		Map<String, Set<String>> updatedTablesColumns =
+			_updatedTableColumns.get();
+
+		if (insertedTablesLowerCase.isEmpty() &&
+			updatedTablesLowerCase.isEmpty() &&
+			deletedTablesLowerCase.isEmpty()) {
+
+			return;
+		}
+
+		for (String insertedTable : insertedTablesLowerCase) {
+			referencesChecker.cleanEmptyTableCacheOnInsert(insertedTable);
+		}
+
+		for (String updatedTable : updatedTablesLowerCase) {
+			referencesChecker.cleanEmptyTableCacheOnUpdate(updatedTable);
+		}
+
+		for (String deletedTable : deletedTablesLowerCase) {
+			referencesChecker.cleanEmptyTableCacheOnDelete(deletedTable);
+		}
+
+		checkMissingReferences(
+			connection, insertedTablesLowerCase, updatedTablesLowerCase,
+			updatedTablesColumns, deletedTablesLowerCase);
 	}
 
 	@Override
@@ -84,7 +143,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		if ((query.getQueryType() == QueryType.CREATE_TABLE) ||
 			(query.getQueryType() == QueryType.ALTER)) {
 
-			Set<String> updatedTables = _updatedTables.get();
+			Set<String> updatedTables = _modifiedTables.get();
 
 			updatedTables.addAll(query.getModifiedTables());
 
@@ -94,11 +153,41 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			Drop drop = (Drop)query.getStatement();
 
 			if (StringUtils.equalsIgnoreCase("TABLE", drop.getType())) {
-				Set<String> deletedTables = _deletedTables.get();
+				Set<String> deletedTables = _droppedTables.get();
 
 				deletedTables.addAll(query.getModifiedTables());
 
 				_regenerateModelUtil.set(Boolean.TRUE);
+			}
+		}
+		else if (query.getQueryType() == QueryType.INSERT) {
+			Set<String> insertedTables = _insertedTablesLowerCase.get();
+
+			insertedTables.addAll(query.getModifiedTablesLowerCase());
+		}
+		else if (query.getQueryType() == QueryType.DELETE) {
+			Set<String> deletedTables = _deletedTablesLowerCase.get();
+
+			deletedTables.addAll(query.getModifiedTablesLowerCase());
+		}
+		else if (query.getQueryType() == QueryType.UPDATE) {
+			Set<String> updatedTables = _updatedTablesLowerCase.get();
+
+			Map<String, Set<String>> updatedTablesColumns =
+				_updatedTableColumns.get();
+
+			for (String modifiedTable : query.getModifiedTablesLowerCase()) {
+				updatedTables.add(modifiedTable);
+
+				Set<String> columnSet = updatedTablesColumns.get(modifiedTable);
+
+				if (columnSet == null) {
+					columnSet = new TreeSet<>();
+
+					updatedTablesColumns.put(modifiedTable, columnSet);
+				}
+
+				columnSet.addAll(query.getModifiedColumns());
 			}
 		}
 
@@ -120,6 +209,21 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	@Override
 	public void beforeCommit(int connectionId, Connection connection) {
+		if (referencesChecker == null) {
+			return;
+		}
+
+		for (String insertedTable : _insertedTablesLowerCase.get()) {
+			referencesChecker.cleanEmptyTableCacheOnInsert(insertedTable);
+		}
+
+		for (String updatedTable : _updatedTablesLowerCase.get()) {
+			referencesChecker.cleanEmptyTableCacheOnUpdate(updatedTable);
+		}
+
+		for (String deletedTable : _deletedTablesLowerCase.get()) {
+			referencesChecker.cleanEmptyTableCacheOnDelete(deletedTable);
+		}
 	}
 
 	@Override
@@ -138,8 +242,12 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	@Override
 	public void resetThreadLocals() {
 		_regenerateModelUtil.set(Boolean.FALSE);
-		_updatedTables.set(new TreeSet<String>());
-		_deletedTables.set(new TreeSet<String>());
+		_modifiedTables.set(new TreeSet<String>());
+		_droppedTables.set(new TreeSet<String>());
+		_insertedTablesLowerCase.set(new TreeSet<String>());
+		_deletedTablesLowerCase.set(new TreeSet<String>());
+		_updatedTablesLowerCase.set(new TreeSet<String>());
+		_updatedTableColumns.set(new HashMap<String, Set<String>>());
 	}
 
 	protected static ReferencesChecker getReferencesChecker() {
@@ -156,6 +264,82 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return referencesCheckerInfrastructureListener.referencesChecker;
 	}
 
+	protected void checkMissingReferences(
+		Connection connection, Set<String> insertedTablesLowerCase,
+		Set<String> updatedTablesLowerCase,
+		Map<String, Set<String>> updatedTablesColumns,
+		Set<String> deletedTablesLowerCase) {
+
+		Collection<Reference> references = referencesChecker.getReferences(
+			connection, true);
+
+		Collection<Reference> referencesToCheck = new HashSet<>();
+
+		for (Reference reference : references) {
+			com.liferay.referenceschecker.dao.Query originQuery =
+				reference.getOriginQuery();
+			com.liferay.referenceschecker.dao.Query destinationQuery =
+				reference.getDestinationQuery();
+
+			Table originTable = originQuery.getTable();
+
+			if (destinationQuery == null) {
+				continue;
+			}
+
+			Table destinationTable = destinationQuery.getTable();
+
+			String originTableName = originTable.getTableNameLowerCase();
+			String destinationTableName =
+				destinationTable.getTableNameLowerCase();
+
+			if (insertedTablesLowerCase.contains(originTableName) ||
+				deletedTablesLowerCase.contains(destinationTableName)) {
+
+				referencesToCheck.add(reference);
+			}
+
+			if (updatedTablesLowerCase.contains(originTableName)) {
+				Set<String> updatedColumns = updatedTablesColumns.get(
+					originTableName);
+
+				if (_queryHasAnyUpdatedColumn(originQuery, updatedColumns)) {
+					referencesToCheck.add(reference);
+				}
+			}
+
+			if (updatedTablesLowerCase.contains(destinationTableName)) {
+				Set<String> updatedColumns = updatedTablesColumns.get(
+					destinationTableName);
+
+				if (_queryHasAnyUpdatedColumn(
+						destinationQuery, updatedColumns)) {
+
+					referencesToCheck.add(reference);
+				}
+			}
+		}
+
+		List<MissingReferences> missingReferences = referencesChecker.execute(
+			connection, referencesToCheck);
+
+		if (missingReferences.isEmpty()) {
+			return;
+		}
+
+		String[] headers = {
+			"origin table", "attributes", "destination table", "attributes",
+			"#", "missing references"
+		};
+
+		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
+			Arrays.asList(headers), missingReferences, -1);
+
+		for (String output : outputList) {
+			_log.warn(output);
+		}
+	}
+
 	protected synchronized void initReferencesChecker(Connection connection)
 		throws SQLException {
 
@@ -165,6 +349,10 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		ReferencesChecker referencesCheckerAux = new ReferencesChecker(
 			connection);
+
+		if (referencesCheckerAux.getConfiguration() == null) {
+			return;
+		}
 
 		referencesCheckerAux.initModelUtil(connection);
 		referencesCheckerAux.initTableUtil(connection);
@@ -202,10 +390,55 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	protected ReferencesChecker referencesChecker;
 
+	private boolean _queryHasAnyUpdatedColumn(
+		com.liferay.referenceschecker.dao.Query query, Set<String> columns) {
+
+		if (columns == null) {
+			return false;
+		}
+
+		for (String queryColumn : query.getColumns()) {
+			for (String column : columns) {
+				if (StringUtils.equalsIgnoreCase(column, queryColumn)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	private static Logger _log = LogManager.getLogger(
 		ReferencesCheckerInfrastructureListener.class);
 
-	private ThreadLocal<Set<String>> _deletedTables =
+	private ThreadLocal<Set<String>> _deletedTablesLowerCase =
+		new ThreadLocal<Set<String>>() {
+
+			@Override protected Set<String> initialValue() {
+				return new TreeSet<String>();
+			}
+
+		};
+
+	private ThreadLocal<Set<String>> _droppedTables =
+		new ThreadLocal<Set<String>>() {
+
+			@Override protected Set<String> initialValue() {
+				return new TreeSet<String>();
+			}
+
+		};
+
+	private ThreadLocal<Set<String>> _insertedTablesLowerCase =
+		new ThreadLocal<Set<String>>() {
+
+			@Override protected Set<String> initialValue() {
+				return new TreeSet<String>();
+			}
+
+		};
+
+	private ThreadLocal<Set<String>> _modifiedTables =
 		new ThreadLocal<Set<String>>() {
 
 			@Override protected Set<String> initialValue() {
@@ -223,7 +456,16 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		};
 
-	private ThreadLocal<Set<String>> _updatedTables =
+	private ThreadLocal<Map<String, Set<String>>> _updatedTableColumns =
+		new ThreadLocal<Map<String, Set<String>>>() {
+
+			@Override protected Map<String, Set<String>> initialValue() {
+				return new HashMap<String, Set<String>>();
+			}
+
+		};
+
+	private ThreadLocal<Set<String>> _updatedTablesLowerCase =
 		new ThreadLocal<Set<String>>() {
 
 			@Override protected Set<String> initialValue() {

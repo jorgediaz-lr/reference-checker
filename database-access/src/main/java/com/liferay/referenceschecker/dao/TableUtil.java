@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +130,7 @@ public class TableUtil {
 		addTables(databaseMetaData, catalog, schema, tableNames);
 	}
 
-	public void addTables(
+	public synchronized void addTables(
 		DatabaseMetaData databaseMetaData, String catalog, String schema,
 		Collection<String> tableNames) {
 
@@ -143,6 +144,18 @@ public class TableUtil {
 		this.tableMap.putAll(tableMap);
 
 		this.tableNames.addAll(tableNames);
+	}
+
+	public void cleanEmptyTableCacheOnDelete(String tableName) {
+		cleanEmptyTableCache(tableName, Boolean.FALSE);
+	}
+
+	public void cleanEmptyTableCacheOnInsert(String tableName) {
+		cleanEmptyTableCache(tableName, Boolean.TRUE);
+	}
+
+	public void cleanEmptyTableCacheOnUpdate(String tableName) {
+		cleanEmptyTableCache(tableName, null);
 	}
 
 	public Table getTable(String tableName) {
@@ -307,6 +320,16 @@ public class TableUtil {
 			}
 		}
 
+		Set<String> keySet = emptyTableKeys.get(table.getTableNameLowerCase());
+
+		if (keySet == null) {
+			keySet = new HashSet<>();
+
+			emptyTableKeys.put(table.getTableNameLowerCase(), keySet);
+		}
+
+		keySet.add(key);
+
 		emptyTableCache.put(key, tableEmpty);
 
 		return tableEmpty;
@@ -322,6 +345,30 @@ public class TableUtil {
 	public void removeTables(Collection<String> tableNames) {
 		for (String tableName : tableNames) {
 			removeTable(tableName);
+		}
+	}
+
+	protected void cleanEmptyTableCache(
+		String tableName, Boolean valueToClean) {
+
+		String tableNameLowerCase = StringUtils.lowerCase(tableName);
+
+		Set<String> keySet = emptyTableKeys.get(tableNameLowerCase);
+
+		if (keySet == null) {
+			return;
+		}
+
+		for (String tableKey : keySet) {
+			if (valueToClean != null) {
+				Boolean empty = emptyTableCache.get(tableKey);
+
+				if ((empty == null) || (empty != valueToClean)) {
+					continue;
+				}
+			}
+
+			emptyTableCache.remove(tableKey);
 		}
 	}
 
@@ -582,6 +629,8 @@ public class TableUtil {
 	}
 
 	protected Map<String, Boolean> emptyTableCache = new ConcurrentHashMap<>();
+	protected Map<String, Set<String>> emptyTableKeys =
+		new ConcurrentHashMap<>();
 	protected List<String[]> ignoreColumns;
 	protected List<String> ignoreTables;
 	protected ModelUtil modelUtil;

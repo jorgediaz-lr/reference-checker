@@ -54,9 +54,7 @@ import org.apache.log4j.Logger;
  */
 public class ReferencesChecker {
 
-	public static long getLiferayBuildNumber(Connection connection)
-		throws SQLException {
-
+	public static long getLiferayBuildNumber(Connection connection) {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		long buildNumber = 0;
@@ -77,6 +75,9 @@ public class ReferencesChecker {
 			while (rs.next()) {
 				buildNumber = rs.getLong(1);
 			}
+		}
+		catch (SQLException sqle) {
+			_log.warn(sqle);
 		}
 		finally {
 			JDBCUtil.cleanUp(ps);
@@ -107,12 +108,6 @@ public class ReferencesChecker {
 
 			throw new RuntimeException(ioe);
 		}
-		catch (SQLException sqle) {
-			_log.error(
-				"Error getting liferay version: " + sqle.getMessage(), sqle);
-
-			throw new RuntimeException(sqle);
-		}
 	}
 
 	public void addExcludeColumns(List<String> excludeColumns) {
@@ -125,7 +120,13 @@ public class ReferencesChecker {
 	public void addTables(Connection connection, Collection<String> tableNames)
 		throws SQLException {
 
+		if (tableNames.isEmpty()) {
+			return;
+		}
+
 		tableUtil.addTables(connection, tableNames);
+
+		referencesCache = null;
 	}
 
 	public Collection<Reference> calculateReferences(
@@ -151,6 +152,18 @@ public class ReferencesChecker {
 		}
 
 		return mapTableCount;
+	}
+
+	public void cleanEmptyTableCacheOnDelete(String tableName) {
+		tableUtil.cleanEmptyTableCacheOnDelete(tableName);
+	}
+
+	public void cleanEmptyTableCacheOnInsert(String tableName) {
+		tableUtil.cleanEmptyTableCacheOnInsert(tableName);
+	}
+
+	public void cleanEmptyTableCacheOnUpdate(String tableName) {
+		tableUtil.cleanEmptyTableCacheOnUpdate(tableName);
 	}
 
 	public List<String> dumpDatabaseInfo(Connection connection)
@@ -305,6 +318,12 @@ public class ReferencesChecker {
 		Collection<Reference> references = calculateReferences(
 			connection, true);
 
+		return execute(connection, references);
+	}
+
+	public List<MissingReferences> execute(
+		Connection connection, Collection<Reference> references) {
+
 		List<MissingReferences> listMissingReferences = new ArrayList<>();
 
 		for (Reference reference : references) {
@@ -345,6 +364,50 @@ public class ReferencesChecker {
 		return listMissingReferences;
 	}
 
+	public Configuration getConfiguration() {
+		return configuration;
+	}
+
+	public Collection<Reference> getReferences(
+		Connection connection, boolean ignoreEmptyTables) {
+
+		if (referencesCache == null) {
+			referencesCache = calculateReferences(connection, false);
+		}
+
+		List<Reference> referencesList = new ArrayList<>();
+
+		for (Reference reference : referencesCache) {
+			Query destinationQuery = reference.getDestinationQuery();
+
+			if (destinationQuery == null) {
+				continue;
+			}
+
+			if (ignoreEmptyTables) {
+				if (reference.isRaw()) {
+					continue;
+				}
+
+				Query originQuery = reference.getOriginQuery();
+
+				Table originTable = originQuery.getTable();
+
+				String whereClause = originQuery.getCondition();
+
+				if (tableUtil.isTableEmpty(
+						connection, originTable, whereClause)) {
+
+					continue;
+				}
+			}
+
+			referencesList.add(reference);
+		}
+
+		return referencesList;
+	}
+
 	public void initModelUtil(Connection connection) throws SQLException {
 		ModelUtil modelUtil = new ModelUtilImpl();
 
@@ -362,7 +425,9 @@ public class ReferencesChecker {
 		this.modelUtil = modelUtil;
 	}
 
-	public void initTableUtil(Connection connection) throws SQLException {
+	public synchronized void initTableUtil(Connection connection)
+		throws SQLException {
+
 		List<String> ignoreColumns = configuration.getIgnoreColumns();
 
 		List<String> ignoreTables = configuration.getIgnoreTables();
@@ -430,7 +495,13 @@ public class ReferencesChecker {
 	}
 
 	public void removeTables(Collection<String> tableNames) {
+		if (tableNames.isEmpty()) {
+			return;
+		}
+
 		tableUtil.removeTables(tableNames);
+
+		referencesCache = null;
 	}
 
 	public void setCheckUndefinedTables(boolean checkUndefinedTables) {
@@ -442,12 +513,12 @@ public class ReferencesChecker {
 	}
 
 	protected Configuration getConfiguration(Connection connection)
-		throws IOException, SQLException {
+		throws IOException {
 
 		long liferayBuildNumber = getLiferayBuildNumber(connection);
 
 		if (liferayBuildNumber == 0) {
-			_log.error("Liferay build number could not be retrieved");
+			_log.warn("Liferay build number could not be retrieved");
 
 			return null;
 		}
@@ -578,6 +649,7 @@ public class ReferencesChecker {
 	protected String dbType;
 	protected boolean ignoreNullValues = true;
 	protected ModelUtil modelUtil;
+	protected Collection<Reference> referencesCache = null;
 	protected TableUtil tableUtil;
 
 	private boolean _isNull(Object obj) {

@@ -150,6 +150,10 @@ public class ReferencesChecker {
 			referencesChecker =
 				new com.liferay.referenceschecker.ReferencesChecker(connection);
 
+			if (referencesChecker.getConfiguration() == null) {
+				throw new RuntimeException("Error loading configuration");
+			}
+
 			referencesChecker.setCheckUndefinedTables(checkUndefinedTables);
 			referencesChecker.initModelUtil(connection);
 			referencesChecker.initTableUtil(connection);

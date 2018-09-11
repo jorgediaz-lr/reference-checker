@@ -86,7 +86,7 @@ public class SQLUtil {
 		}
 
 		if (dbType.equals(TYPE_HYPERSONIC)) {
-			return "CAST(" + column + " AS SQL_VARCHAR)";
+			return "CONVERT(" + column + ", SQL_VARCHAR)";
 		}
 
 		if (dbType.equals(TYPE_MARIADB) || dbType.equals(TYPE_MYSQL)) {
