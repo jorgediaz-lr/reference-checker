@@ -7,8 +7,8 @@ allprojects {
 	apply plugin: 'eclipse'
 	apply plugin: 'com.liferay.source.formatter'
 
-	sourceCompatibility = "1.8"
-	targetCompatibility = "1.8"
+	sourceCompatibility = "1.7"
+	targetCompatibility = "1.7"
 
 	repositories {
 		mavenCentral()

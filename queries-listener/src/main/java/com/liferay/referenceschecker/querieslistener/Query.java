@@ -14,11 +14,10 @@
 
 package com.liferay.referenceschecker.querieslistener;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
@@ -134,41 +133,39 @@ public class Query implements Comparable<Query> {
 	public List<String> getModifiedColumns() {
 		List<Column> columnsList = getModifiedColumnsObject();
 
-		Stream<Column> stream = columnsList.stream();
+		List<String> list = new ArrayList<>();
 
-		return stream.map(
-			column -> column.getColumnName()
-		).collect(
-			Collectors.toList()
-		);
+		for (Column column : columnsList) {
+			list.add(column.getColumnName());
+		}
+
+		return list;
 	}
 
 	public List<String> getModifiedTables() {
 		List<Table> tableList = getModifiedTablesObject();
 
-		Stream<Table> stream = tableList.stream();
+		List<String> list = new ArrayList<>();
 
-		return stream.map(
-			table -> table.getName()
-		).collect(
-			Collectors.toList()
-		);
+		for (Table table : tableList) {
+			list.add(table.getName());
+		}
+
+		return list;
 	}
 
 	public List<String> getModifiedTablesLowerCase() {
 		List<Table> tableList = getModifiedTablesObject();
 
-		Stream<Table> stream = tableList.stream();
+		List<String> list = new ArrayList<>();
 
-		return stream.map(
-			table -> {
-				String tableName = table.getName();
+		for (Table table : tableList) {
+			String tableName = table.getName();
 
-				return tableName.toLowerCase();
-			}
-		).collect(
-			Collectors.toList()
-		);
+			list.add(tableName.toLowerCase());
+		}
+
+		return list;
 	}
 
 	public QueryType getQueryType() {
@@ -176,15 +173,7 @@ public class Query implements Comparable<Query> {
 			return _queryType;
 		}
 
-		String sqlAux = _sql;
-
-		while (sqlAux.charAt(0) == '(') {
-			sqlAux = sqlAux.substring(1);
-
-			sqlAux = sqlAux.trim();
-		}
-
-		if (StringUtils.startsWithIgnoreCase(sqlAux, "SELECT")) {
+		if (startsWithSelect()) {
 			_queryType = QueryType.SELECT;
 
 			return _queryType;
@@ -386,6 +375,22 @@ public class Query implements Comparable<Query> {
 		}
 
 		return null;
+	}
+
+	protected boolean startsWithSelect() {
+		String sqlAux = _sql;
+
+		while (sqlAux.charAt(0) == '(') {
+			sqlAux = sqlAux.substring(1);
+
+			sqlAux = sqlAux.trim();
+		}
+
+		if (StringUtils.startsWithIgnoreCase(sqlAux, "SELECT")) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private static Logger _log = LogManager.getLogger(Query.class);

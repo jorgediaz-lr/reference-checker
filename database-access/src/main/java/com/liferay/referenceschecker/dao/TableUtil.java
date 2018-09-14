@@ -35,8 +35,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
@@ -638,13 +636,13 @@ public class TableUtil {
 	protected Set<String> tableNames = new TreeSet<>();
 
 	private Collection<String> _getTableNames(Collection<Table> tables) {
-		Stream<Table> stream = tables.stream();
+		List<String> list = new ArrayList<>();
 
-		return stream.map(
-			table -> table.getTableName()
-		).collect(
-			Collectors.toList()
-		);
+		for (Table table : tables) {
+			list.add(table.getTableName());
+		}
+
+		return list;
 	}
 
 	private void _manageStar(String[] ignoreColumnArray, int i) {

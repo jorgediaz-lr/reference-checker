@@ -79,7 +79,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
 		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
 		Map<String, Set<String>> updatedTablesColumns =
-			_updatedTableColumns.get();
+			_updatedTablesColumns.get();
 
 		if (insertedTablesLowerCase.isEmpty() &&
 			updatedTablesLowerCase.isEmpty() &&
@@ -174,7 +174,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			Set<String> updatedTables = _updatedTablesLowerCase.get();
 
 			Map<String, Set<String>> updatedTablesColumns =
-				_updatedTableColumns.get();
+				_updatedTablesColumns.get();
 
 			for (String modifiedTable : query.getModifiedTablesLowerCase()) {
 				updatedTables.add(modifiedTable);
@@ -247,7 +247,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		_insertedTablesLowerCase.set(new TreeSet<String>());
 		_deletedTablesLowerCase.set(new TreeSet<String>());
 		_updatedTablesLowerCase.set(new TreeSet<String>());
-		_updatedTableColumns.set(new HashMap<String, Set<String>>());
+		_updatedTablesColumns.set(new HashMap<String, Set<String>>());
 	}
 
 	protected static ReferencesChecker getReferencesChecker() {
@@ -397,9 +397,14 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return false;
 		}
 
+		Table table = query.getTable();
+
 		for (String queryColumn : query.getColumns()) {
 			for (String column : columns) {
-				if (StringUtils.equalsIgnoreCase(column, queryColumn)) {
+				if (StringUtils.equalsIgnoreCase(column, queryColumn) &&
+					!StringUtils.equalsIgnoreCase(
+						column, table.getPrimaryKey())) {
+
 					return true;
 				}
 			}
@@ -456,7 +461,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		};
 
-	private ThreadLocal<Map<String, Set<String>>> _updatedTableColumns =
+	private ThreadLocal<Map<String, Set<String>>> _updatedTablesColumns =
 		new ThreadLocal<Map<String, Set<String>>>() {
 
 			@Override protected Map<String, Set<String>> initialValue() {
