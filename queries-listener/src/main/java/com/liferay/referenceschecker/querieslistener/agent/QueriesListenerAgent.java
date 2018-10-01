@@ -243,6 +243,23 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
 			eventListener.afterQuery(connectionId, connection, query, sqle);
 		}
+
+		try {
+			if (!connection.getAutoCommit()) {
+				return;
+			}
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+		// AUTOCOMMIT
+
+		for (EventListener eventListener :
+			_eventListenerRegistry.getEventListeners()) {
+
+			eventListener.afterCommit(connectionId, connection, sqle);
+		}
 	}
 
 	protected void beforeQuery(
