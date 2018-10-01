@@ -149,16 +149,12 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			_regenerateModelUtil.set(Boolean.TRUE);
 		}
-		else if (query.getQueryType() == QueryType.DROP) {
-			Drop drop = (Drop)query.getStatement();
+		else if (query.getQueryType() == QueryType.DROP_TABLE) {
+			Set<String> deletedTables = _droppedTables.get();
 
-			if (StringUtils.equalsIgnoreCase("TABLE", drop.getType())) {
-				Set<String> deletedTables = _droppedTables.get();
+			deletedTables.addAll(query.getModifiedTables());
 
-				deletedTables.addAll(query.getModifiedTables());
-
-				_regenerateModelUtil.set(Boolean.TRUE);
-			}
+			_regenerateModelUtil.set(Boolean.TRUE);
 		}
 		else if (query.getQueryType() == QueryType.INSERT) {
 			Set<String> insertedTables = _insertedTablesLowerCase.get();

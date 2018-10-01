@@ -68,7 +68,19 @@ public class Query implements Comparable<Query> {
 		}
 
 		if (statement instanceof Drop) {
-			return QueryType.DROP;
+			Drop drop = (Drop)statement;
+
+			String type = drop.getType();
+
+			if (StringUtils.equalsIgnoreCase(type, "INDEX")) {
+				return QueryType.DROP_INDEX;
+			}
+
+			if (StringUtils.equalsIgnoreCase(type, "TABLE")) {
+				return QueryType.DROP_TABLE;
+			}
+
+			return QueryType.DROP_OTHER;
 		}
 
 		if (statement instanceof Insert) {
@@ -169,13 +181,11 @@ public class Query implements Comparable<Query> {
 	}
 
 	public QueryType getQueryType() {
-		if (_queryType != null) {
-			return _queryType;
+		if (_queryType == null) {
+			_queryType = getQueryTypeStartsWith();
 		}
 
-		if (startsWithSelect()) {
-			_queryType = QueryType.SELECT;
-
+		if (_queryType != null) {
 			return _queryType;
 		}
 
@@ -199,8 +209,10 @@ public class Query implements Comparable<Query> {
 			return _statement;
 		}
 
+		String sqlAux = normalizeSql(_sql);
+
 		try {
-			_statement = CCJSqlParserUtil.parse(_sql);
+			_statement = CCJSqlParserUtil.parse(sqlAux);
 		}
 		catch (JSQLParserException jsqlpe) {
 			_cannot_parse_sql = true;
@@ -253,7 +265,8 @@ public class Query implements Comparable<Query> {
 
 	public enum QueryType {
 
-		ALTER, CREATE_INDEX, CREATE_TABLE, DELETE, DROP, INSERT, SELECT, UPDATE
+		ALTER, CREATE_INDEX, CREATE_TABLE, DELETE, DROP_INDEX, DROP_OTHER,
+		DROP_TABLE, INSERT, SELECT, UPDATE
 
 	}
 
@@ -343,6 +356,48 @@ public class Query implements Comparable<Query> {
 		return Collections.emptyList();
 	}
 
+	protected QueryType getQueryTypeStartsWith() {
+		if (startsWithSelect()) {
+			return QueryType.SELECT;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "ALTER")) {
+			return QueryType.ALTER;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "CREATE INDEX") ||
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE UNIQUE INDEX")) {
+
+			return QueryType.CREATE_INDEX;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "CREATE TABLE")) {
+			return QueryType.CREATE_TABLE;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "DELETE")) {
+			return QueryType.DELETE;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "DROP INDEX")) {
+			return QueryType.DROP_INDEX;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "DROP TABLE")) {
+			return QueryType.DROP_TABLE;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "INSERT")) {
+			return QueryType.INSERT;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "UPDATE")) {
+			return QueryType.UPDATE;
+		}
+
+		return null;
+	}
+
 	protected Expression getWhereExpression() {
 		Statement statement = getStatement();
 
@@ -375,6 +430,38 @@ public class Query implements Comparable<Query> {
 		}
 
 		return null;
+	}
+
+	protected String normalizeSql(String sql) {
+		if (StringUtils.containsIgnoreCase(sql, "IGNORE")) {
+			sql = StringUtils.replaceIgnoreCase(sql, "INSERT IGNORE", "INSERT");
+			sql = StringUtils.replaceIgnoreCase(sql, "UPDATE IGNORE", "UPDATE");
+			sql = StringUtils.replaceIgnoreCase(sql, "DELETE IGNORE", "DELETE");
+		}
+
+		/* alter table @table@ change column @old-column@ @new-column@ @type@;
+		alter table @table@ rename column @old-column@ to @new-column@;
+		alter table @table@ rename @old-column@ to @new-column@;*/
+		if (StringUtils.startsWithIgnoreCase(sql, "ALTER TABLE")) {
+			String[] sqlArr = sql.split(" ");
+
+			if (StringUtils.startsWithIgnoreCase(sqlArr[3], "CHANGE") ||
+				StringUtils.startsWithIgnoreCase(sqlArr[3], "RENAME")) {
+
+				sql = "ALTER TABLE " + sqlArr[2] + " ADD dummy INTEGER";
+			}
+		}
+
+		/*exec sp_rename '@table@.@old-column@', '@new-column@', 'column';*/
+		if (StringUtils.startsWithIgnoreCase(sql, "exec sp_rename")) {
+			String tableName = StringUtils.substringBefore(sql, ".");
+
+			tableName = StringUtils.substringAfter(tableName, "'");
+
+			sql = "ALTER TABLE " + tableName + " ADD dummy INTEGER";
+		}
+
+		return sql;
 	}
 
 	protected boolean startsWithSelect() {
