@@ -53,8 +53,6 @@ public class ConfigurationUtil {
 
 		configurationDescription.putListPropertyType(
 			"references", Configuration.Reference.class);
-		configurationDescription.putListPropertyType(
-			"ignoreTables", String.class);
 		configurationDescription.putMapPropertyType(
 			"tableToClassNameMapping", String.class, String.class);
 

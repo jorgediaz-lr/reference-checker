@@ -210,6 +210,22 @@ public class ReferenceUtil {
 		return listReferences;
 	}
 
+	public boolean isCheckUndefinedTables() {
+		return checkUndefinedTables;
+	}
+
+	public boolean isIgnoreEmptyTables() {
+		return ignoreEmptyTables;
+	}
+
+	public void setCheckUndefinedTables(boolean checkUndefinedTables) {
+		this.checkUndefinedTables = checkUndefinedTables;
+	}
+
+	public void setIgnoreEmptyTables(boolean ignoreEmptyTables) {
+		this.ignoreEmptyTables = ignoreEmptyTables;
+	}
+
 	protected <T> List<List<T>> cartesianProduct(List<List<T>> lists) {
 		List<List<T>> resultLists = new ArrayList<>();
 
@@ -595,9 +611,13 @@ public class ReferenceUtil {
 				return false;
 			}
 
-			boolean constant =
-				(column.charAt(0) == '\'') &&
-				(column.charAt(column.length() - 1) == '\'');
+			boolean constant = false;
+
+			if ((column.charAt(0) == '\'') &&
+				(column.charAt(column.length() - 1) == '\'')) {
+
+				constant = true;
+			}
 
 			if (constant || table.hasColumn(column)) {
 				continue;
@@ -607,23 +627,6 @@ public class ReferenceUtil {
 		}
 
 		return true;
-	}
-
-	public boolean isCheckUndefinedTables() {
-
-		return checkUndefinedTables;
-	}
-
-	public void setCheckUndefinedTables(boolean checkUndefinedTables) {
-		this.checkUndefinedTables = checkUndefinedTables;
-	}
-
-	public boolean isIgnoreEmptyTables() {
-		return ignoreEmptyTables;
-	}
-
-	public void setIgnoreEmptyTables(boolean ignoreEmptyTables) {
-		this.ignoreEmptyTables = ignoreEmptyTables;
 	}
 
 	protected String replaceVars(String text) {
@@ -726,6 +729,11 @@ public class ReferenceUtil {
 		return text;
 	}
 
+	protected boolean checkUndefinedTables;
+	protected boolean ignoreEmptyTables;
+	protected ModelUtil modelUtil;
+	protected TableUtil tableUtil;
+
 	private Table _getDestinationTable(Reference reference) {
 		Query destinationQuery = reference.getDestinationQuery();
 
@@ -751,11 +759,5 @@ public class ReferenceUtil {
 	private static final String _STAR = "*";
 
 	private static Logger _log = LogManager.getLogger(ReferenceUtil.class);
-
-	protected boolean checkUndefinedTables;
-
-	protected boolean ignoreEmptyTables;
-	protected TableUtil tableUtil;
-	protected ModelUtil modelUtil;
 
 }
