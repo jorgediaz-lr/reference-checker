@@ -581,6 +581,14 @@ public class TableUtil {
 		Map<String, Table> tableMap = new TreeMap<>();
 
 		for (String tableName : tableNames) {
+			if (ignoreTable(tableName)) {
+				if (_log.isDebugEnabled()) {
+					_log.debug("Ignoring table: " + tableName);
+				}
+
+				continue;
+			}
+
 			try {
 				tableName = getSanitizedTableName(
 					databaseMetaData, catalog, schema, tableName);
