@@ -55,7 +55,18 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
+		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get();
+		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
+		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
+		Map<String, Set<String>> updatedTablesColumns =
+			_updatedTablesColumns.get();
+
+		if (updatedTablesLowerCase.contains(_RELEASE_TABLE_LOWERCASE)) {
+			referencesChecker = null;
+		}
+
 		if (referencesChecker == null) {
+
 			try {
 				initReferencesChecker(connection);
 			}
@@ -74,12 +85,6 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		refreshReferencesChecker(
 			connection, _modifiedTables.get(), _droppedTables.get(),
 			_regenerateModelUtil.get());
-
-		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get();
-		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
-		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
-		Map<String, Set<String>> updatedTablesColumns =
-			_updatedTablesColumns.get();
 
 		if (insertedTablesLowerCase.isEmpty() &&
 			updatedTablesLowerCase.isEmpty() &&
@@ -474,5 +479,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 
 		};
+
+	private static String _RELEASE_TABLE_LOWERCASE = "Release_".toLowerCase();
 
 }
