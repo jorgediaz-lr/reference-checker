@@ -98,7 +98,16 @@ public class InitDatabase {
 
 		JDBCUtil.cleanUp(testConnection);
 
-		databaseProperties.store(databasePropertiesFile);
+		try {
+			databaseProperties.store(databasePropertiesFile);
+		}
+		catch (IOException ioe) {
+			System.out.println(
+				"Error writting to " +
+					databasePropertiesFile.getAbsolutePath());
+
+			throw ioe;
+		}
 
 		return dataSource;
 	}

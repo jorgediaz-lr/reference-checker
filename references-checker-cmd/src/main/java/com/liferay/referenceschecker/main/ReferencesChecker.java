@@ -64,6 +64,7 @@ public class ReferencesChecker {
 		String databaseCfg = commandArguments.getDatabaseConfiguration();
 		String filenamePrefix = commandArguments.getOutputFilesPrefix();
 		String filenameSuffix = commandArguments.getOutputFilesSuffix();
+
 		int missingReferencesLimit =
 			commandArguments.getMissingReferencesLimit();
 
@@ -72,7 +73,9 @@ public class ReferencesChecker {
 		}
 
 		if (databaseCfg == null) {
-			databaseCfg = "database.properties";
+			String configFolder = getConfigFolder();
+
+			databaseCfg = configFolder + "database.properties";
 		}
 
 		if (filenamePrefix == null) {
@@ -170,14 +173,7 @@ public class ReferencesChecker {
 
 		JCommander jCommander = new JCommander(commandArguments);
 
-		File jarFile = _getJarFile();
-
-		if (jarFile.isFile()) {
-			jCommander.setProgramName("java -jar " + jarFile.getName());
-		}
-		else {
-			jCommander.setProgramName(ReferencesChecker.class.getName());
-		}
+		jCommander.setProgramName("referenceschecker");
 
 		try {
 			jCommander.parse(args);
@@ -199,6 +195,24 @@ public class ReferencesChecker {
 		}
 
 		return commandArguments;
+	}
+
+	protected static String getConfigFolder() throws Exception {
+		File jarFile = _getJarFile();
+
+		if (jarFile == null) {
+			return StringUtils.EMPTY;
+		}
+
+		File libFolder = jarFile.getParentFile();
+
+		String libFolderPath = libFolder.getAbsolutePath();
+
+		if (!libFolderPath.endsWith("lib")) {
+			return StringUtils.EMPTY;
+		}
+
+		return libFolder.getParent() + "/config/";
 	}
 
 	protected void calculateReferences() throws IOException, SQLException {

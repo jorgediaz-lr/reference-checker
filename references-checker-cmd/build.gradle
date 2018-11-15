@@ -4,7 +4,36 @@ plugins {
 
 apply plugin: 'application'
 
+applicationDefaultJvmArgs = ["-Xms512m", "-Xmx2048m"]
+
 mainClassName = "com.liferay.referenceschecker.main.ReferencesChecker"
+
+executableDir = ""
+
+distributions {
+	main {
+		contents {
+			from("resources/config") {
+				include "*.properties"
+				into "config"
+			}
+		}
+	}
+}
+
+startScripts {
+	applicationName = 'references-checker'
+	executableDir = '.'
+	doLast {
+		// By default, scripts are included in bin, changing it to root folder
+		unixScript.text = unixScript.text.replace('\\\"\$PRG\\\"`/..', '\\\"\$PRG\\\"`')
+		windowsScript.text = windowsScript.text.replace('APP_HOME=%DIRNAME%..', 'APP_HOME=%DIRNAME%')
+		// Add config folder to classpath
+		unixScript.text = unixScript.text.replace('CLASSPATH=\$APP_HOME/', 'CLASSPATH=\$APP_HOME/config:\$APP_HOME/')
+		windowsScript.text = windowsScript.text.replace('set CLASSPATH=%APP_HOME%\\', 'set CLASSPATH=%APP_HOME%\\config;%APP_HOME%\\')
+
+	}
+}
 
 dependencies {
 	compile group: "com.beust", name: "jcommander", version: "1.72"
