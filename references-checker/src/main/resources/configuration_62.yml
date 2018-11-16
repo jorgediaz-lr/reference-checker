@@ -1,4 +1,4 @@
-ignoreColumns: [actionId]
+ignoreColumns: [actionId, userId, "*userId"]
 ignoreTables: [counter, cyrusUser, cyrusVirtual, systemEvent]
 references: [
 #generic references
