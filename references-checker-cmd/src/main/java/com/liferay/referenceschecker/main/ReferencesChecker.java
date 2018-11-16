@@ -19,6 +19,7 @@ import com.beust.jcommander.ParameterException;
 
 import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.main.util.CommandArguments;
+import com.liferay.referenceschecker.main.util.CsvToHtmlUtil;
 import com.liferay.referenceschecker.main.util.InitDatabase;
 import com.liferay.referenceschecker.main.util.TeePrintStream;
 import com.liferay.referenceschecker.ref.MissingReferences;
@@ -241,27 +242,14 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		String[] headers =
-			{"origin table", "attributes", "destination table", "attributes"};
+		String[] headers = {
+			"origin table", "attributes", "destination table", "dest attributes"
+		};
 
 		List<String> outputList = OutputUtil.generateCSVOutputMappingList(
 			Arrays.asList(headers), references);
 
-		String outputFile = _getOutputFileName("references", "csv");
-
-		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
-
-		for (String line : outputList) {
-			writer.println(line);
-		}
-
-		writer.close();
-
-		long endTime = System.currentTimeMillis();
-
-		System.out.println("");
-		System.out.println("Total time: " + (endTime - startTime) + " ms");
-		System.out.println("Output was written to file: " + outputFile);
+		writeOutput("references", "csv", startTime, outputList);
 	}
 
 	protected void calculateTableCount() throws IOException, SQLException {
@@ -285,21 +273,7 @@ public class ReferencesChecker {
 		List<String> outputList = OutputUtil.generateCSVOutputMap(
 			Arrays.asList(headers), mapTableCount);
 
-		String outputFile = _getOutputFileName("tablesCount", "csv");
-
-		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
-
-		for (String line : outputList) {
-			writer.println(line);
-		}
-
-		writer.close();
-
-		long endTime = System.currentTimeMillis();
-
-		System.out.println("");
-		System.out.println("Total time: " + (endTime - startTime) + " ms");
-		System.out.println("Output was written to file: " + outputFile);
+		writeOutput("tablesCount", "csv", startTime, outputList);
 	}
 
 	protected void dumpDatabaseInfo() throws IOException, SQLException {
@@ -318,21 +292,7 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		String outputFile = _getOutputFileName("information", "txt");
-
-		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
-
-		for (String line : outputList) {
-			writer.println(line);
-		}
-
-		writer.close();
-
-		long endTime = System.currentTimeMillis();
-
-		System.out.println("");
-		System.out.println("Total time: " + (endTime - startTime) + " ms");
-		System.out.println("Output was written to file: " + outputFile);
+		writeOutput("information", "txt", startTime, outputList);
 	}
 
 	protected void execute() throws IOException, SQLException {
@@ -360,7 +320,14 @@ public class ReferencesChecker {
 			Arrays.asList(headers), listMissingReferences,
 			missingReferencesLimit);
 
-		String outputFile = _getOutputFileName("missing-references", "csv");
+		writeOutput("missing-references", "csv", startTime, outputList);
+	}
+
+	protected void writeOutput(
+			String name, String format, long startTime, List<String> outputList)
+		throws IOException {
+
+		File outputFile = _getOutputFile(name, format);
 
 		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
 
@@ -370,11 +337,28 @@ public class ReferencesChecker {
 
 		writer.close();
 
+		String outputFileName = outputFile.getName();
+
+		if ("csv".equals(format)) {
+			File htmlFile = _getOutputFile(name, "html");
+
+			try {
+				File csvFile = outputFile;
+
+				CsvToHtmlUtil.writeOutputHtml(csvFile, htmlFile);
+
+				outputFileName = outputFileName + " and " + htmlFile.getName();
+			}
+			catch (IOException ioe) {
+				ioe.printStackTrace(System.out);
+			}
+		}
+
 		long endTime = System.currentTimeMillis();
 
 		System.out.println("");
 		System.out.println("Total time: " + (endTime - startTime) + " ms");
-		System.out.println("Output was written to file: " + outputFile);
+		System.out.println("Output was written to file: " + outputFileName);
 	}
 
 	protected DataSource dataSource;
@@ -405,8 +389,14 @@ public class ReferencesChecker {
 		}
 	}
 
-	private String _getOutputFileName(String name, String extension) {
-		return filenamePrefix + name + filenameSuffix + "." + extension;
+	private File _getOutputFile(String name, String extension) {
+		String fileName = filenamePrefix + name + filenameSuffix;
+
+		if (StringUtils.isNotEmpty(extension)) {
+			fileName = fileName + "." + extension;
+		}
+
+		return new File(fileName);
 	}
 
 }
