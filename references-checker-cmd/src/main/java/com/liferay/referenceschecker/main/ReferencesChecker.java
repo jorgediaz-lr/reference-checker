@@ -53,6 +53,15 @@ import org.apache.commons.lang3.StringUtils;
 public class ReferencesChecker {
 
 	public static void main(String[] args) throws Exception {
+		System.out.println("========");
+		System.out.println(
+			"WARNING: This tool is for Liferay internal use only and it " +
+				"should not be distributed to customers or external users. " +
+					"False positives can be returned, if you have any " +
+						"question, contact with Jorge Diaz");
+		System.out.println("========");
+		System.out.println("");
+
 		CommandArguments commandArguments = getCommandArguments(args);
 
 		if (commandArguments == null) {
