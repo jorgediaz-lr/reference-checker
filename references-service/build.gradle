@@ -9,5 +9,3 @@ dependencies {
 	compile group: "org.yaml", name: "snakeyaml", version: "1.18"
 	compile project(":database-access")
 }
-
-version = '0.1.0'

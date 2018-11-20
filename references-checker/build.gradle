@@ -8,5 +8,3 @@ dependencies {
 	compile project(":database-access")
 	compile project(":references-service")
 }
-
-version = '0.1.0'

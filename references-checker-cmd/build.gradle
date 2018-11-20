@@ -50,5 +50,3 @@ dependencies {
 	compile group: "org.slf4j", name: "slf4j-simple", version: "1.7.25"
 	compile project(":references-checker")
 }
-
-version = '0.1.0'

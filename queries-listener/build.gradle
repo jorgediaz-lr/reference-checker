@@ -8,5 +8,3 @@ dependencies {
 	compile group: "org.apache.commons", name: "commons-lang3", version: "3.8"
 	compile group: "p6spy", name: "p6spy", version: "3.7.0"
 }
-
-version = '0.1.0'

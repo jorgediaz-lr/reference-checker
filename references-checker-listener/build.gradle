@@ -9,5 +9,3 @@ dependencies {
 	compile project(":queries-listener")
 	compile project(":references-checker")
 }
-
-version = '0.1.0'

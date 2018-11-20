@@ -17,4 +17,6 @@ allprojects {
 	check {
 		dependsOn checkSourceFormatting
 	}
+
+	version = '0.2.0'
 }
