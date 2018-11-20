@@ -62,6 +62,8 @@ public class ReferencesChecker {
 						"question, contact with Jorge Diaz");
 		System.out.println("========");
 		System.out.println("");
+		System.out.println("Reference checker version " + _getJarVersion());
+		System.out.println("");
 
 		CommandArguments commandArguments = getCommandArguments(args);
 
@@ -312,8 +314,8 @@ public class ReferencesChecker {
 		}
 
 		String[] headers = {
-			"origin table", "attributes", "destination table", "dest attributes",
-			"#", "missing references"
+			"origin table", "attributes", "destination table",
+			"dest attributes", "#", "missing references"
 		};
 
 		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
@@ -376,6 +378,12 @@ public class ReferencesChecker {
 		URL url = codeSource.getLocation();
 
 		return new File(url.toURI());
+	}
+
+	private static String _getJarVersion() {
+		Package p = ReferencesChecker.class.getPackage();
+
+		return p.getImplementationVersion();
 	}
 
 	private static void _printHelp(JCommander jCommander) {
