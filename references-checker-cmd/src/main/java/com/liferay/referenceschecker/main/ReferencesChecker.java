@@ -347,7 +347,9 @@ public class ReferencesChecker {
 			try {
 				File csvFile = outputFile;
 
-				CsvToHtmlUtil.writeOutputHtml(csvFile, htmlFile);
+				String footer = "Version " + _getJarVersion();
+
+				CsvToHtmlUtil.writeOutputHtml(csvFile, htmlFile, footer);
 
 				outputFileName = outputFileName + " and " + htmlFile.getName();
 			}

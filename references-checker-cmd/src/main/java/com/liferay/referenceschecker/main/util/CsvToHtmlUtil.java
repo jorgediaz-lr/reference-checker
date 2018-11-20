@@ -58,7 +58,8 @@ public class CsvToHtmlUtil {
 		return mappingIterator.readAll();
 	}
 
-	public static void writeOutputHtml(File sourceCsvFile, File htmlFile)
+	public static void writeOutputHtml(
+			File sourceCsvFile, File htmlFile, String footer)
 		throws FileNotFoundException, IOException, JsonProcessingException,
 			   UnsupportedEncodingException {
 
@@ -76,6 +77,7 @@ public class CsvToHtmlUtil {
 		template = template.replace(
 			"${CSV_FILE_NAME}", sourceCsvFile.getName());
 		template = template.replace("${JSON_DATA}", jsonData);
+		template = template.replace("${FOOTER}", footer);
 
 		PrintWriter writer = new PrintWriter(htmlFile, "UTF-8");
 
