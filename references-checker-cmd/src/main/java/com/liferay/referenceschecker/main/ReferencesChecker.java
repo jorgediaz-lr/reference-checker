@@ -312,7 +312,7 @@ public class ReferencesChecker {
 		}
 
 		String[] headers = {
-			"origin table", "attributes", "destination table", "attributes",
+			"origin table", "attributes", "destination table", "dest attributes",
 			"#", "missing references"
 		};
 

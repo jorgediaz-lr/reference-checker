@@ -189,16 +189,16 @@
 						.append('tr');
 		  rows.selectAll('td')
 			.data(function (d) {
-				return titles.map(function (k) {
-						var value = d[k];
-						if (k.startsWith('attributes')) {
+				return titles.map(function (key) {
+						var value = d[key];
+						if (key.includes('attributes')) {
 							value = value.replace(/,/g, ', ');
 						}
-						else if (k.includes('table')) {
+						else if (key.includes('table')) {
 							value = value.replace(/ value=/g, ' value = ');
 							value = value.replace(/ name=/g, ' name = ');
 						}
-						return { 'value': value, 'name': k};
+						return { 'value': value, 'name': key};
 				});
 			}).enter()
 			.append('td')
