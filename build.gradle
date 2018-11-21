@@ -15,7 +15,7 @@ allprojects {
 				'Created-By'            : "Gradle ${gradle.gradleVersion}",
 				'Build-Jdk'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
 				'Build-OS'              : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
-				'Implementation-Title'  : "Reference Checher: ${baseName}",
+				'Implementation-Title'  : "Reference Checher: ${baseName} jar",
 				'Implementation-Version': "${project.rootProject.version}",
 				'Implementation-Vendor' : "Liferay"
 			)
@@ -33,5 +33,5 @@ allprojects {
 		dependsOn checkSourceFormatting
 	}
 
-	version = '0.2.0'
+	version = '0.3.0'
 }
