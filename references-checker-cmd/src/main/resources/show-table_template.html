@@ -142,6 +142,20 @@
 	<script src="http://d3js.org/d3.v3.min.js" type="text/javascript">
 	</script>
 	<script type="text/javascript">
+		function toogleHiddenSpan(id) {
+			if (document.getElementById(id)) {
+				if (document.getElementById(id+'-show').style.display != 'none') {
+					document.getElementById(id+'-show').style.display = 'none';
+					document.getElementById(id).style.display = 'block';
+				}
+				else {
+					document.getElementById(id+'-show').style.display = 'inline';
+					document.getElementById(id).style.display = 'none';
+				}
+			}
+		}
+	</script>
+	<script type="text/javascript">
 		var jsonData = ${JSON_DATA};
 
 		var sortAscending = true;
@@ -165,9 +179,9 @@
 								if (sortAscending) {
 									rows.sort(function(a, b) {
 											var aa = parseFloat(a[d]);
-											if (isNaN(aa)) {aa = a[d]}
+											if (isNaN(aa)) {aa = "" + a[d]; aa = aa.toLowerCase();}
 											var bb = parseFloat(b[d]);
-											if (isNaN(bb)) {bb = b[d]}
+											if (isNaN(bb)) {bb = "" + b[d]; bb = bb.toLowerCase();}
 											return d3.ascending(aa,bb);
 									});
 									sortAscending = false;
@@ -176,9 +190,9 @@
 								else {
 									rows.sort(function(a, b) {
 											var aa = parseFloat(a[d]);
-											if (isNaN(aa)) {aa = a[d]}
+											if (isNaN(aa)) {aa = "" + a[d]; aa = aa.toLowerCase();}
 											var bb = parseFloat(b[d]);
-											if (isNaN(bb)) {bb = b[d]}
+											if (isNaN(bb)) {bb = "" + b[d]; bb = bb.toLowerCase();}
 											return d3.descending(aa,bb);
 									});
 									sortAscending = true;
@@ -208,8 +222,34 @@
 			.attr('data-th', function (d) {
 				return d.name;
 			})
-			.text(function (d) {
-				return d.value;
+			.html(function (d) {
+				if (d.name != 'missing references') {
+					return d.value;
+				}
+
+				var maxLenght = 40;
+
+				var outputString =  "" + d.value;
+
+				if (outputString.length < maxLenght) {
+					return outputString;
+				}
+
+				var outputStringTrimmed = outputString.substring(0,maxLenght) + "...";
+
+				outputString = outputString.replace(/,/g, ', ');
+
+				var randLetter = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+
+				var tagId = randLetter + Date.now();
+
+				var onClick = "onclick=\"toogleHiddenSpan('" + tagId + "');return false;\"";
+				var linkMore = "<a href='#' >(see more)</a>";
+				var linkCollapse = "<a href='#' >(collapse)</a>";
+
+				return "<span id='" + tagId + "-show' " + onClick + " >" + outputStringTrimmed +
+					" " + linkMore + "</span><span id='" + tagId + "' " + onClick +
+					" style='display: none;' >" + outputString + " " + linkCollapse + "</span>";
 			});
 	</script>
 </body>
