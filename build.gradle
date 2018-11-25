@@ -37,8 +37,28 @@ allprojects {
 		}
 	}
 
+	buildDir = new File(rootProject.projectDir, "build/" + project.name)
+
 	check {
 		dependsOn checkSourceFormatting
+	}
+
+	task copyJars(type: Copy) {
+		from subprojects.collect { it.tasks.withType(Jar) }
+		into new File(rootProject.projectDir, "lib")
+	}
+
+	task copyDist(type: Copy) {
+		dependsOn ':references-checker-cmd:distZip'
+		from new File(rootProject.projectDir, "build/references-checker-cmd/distributions")
+		into new File(rootProject.projectDir, "dist")
+	}
+
+	task deploy {
+		group 'Distribution'
+		description 'Create all distributable files (dist and lib folders)'
+		dependsOn 'copyJars'
+		dependsOn 'copyDist'
 	}
 
 	version = '0.3.0'
