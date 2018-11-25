@@ -27,6 +27,14 @@ allprojects {
 
 	repositories {
 		mavenCentral()
+		maven {
+			url "https://www.oracle.com/content/secure/maven/content"
+			name "maven.oracle.com"
+			credentials {
+				username mavenOracleUsername
+				password mavenOraclePassword
+			}
+		}
 	}
 
 	check {
