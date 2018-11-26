@@ -78,6 +78,7 @@ public class ReferenceUtil {
 
 		for (Table table : tableUtil.getTables()) {
 			String tableName = StringUtils.lowerCase(table.getTableName());
+
 			String primaryKey = table.getPrimaryKey();
 
 			if (primaryKey != null) {

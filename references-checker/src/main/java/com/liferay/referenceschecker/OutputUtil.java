@@ -14,10 +14,19 @@
 
 package com.liferay.referenceschecker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+
 import com.liferay.referenceschecker.dao.Query;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
+
+import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,11 +85,32 @@ public class OutputUtil {
 		return sb.toString();
 	}
 
+	public static List<Map<?, ?>> csvToMapList(String csvContent)
+		throws IOException {
+
+		CsvSchema emptySchema = CsvSchema.emptySchema();
+
+		CsvSchema bootstrap = emptySchema.withHeader();
+
+		CsvMapper csvMapper = new CsvMapper();
+
+		ObjectReader objectReader = csvMapper.readerFor(Map.class);
+
+		objectReader = objectReader.with(bootstrap);
+
+		MappingIterator<Map<?, ?>> mappingIterator = objectReader.readValues(
+			csvContent);
+
+		return mappingIterator.readAll();
+	}
+
 	public static List<String> generateCSVOutputCheckReferences(
-		List<String> headers, List<MissingReferences> listMissingReferences,
+		List<MissingReferences> listMissingReferences,
 		int missingReferencesLimit) {
 
 		List<String> out = new ArrayList<>();
+
+		List<String> headers = Arrays.asList(HEADERS_MISSING_REFERENCES);
 
 		out.add(getCSVRow(headers));
 
@@ -150,9 +180,11 @@ public class OutputUtil {
 	}
 
 	public static List<String> generateCSVOutputMappingList(
-		List<String> headers, Collection<Reference> references) {
+		Collection<Reference> references) {
 
 		List<String> out = new ArrayList<>();
+
+		List<String> headers = Arrays.asList(HEADERS_MISSING_REFERENCES);
 
 		out.add(getCSVRow(headers));
 
@@ -181,18 +213,12 @@ public class OutputUtil {
 		return line;
 	}
 
-	public static String getCSVRow(List<String> rowData) {
-		return getCSVRow(rowData, ",");
-	}
+	public static String mapListToJSON(List<Map<?, ?>> data)
+		throws JsonProcessingException {
 
-	public static String getCSVRow(List<String> rowData, String sep) {
-		String row = StringUtils.EMPTY;
+		ObjectMapper mapper = new ObjectMapper();
 
-		for (String aux : rowData) {
-			row = addCell(row, aux, sep);
-		}
-
-		return row;
+		return mapper.writeValueAsString(data);
 	}
 
 	protected static String addCell(String line, String cell, String sep) {
@@ -244,5 +270,28 @@ public class OutputUtil {
 
 		return line;
 	}
+
+	protected static String getCSVRow(List<String> rowData) {
+		return getCSVRow(rowData, ",");
+	}
+
+	protected static String getCSVRow(List<String> rowData, String sep) {
+		String row = StringUtils.EMPTY;
+
+		for (String aux : rowData) {
+			row = addCell(row, aux, sep);
+		}
+
+		return row;
+	}
+
+	protected static final String[] HEADERS_MISSING_REFERENCES = {
+		"origin table", "attributes", "destination table", "dest attributes",
+		"#", "missing references"
+	};
+
+	protected static final String[] HEADERS_REFERENCES = {
+		"origin table", "attributes", "destination table", "dest attributes"
+	};
 
 }

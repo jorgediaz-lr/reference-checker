@@ -17,9 +17,10 @@ package com.liferay.referenceschecker.main;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.main.util.CommandArguments;
-import com.liferay.referenceschecker.main.util.CsvToHtmlUtil;
 import com.liferay.referenceschecker.main.util.InitDatabase;
 import com.liferay.referenceschecker.main.util.TeePrintStream;
 import com.liferay.referenceschecker.ref.MissingReferences;
@@ -27,9 +28,12 @@ import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.JDBCUtil;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 
 import java.net.URL;
 
@@ -46,6 +50,8 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -178,6 +184,33 @@ public class ReferencesChecker {
 		}
 	}
 
+	public void writeOutputHtml(
+			File sourceCsvFile, File htmlFile, String footer)
+		throws FileNotFoundException, IOException, JsonProcessingException,
+			   UnsupportedEncodingException {
+
+		String sourceCsvContent = FileUtils.readFileToString(
+			sourceCsvFile, "UTF-8");
+
+		List<Map<?, ?>> data = OutputUtil.csvToMapList(sourceCsvContent);
+
+		String jsonData = OutputUtil.mapListToJSON(data);
+
+		String template = getResource("show-table_template.html");
+		String title = StringUtils.removeEnd(htmlFile.getName(), ".html");
+
+		template = template.replace("${TITLE}", title);
+		template = template.replace(
+			"${CSV_FILE_NAME}", sourceCsvFile.getName());
+		template = template.replace("${JSON_DATA}", jsonData);
+		template = template.replace("${FOOTER}", footer);
+
+		PrintWriter writer = new PrintWriter(htmlFile, "UTF-8");
+
+		writer.print(template);
+		writer.close();
+	}
+
 	protected static CommandArguments getCommandArguments(String[] args)
 		throws Exception {
 
@@ -244,12 +277,8 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		String[] headers = {
-			"origin table", "attributes", "destination table", "dest attributes"
-		};
-
 		List<String> outputList = OutputUtil.generateCSVOutputMappingList(
-			Arrays.asList(headers), references);
+			references);
 
 		writeOutput("references", "csv", startTime, outputList);
 	}
@@ -313,16 +342,20 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		String[] headers = {
-			"origin table", "attributes", "destination table",
-			"dest attributes", "#", "missing references"
-		};
-
 		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
-			Arrays.asList(headers), listMissingReferences,
-			missingReferencesLimit);
+			listMissingReferences, missingReferencesLimit);
 
 		writeOutput("missing-references", "csv", startTime, outputList);
+	}
+
+	protected String getResource(String resourceName)
+		throws IOException, UnsupportedEncodingException {
+
+		ClassLoader classLoader = getClass().getClassLoader();
+
+		InputStream inputStream = classLoader.getResourceAsStream(resourceName);
+
+		return IOUtils.toString(inputStream, "UTF-8");
 	}
 
 	protected void writeOutput(
@@ -349,7 +382,7 @@ public class ReferencesChecker {
 
 				String footer = "Version " + _getJarVersion();
 
-				CsvToHtmlUtil.writeOutputHtml(csvFile, htmlFile, footer);
+				writeOutputHtml(csvFile, htmlFile, footer);
 
 				outputFileName = outputFileName + " and " + htmlFile.getName();
 			}

@@ -14,12 +14,11 @@
 
 package com.liferay.referenceschecker.portlet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
@@ -38,11 +37,8 @@ import com.liferay.portlet.documentlibrary.service.DLAppLocalServiceUtil;
 import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
 import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
-import com.liferay.referenceschecker.dao.Query;
-import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.model.ModelUtil;
 import com.liferay.referenceschecker.portal.ModelUtilImpl;
-import com.liferay.referenceschecker.portal.ReferencesCheckerOutput;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.PortletFileRepositoryUtil;
@@ -51,21 +47,20 @@ import com.liferay.util.bridges.mvc.MVCPortlet;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import java.sql.Connection;
-import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
 import javax.portlet.PortletConfig;
 import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
+import javax.portlet.PortletRequest;
+import javax.portlet.PortletResponse;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import javax.portlet.ResourceRequest;
@@ -138,123 +133,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		}
 	}
 
-	public static List<String> generateCSVOutputCheckReferences(
-		PortletConfig portletConfig, Locale locale,
-		List<MissingReferences> listMissingReferences) {
-
-		if (listMissingReferences == null) {
-			return null;
-		}
-
-		String[] headerKeys = new String[] {
-			"output.table-name", "output.attributes", "output.destination",
-			"output.attributes", "output.number", "output.missing-references"};
-
-		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
-
-		return OutputUtil.generateCSVOutputCheckReferences(
-			headers, listMissingReferences, -1);
-	}
-
-	public static List<String> generateCSVOutputMappingList(
-		PortletConfig portletConfig, Locale locale,
-		Collection<Reference> references) {
-
-		if (references == null) {
-			return null;
-		}
-
-		String[] headerKeys = new String[] {
-			"output.table-name", "output.attributes", "output.destination",
-			"output.attributes"};
-
-		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
-
-		return OutputUtil.generateCSVOutputMappingList(headers, references);
-	}
-
-	public static SearchContainer<MissingReferences>
-		generateSearchContainerCheckReferences(
-			PortletConfig portletConfig, RenderRequest renderRequest,
-			List<MissingReferences> listMissingReferences, PortletURL serverURL)
-		throws SystemException {
-
-		Locale locale = renderRequest.getLocale();
-
-		String[] headerKeys = new String[] {
-			"output.table-name", "output.attributes", "output.destination",
-			"output.attributes", "output.missing-references"};
-
-		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
-
-		return ReferencesCheckerOutput.generateSearchContainerCheckReferences(
-			renderRequest, serverURL, headers, listMissingReferences);
-	}
-
-	public static
-		SearchContainer<Reference> generateSearchContainerMappingList(
-			PortletConfig portletConfig, RenderRequest renderRequest,
-			List<Reference> referecesList, PortletURL serverURL)
-		throws SystemException {
-
-		Locale locale = renderRequest.getLocale();
-
-		String[] headerKeys = new String[] {
-			"output.table-name", "output.attributes", "output.destination",
-			"output.attributes"};
-
-		List<String> headers = getHeaders(portletConfig, locale, headerKeys);
-
-		return ReferencesCheckerOutput.generateSearchContainerMappingList(
-			renderRequest, serverURL, headers, referecesList);
-	}
-
-	public static
-		Map<Table, SearchContainer<Reference>>
-			generateSearchContainersMappingList(
-			PortletConfig portletConfig, RenderRequest renderRequest,
-			Collection<Reference> references, PortletURL serverURL)
-		throws SystemException {
-
-		Map<Table, List<Reference>> referenceListMap =
-			new TreeMap<Table, List<Reference>>();
-
-		for (Reference reference : references) {
-			Query originQuery = reference.getOriginQuery();
-			Table originTable = originQuery.getTable();
-
-			if (!referenceListMap.containsKey(originTable)) {
-				referenceListMap.put(originTable, new ArrayList<Reference>());
-			}
-
-			referenceListMap.get(originTable).add(reference);
-		}
-
-		Map<Table, SearchContainer<Reference>> searchContainerMap =
-			new TreeMap<Table, SearchContainer<Reference>>();
-
-		for (Entry<Table, List<Reference>> e : referenceListMap.entrySet()) {
-			SearchContainer<Reference> sc =
-				ReferencesCheckerPortlet.generateSearchContainerMappingList(
-					portletConfig, renderRequest, e.getValue(), serverURL);
-			searchContainerMap.put(e.getKey(), sc);
-		}
-
-		return searchContainerMap;
-	}
-
-	public static List<String> getHeaders(
-		PortletConfig portletConfig, Locale locale, String[] headerKeys) {
-
-		List<String> headers = new ArrayList<String>();
-
-		for (int i = 0; i<headerKeys.length; i++) {
-			headers.add(LanguageUtil.get(portletConfig, locale, headerKeys[i]));
-		}
-
-		return headers;
-	}
-
 	public static void servePortletFileEntry(
 			long groupId, String portletId, String title,
 			ResourceRequest request, ResourceResponse response)
@@ -275,39 +153,33 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			request, response, title, inputStream, -1, mimeType);
 	}
 
-	@SuppressWarnings("unchecked")
 	public void doView(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 
-		PortletConfig portletConfig =
-			(PortletConfig)renderRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_CONFIG);
+		String exportCsvTitle = (String)renderRequest.getAttribute(
+			"exportCsvTitle");
 
-		List<String> outputList = null;
-
-		List<MissingReferences> listMissingReferences =
-			(List<MissingReferences>)renderRequest.getAttribute(
-				"missingReferencesList");
-
-		if (listMissingReferences != null) {
-			outputList =
-				ReferencesCheckerPortlet.generateCSVOutputCheckReferences(
-					portletConfig, renderRequest.getLocale(),
-					listMissingReferences);
+		if (exportCsvTitle != null) {
+			ResourceURL exportCsvResourceURL =
+				renderResponse.createResourceURL();
+	
+			exportCsvResourceURL.setResourceID(exportCsvTitle);
+	
+			renderRequest.setAttribute(
+				"exportCsvResourceURL", exportCsvResourceURL.toString());
 		}
 
-		Collection<Reference> references =
-			(Collection<Reference>)renderRequest.getAttribute("references");
+		super.doView(renderRequest, renderResponse);
+	}
 
-		if (references != null) {
-			outputList = ReferencesCheckerPortlet.generateCSVOutputMappingList(
-				portletConfig, renderRequest.getLocale(), references);
-		}
+	protected void handleOutput(
+		PortletRequest request, PortletResponse response,
+		String portletId, List<String> outputList)
+		throws PortletException, IOException, JsonProcessingException {
 
 		long groupId = getGlobalGroupId();
-		String portletId = portletConfig.getPortletName();
-		long userId = PortalUtil.getUserId(renderRequest);
+		long userId = PortalUtil.getUserId(request);
 
 		String outputContent = StringUtils.join(
 			outputList, StringPool.NEW_LINE);
@@ -317,15 +189,14 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 				groupId, portletId, userId, outputContent);
 
 		if (exportCsvFileEntry != null) {
-			ResourceURL exportCsvResourceURL =
-				renderResponse.createResourceURL();
-			exportCsvResourceURL.setResourceID(exportCsvFileEntry.getTitle());
-
-			renderRequest.setAttribute(
-				"exportCsvResourceURL", exportCsvResourceURL.toString());
+			request.setAttribute(
+				"exportCsvTitle", exportCsvFileEntry.getTitle());
 		}
 
-		super.doView(renderRequest, renderResponse);
+		List<Map<?, ?>> data = OutputUtil.csvToMapList(outputContent);
+		String jsonData = OutputUtil.mapListToJSON(data);
+
+		request.setAttribute("jsonData", jsonData);
 	}
 
 	public void executeCheckReferences(
@@ -370,9 +241,18 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			DataAccess.cleanUp(connection);
 		}
 
-		long endTime = System.currentTimeMillis();
+		PortletConfig portletConfig =
+			(PortletConfig)request.getAttribute(
+				JavaConstants.JAVAX_PORTLET_CONFIG);
 
-		request.setAttribute("missingReferencesList", listMissingReferences);
+		String portletId = portletConfig.getPortletName();
+
+		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
+			listMissingReferences, -1);
+
+		handleOutput(request, response, portletId, outputList);
+
+		long endTime = System.currentTimeMillis();
 
 		response.setRenderParameter("processTime", "" + (endTime-startTime));
 	}
@@ -420,9 +300,18 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			DataAccess.cleanUp(connection);
 		}
 
-		long endTime = System.currentTimeMillis();
+		PortletConfig portletConfig =
+			(PortletConfig)request.getAttribute(
+				JavaConstants.JAVAX_PORTLET_CONFIG);
 
-		request.setAttribute("references", references);
+		String portletId = portletConfig.getPortletName();
+
+		List<String> outputList = OutputUtil.generateCSVOutputMappingList(
+			references);
+
+		handleOutput(request, response, portletId, outputList);
+
+		long endTime = System.currentTimeMillis();
 
 		response.setRenderParameter("processTime", "" + (endTime-startTime));
 	}

@@ -27,7 +27,6 @@ import com.liferay.referenceschecker.ref.Reference;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-
-import net.sf.jsqlparser.statement.drop.Drop;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
@@ -66,7 +63,6 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		if (referencesChecker == null) {
-
 			try {
 				initReferencesChecker(connection);
 			}
@@ -328,13 +324,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
-		String[] headers = {
-			"origin table", "attributes", "destination table", "attributes",
-			"#", "missing references"
-		};
-
 		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
-			Arrays.asList(headers), missingReferences, -1);
+			missingReferences, -1);
 
 		for (String output : outputList) {
 			_log.warn(output);
@@ -414,6 +405,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return false;
 	}
 
+	private static final String _RELEASE_TABLE_LOWERCASE =
+		"Release_".toLowerCase();
+
 	private static Logger _log = LogManager.getLogger(
 		ReferencesCheckerInfrastructureListener.class);
 
@@ -479,7 +473,5 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 
 		};
-
-	private static String _RELEASE_TABLE_LOWERCASE = "Release_".toLowerCase();
 
 }

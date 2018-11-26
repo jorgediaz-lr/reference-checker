@@ -48,6 +48,7 @@ public class ConfigurationUtil {
 		}
 
 		Constructor constructor = new Constructor(Configuration.class);
+
 		TypeDescription configurationDescription = new TypeDescription(
 			Configuration.class);
 

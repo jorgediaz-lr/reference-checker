@@ -337,6 +337,7 @@ public class ReferencesChecker {
 				}
 
 				Query originQuery = reference.getOriginQuery();
+
 				Query destinationQuery = reference.getDestinationQuery();
 
 				if (destinationQuery == null) {

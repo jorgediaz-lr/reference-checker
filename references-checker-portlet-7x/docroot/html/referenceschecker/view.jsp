@@ -51,20 +51,6 @@
 <portlet:actionURL name="executeMappingList" var="executeMappingListURL" windowState="normal" />
 
 <div class="container-fluid-1280"><div class="card-horizontal main-content-card"><div class="panel-body">
-<script type="text/javascript">
-	function showHide(shID) {
-		if (document.getElementById(shID)) {
-			if (document.getElementById(shID+'-show').style.display != 'none') {
-				document.getElementById(shID+'-show').style.display = 'none';
-				document.getElementById(shID).style.display = 'block';
-			}
-			else {
-				document.getElementById(shID+'-show').style.display = 'inline';
-				document.getElementById(shID).style.display = 'none';
-			}
-		}
-	}
-</script>
 <div class="alert alert-warning"><liferay-ui:message key="disclaimer" /></div>
 <aui:form action="<%= executeCheckReferencesURL %>" method="POST" name="fm">
 	<aui:col width="33">
@@ -95,21 +81,12 @@
 </aui:form>
 
 <%
-	Collection<Reference> references = (Collection<Reference>) request.getAttribute("references");
+	String jsonData = (String) request.getAttribute("jsonData");
 
-	List<MissingReferences> listMissingReferences = (List<MissingReferences>) request.getAttribute("missingReferencesList");
-
-	if (references != null) {
+	if (jsonData != null) {
 %>
 
-	<%@ include file="/html/referenceschecker/output/references_table.jspf" %>
-
-<%
-	}
-	else if (listMissingReferences != null) {
-%>
-
-	<%@ include file="/html/referenceschecker/output/missingref_table.jspf" %>
+	<%@ include file="/html/referenceschecker/output.jspf" %>
 
 <%
 	}

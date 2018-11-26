@@ -1,1 +1,0 @@
-java -cp ".;../lib/*;../../../../lib/*;../../../../lib/ext/*;../../../ROOT/WEB-INF/lib/*" com.liferay.referenceschecker.main.ReferencesChecker
