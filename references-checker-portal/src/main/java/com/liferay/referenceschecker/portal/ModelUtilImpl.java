@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.repository.model.RepositoryModel;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.util.ReflectionUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -39,6 +40,38 @@ import org.apache.log4j.Logger;
  */
 public class ModelUtilImpl
 	extends com.liferay.referenceschecker.model.ModelUtilImpl {
+
+	public static Object invokeMethod(
+		Object object, String methodName, Class<?>[] parameterTypes,
+		Object[] args) {
+
+		try {
+			Class<?> clazz = object.getClass();
+
+			Method method = clazz.getMethod(methodName, parameterTypes);
+
+			return method.invoke(object, args);
+		}
+		catch (NoSuchMethodException nsme) {
+			throw new RuntimeException(
+				"invokeMethod: " + methodName + " method not found for " +
+					object,
+				nsme);
+		}
+		catch (Exception e) {
+			String cause = null;
+			Throwable rootException = e.getCause();
+
+			if (rootException != null) {
+				cause = " (root cause: " + rootException.getMessage() + ")";
+			}
+
+			throw new RuntimeException(
+				"invokeMethod: " + methodName + " method for " + object + ": " +
+					cause,
+				e);
+		}
+	}
 
 	public String getClassName(String tableName) {
 		if (tableName == null) {
@@ -161,9 +194,8 @@ public class ModelUtilImpl
 			String modelTableName;
 
 			try {
-				Field field =
-					ReflectionUtil.getDeclaredField(
-						classLiferayModelImpl, "TABLE_NAME");
+				Field field = ReflectionUtil.getDeclaredField(
+					classLiferayModelImpl, "TABLE_NAME");
 
 				modelTableName = (String)field.get(null);
 			}
@@ -225,7 +257,7 @@ public class ModelUtilImpl
 		try {
 			dynamicQuery.setLimit(0, 1);
 
-			List<?> list = (List<?>)ReflectionUtil.invokeMethod(
+			List<?> list = (List<?>)invokeMethod(
 				service, "dynamicQuery", new Class<?>[] {DynamicQuery.class},
 				new Object[] {dynamicQuery});
 
@@ -250,16 +282,24 @@ public class ModelUtilImpl
 		return null;
 	}
 
+	protected static Object getPrivateField(Object object, String fieldName)
+		throws Exception {
+
+		Class<?> clazz = object.getClass();
+
+		Field field = ReflectionUtil.getDeclaredField(clazz, fieldName);
+
+		return field.get(object);
+	}
+
 	protected static String getWrappedModelImpl(DynamicQuery dynamicQuery) {
 		try {
-			Object detachedCriteria = ReflectionUtil.getPrivateField(
+			Object detachedCriteria = getPrivateField(
 				dynamicQuery, "_detachedCriteria");
 
-			Object criteria = ReflectionUtil.getPrivateField(
-				detachedCriteria, "impl");
+			Object criteria = getPrivateField(detachedCriteria, "impl");
 
-			return (String)ReflectionUtil.getPrivateField(
-				criteria, "entityOrClassName");
+			return (String)getPrivateField(criteria, "entityOrClassName");
 		}
 		catch (Throwable t) {
 			if (_log.isDebugEnabled()) {
@@ -273,7 +313,7 @@ public class ModelUtilImpl
 	protected List<?> executeDynamicQuery(
 		Object service, DynamicQuery dynamicQuery) {
 
-		return (List<?>)ReflectionUtil.invokeMethod(
+		return (List<?>)invokeMethod(
 			service, "dynamicQuery", new Class<?>[] {DynamicQuery.class},
 			new Object[] {dynamicQuery});
 	}
@@ -309,7 +349,7 @@ public class ModelUtilImpl
 	}
 
 	protected Object getPersistedModelLocalService(String className) {
-		return ReflectionUtil.invokeMethod(
+		return invokeMethod(
 			persistedModelLocalServiceRegistry, "getPersistedModelLocalService",
 			new Class<?>[] {String.class}, new Object[] {className});
 	}
@@ -366,13 +406,20 @@ public class ModelUtilImpl
 	}
 
 	protected DynamicQuery newDynamicQuery(Object service) {
-		return (DynamicQuery)ReflectionUtil.invokeMethod(
-			service, "dynamicQuery", null, null);
+		return (DynamicQuery)invokeMethod(service, "dynamicQuery", null, null);
 	}
 
 	protected DynamicQuery newDynamicQueryFromPortal(String className) {
 		try {
-			Class<?> classInterface = ReflectionUtil.getPortalClass(className);
+			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
+
+			if (classLoader == null) {
+				Class<?> clazz = getClass();
+
+				classLoader = clazz.getClassLoader();
+			}
+
+			Class<?> classInterface = classLoader.loadClass(className);
 
 			if (RepositoryModel.class.isAssignableFrom(classInterface)) {
 				return null;
