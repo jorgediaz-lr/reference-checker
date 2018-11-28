@@ -14,12 +14,18 @@
 
 package com.liferay.referenceschecker.portal;
 
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
+import com.liferay.portal.kernel.repository.model.RepositoryModel;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+
 import java.sql.Connection;
 import java.sql.SQLException;
+
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,18 +34,71 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-import com.liferay.portal.kernel.dao.orm.DynamicQuery;
-import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
-import com.liferay.portal.kernel.repository.model.RepositoryModel;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-
 /**
  * @author Jorge Díaz
  */
-public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtilImpl {
+public class ModelUtilImpl
+	extends com.liferay.referenceschecker.model.ModelUtilImpl {
+
+	public String getClassName(String tableName) {
+		if (tableName == null) {
+			return null;
+		}
+
+		String className = super.getClassName(tableName);
+
+		if (className != null) {
+			return className;
+		}
+
+		className = tableToClassNameMappingFromPortal.get(
+			StringUtils.lowerCase(tableName));
+
+		if (className == null) {
+			_log.info(tableName + " has no className");
+		}
+		else {
+			_log.warn(
+				"Mapping " + tableName + " => " + className +
+					" was retrieved from model");
+
+			super.tableNameToClassNameMapping.put(
+				StringUtils.lowerCase(tableName), className);
+		}
+
+		return className;
+	}
+
+	public String getTableName(String className) {
+		if (className == null) {
+			return null;
+		}
+
+		String tableName = super.getTableName(className);
+
+		if (tableName != null) {
+			return tableName;
+		}
+
+		tableName = classNameToTableMappingFromPortal.get(className);
+
+		if (tableName == null) {
+			_log.info(className + " has no tableName");
+		}
+		else {
+			_log.warn(
+				"Mapping " + tableName + " => " + className +
+					" was retrieved from model");
+
+			super.classNameToTableNameMapping.put(className, tableName);
+		}
+
+		return className;
+	}
 
 	public void init(
-		Connection connection, Map<String, String> tableNameToClassNameMapping)
+			Connection connection,
+			Map<String, String> tableNameToClassNameMapping)
 		throws SQLException {
 
 		super.init(connection, tableNameToClassNameMapping);
@@ -55,7 +114,7 @@ public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtil
 			return;
 		}
 
-		List<String> classNamesList = new ArrayList<String>();
+		List<String> classNamesList = new ArrayList<>();
 
 		for (String className : getClassNames()) {
 			if (!className.contains(".model.")) {
@@ -75,10 +134,8 @@ public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtil
 			}
 		}
 
-		Map<String, String> classNameToTableMapping =
-			new ConcurrentHashMap<String, String>();
-		Map<String, String> tableToClassNameMapping =
-			new ConcurrentHashMap<String, String>();
+		Map<String, String> classNameToTableMapping = new ConcurrentHashMap<>();
+		Map<String, String> tableToClassNameMapping = new ConcurrentHashMap<>();
 
 		for (String className : classNamesList) {
 			String realClassName = className;
@@ -102,6 +159,7 @@ public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtil
 			}
 
 			String modelTableName;
+
 			try {
 				Field field =
 					ReflectionUtil.getDeclaredField(
@@ -132,93 +190,6 @@ public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtil
 		tableToClassNameMappingFromPortal = tableToClassNameMapping;
 	}
 
-	public String getClassName(String tableName) {
-		if (tableName == null) {
-			return null;
-		}
-
-		String className = super.getClassName(tableName);
-
-		if (className != null) {
-			return className;
-		}
-
-		className = tableToClassNameMappingFromPortal.get(
-			StringUtils.lowerCase(tableName));
-
-		if (className == null) {
-			_log.warn(tableName + " has no className");
-		}
-		else {
-			_log.warn(
-				"Mapping " + tableName + " => " + className +
-					" was retrieved from model");
-
-			super.tableNameToClassNameMapping.put(
-				StringUtils.lowerCase(tableName), className);
-		}
-
-		return className;
-	}
-
-	protected Class<?> getLiferayModelImpl(String className)
-		throws ClassNotFoundException {
-
-		ClassLoader classLoader;
-		DynamicQuery dynamicQuery;
-		Object service = getPersistedModelLocalService(className);
-
-		if (service == null) {
-			classLoader = PortalClassLoaderUtil.getClassLoader();
-			dynamicQuery = newDynamicQueryFromPortal(className);
-			service = groupService;
-		}
-		else {
-			Class<?> serviceClass = service.getClass();
-
-			classLoader = serviceClass.getClassLoader();
-
-			dynamicQuery = newDynamicQuery(service);
-		}
-
-		if (dynamicQuery == null) {
-			return null;
-		}
-
-		String liferayModelImpl = getLiferayModelImplClassName(
-			service, dynamicQuery);
-
-		return getLiferayModelImplClass(
-			classLoader, liferayModelImpl);
-	}
-
-	public String getTableName(String className) {
-		if (className == null) {
-			return null;
-		}
-
-		String tableName = super.getTableName(className);
-
-		if (tableName != null) {
-			return tableName;
-		}
-
-		tableName = classNameToTableMappingFromPortal.get(className);
-
-		if (className == null) {
-			_log.warn(className + " has no tableName");
-		}
-		else {
-			_log.warn(
-				"Mapping " + tableName + " => " + className +
-					" was retrieved from model");
-
-			super.classNameToTableNameMapping.put(className, tableName);
-		}
-
-		return className;
-	}
-
 	protected static Class<?> getLiferayModelImplClass(
 			ClassLoader classLoader, String liferayModelImpl)
 		throws ClassNotFoundException {
@@ -236,8 +207,7 @@ public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtil
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"loaded class: " + clazz + " from classloader: " +
-					classLoader);
+				"loaded class: " + clazz + " from classloader: " + classLoader);
 		}
 
 		return clazz;
@@ -308,8 +278,37 @@ public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtil
 			new Object[] {dynamicQuery});
 	}
 
-	protected Object getPersistedModelLocalService(String className) {
+	protected Class<?> getLiferayModelImpl(String className)
+		throws ClassNotFoundException {
 
+		ClassLoader classLoader;
+		DynamicQuery dynamicQuery;
+		Object service = getPersistedModelLocalService(className);
+
+		if (service == null) {
+			classLoader = PortalClassLoaderUtil.getClassLoader();
+			dynamicQuery = newDynamicQueryFromPortal(className);
+			service = groupService;
+		}
+		else {
+			Class<?> serviceClass = service.getClass();
+
+			classLoader = serviceClass.getClassLoader();
+
+			dynamicQuery = newDynamicQuery(service);
+		}
+
+		if (dynamicQuery == null) {
+			return null;
+		}
+
+		String liferayModelImpl = getLiferayModelImplClassName(
+			service, dynamicQuery);
+
+		return getLiferayModelImplClass(classLoader, liferayModelImpl);
+	}
+
+	protected Object getPersistedModelLocalService(String className) {
 		return ReflectionUtil.invokeMethod(
 			persistedModelLocalServiceRegistry, "getPersistedModelLocalService",
 			new Class<?>[] {String.class}, new Object[] {className});
@@ -367,7 +366,6 @@ public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtil
 	}
 
 	protected DynamicQuery newDynamicQuery(Object service) {
-
 		return (DynamicQuery)ReflectionUtil.invokeMethod(
 			service, "dynamicQuery", null, null);
 	}
@@ -389,11 +387,11 @@ public class ModelUtilImpl extends com.liferay.referenceschecker.model.ModelUtil
 	}
 
 	protected Map<String, String> classNameToTableMappingFromPortal =
-		new ConcurrentHashMap<String, String>();
+		new ConcurrentHashMap<>();
 	protected Object groupService = null;
 	protected Object persistedModelLocalServiceRegistry = null;
 	protected Map<String, String> tableToClassNameMappingFromPortal =
-		new ConcurrentHashMap<String, String>();
+		new ConcurrentHashMap<>();
 
 	private static Logger _log = LogManager.getLogger(ModelUtilImpl.class);
 
