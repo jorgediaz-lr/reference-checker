@@ -26,8 +26,12 @@ import java.sql.Types;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 /**
  * @author Jorge Díaz
@@ -81,35 +85,7 @@ public class SQLUtil {
 	}
 
 	public static String castColumnToText(String dbType, String column) {
-		if (dbType.equals(TYPE_DB2)) {
-			return "CAST(" + column + " AS VARCHAR(254))";
-		}
-
-		if (dbType.equals(TYPE_HYPERSONIC)) {
-			return "CONVERT(" + column + ", SQL_VARCHAR)";
-		}
-
-		if (dbType.equals(TYPE_MARIADB) || dbType.equals(TYPE_MYSQL)) {
-			return column;
-		}
-
-		if (dbType.equals(TYPE_ORACLE)) {
-			return "CAST(" + column + " AS VARCHAR(4000))";
-		}
-
-		if (dbType.equals(TYPE_POSTGRESQL)) {
-			return "CAST(" + column + " AS TEXT)";
-		}
-
-		if (dbType.equals(TYPE_SQLSERVER)) {
-			return "CAST(" + column + " AS NVARCHAR(MAX))";
-		}
-
-		if (dbType.equals(TYPE_SYBASE)) {
-			return "CAST(" + column + " AS NVARCHAR(5461))";
-		}
-
-		return column;
+		return _replaceCastText(dbType, "CAST_TEXT(" + column + ")");
 	}
 
 	public static String getDBType(Connection connection) throws SQLException {
@@ -236,5 +212,136 @@ public class SQLUtil {
 
 		return result;
 	}
+
+	public static List<String> transform(String dbType, List<String> sqlList) {
+		if (sqlList == null) {
+			return null;
+		}
+
+		List<String> transformedSqlList = new ArrayList<>();
+
+		for (String sql : sqlList) {
+			String transformedSql = transform(dbType, sql);
+
+			transformedSqlList.add(transformedSql);
+		}
+
+		return transformedSqlList;
+	}
+
+	public static String transform(String dbType, String sql) {
+		if (sql == null) {
+			return sql;
+		}
+
+		String newSQL = sql;
+
+		newSQL = _replaceCastText(dbType, newSQL);
+		newSQL = _replaceInstr(dbType, newSQL);
+		newSQL = _replaceSubstr(dbType, newSQL);
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("Original SQL " + sql);
+			_log.debug("Modified SQL " + newSQL);
+		}
+
+		return newSQL;
+	}
+
+	private static String _replaceCastText(String dbType, String sql) {
+		Matcher matcher = _castTextPattern.matcher(sql);
+
+		if (dbType.equals(TYPE_DB2)) {
+			return matcher.replaceAll("CAST($1 AS VARCHAR(254))");
+		}
+
+		if (dbType.equals(TYPE_HYPERSONIC)) {
+			return matcher.replaceAll("CONVERT($1, SQL_VARCHAR)");
+		}
+
+		if (dbType.equals(TYPE_MARIADB) || dbType.equals(TYPE_MYSQL)) {
+			return matcher.replaceAll("$1");
+		}
+
+		if (dbType.equals(TYPE_ORACLE)) {
+			return matcher.replaceAll("CAST($1 AS VARCHAR(4000))");
+		}
+
+		if (dbType.equals(TYPE_POSTGRESQL)) {
+			return matcher.replaceAll("CAST($1 AS TEXT)");
+		}
+
+		if (dbType.equals(TYPE_SQLSERVER)) {
+			return matcher.replaceAll("CAST($1 AS NVARCHAR(MAX))");
+		}
+
+		if (dbType.equals(TYPE_SYBASE)) {
+			return matcher.replaceAll("CAST($1 AS NVARCHAR(5461))");
+		}
+
+		return matcher.replaceAll("$1");
+	}
+
+	private static String _replaceInstr(String dbType, String sql) {
+		Matcher matcher = _instrPattern.matcher(sql);
+
+		if (dbType.equals(TYPE_DB2)) {
+			return matcher.replaceAll("LOCATE($2, $1)");
+		}
+
+		if (dbType.equals(TYPE_HYPERSONIC)) {
+			return matcher.replaceAll("INSTR($1, $2)");
+		}
+
+		if (dbType.equals(TYPE_MARIADB) || dbType.equals(TYPE_MYSQL)) {
+			return matcher.replaceAll("INSTR($1, $2)");
+		}
+
+		if (dbType.equals(TYPE_ORACLE)) {
+			return matcher.replaceAll("INSTR($1, $2)");
+		}
+
+		if (dbType.equals(TYPE_POSTGRESQL)) {
+			return matcher.replaceAll("STRPOS($1, $2)");
+		}
+
+		if (dbType.equals(TYPE_SQLSERVER)) {
+			return matcher.replaceAll("CHARINDEX($2, $1)");
+		}
+
+		if (dbType.equals(TYPE_SYBASE)) {
+			return matcher.replaceAll("CHARINDEX($2, $1)");
+		}
+
+		return matcher.replaceAll("SUBSTRING_REGEX ($2 IN $1)");
+	}
+
+	private static String _replaceSubstr(String dbType, String sql) {
+		Matcher matcher = _substrPattern.matcher(sql);
+
+		if (dbType.equals(TYPE_DB2) || dbType.equals(TYPE_HYPERSONIC) ||
+			dbType.equals(TYPE_MARIADB) || dbType.equals(TYPE_MYSQL) ||
+			dbType.equals(TYPE_ORACLE) || dbType.equals(TYPE_POSTGRESQL) ||
+			dbType.equals(TYPE_SYBASE)) {
+
+			return matcher.replaceAll("SUBSTR($1, $2, $3)");
+		}
+
+		if (dbType.equals(TYPE_SQLSERVER)) {
+			return matcher.replaceAll("SUBSTRING($1, $2, $3)");
+		}
+
+		return matcher.replaceAll("SUBSTRING($1 FROM $2 FOR $3)");
+	}
+
+	private static Logger _log = LogManager.getLogger(SQLUtil.class);
+
+	private static Pattern _castTextPattern = Pattern.compile(
+		"CAST_TEXT\\((.+?)\\)", Pattern.CASE_INSENSITIVE);
+	private static Pattern _instrPattern = Pattern.compile(
+		"INSTR\\(\\s*(.+?)\\s*,\\s*(.+?)\\s*\\)", Pattern.CASE_INSENSITIVE);
+	private static Pattern _substrPattern = Pattern.compile(
+		"SUBSTR\\(\\s*(.+?)\\s*,\\s*(.+?)\\s*,\\s*(.+?)\\s*\\)",
+		Pattern.CASE_INSENSITIVE);
 
 }

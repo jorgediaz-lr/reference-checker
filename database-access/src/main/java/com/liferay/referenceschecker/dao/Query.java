@@ -27,8 +27,12 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Query implements Comparable<Query> {
 
-	public Query(Table table, List<String> columns, String condition) {
+	public Query(
+		Table table, List<String> castedColumns, List<String> columns,
+		String condition) {
+
 		this.columns = _rewriteConstants(columns);
+		this.castedColumns = castedColumns;
 		columnsString = StringUtils.join(this.columns, ",");
 		this.condition = condition;
 		this.table = table;
@@ -64,6 +68,10 @@ public class Query implements Comparable<Query> {
 
 	public List<String> getColumnsWithCast(
 		String dbType, Query destinationQuery) {
+
+		if ((castedColumns != null) && !castedColumns.isEmpty()) {
+			return SQLUtil.transform(dbType, castedColumns);
+		}
 
 		List<String> destinationColumns = destinationQuery.getColumns();
 
@@ -155,6 +163,7 @@ public class Query implements Comparable<Query> {
 		return toString;
 	}
 
+	protected List<String> castedColumns;
 	protected List<String> columns;
 	protected String columnsString;
 	protected String condition;
