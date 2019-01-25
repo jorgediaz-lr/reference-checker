@@ -36,7 +36,7 @@ public class DebugListener implements EventListener {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("After commit. Connection-id=" + connectionId);
-		};
+		}
 	}
 
 	@Override
@@ -70,14 +70,14 @@ public class DebugListener implements EventListener {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("After rollback. Connection-id=" + connectionId);
-		};
+		}
 	}
 
 	@Override
 	public void beforeCommit(int connectionId, Connection connection) {
 		if (_log.isDebugEnabled()) {
 			_log.debug("Before commit. Connection-id=" + connectionId);
-		};
+		}
 
 		logQueries(
 			connectionId, _insertQueriesThreadLocal.get(), "Insert queries");
@@ -93,7 +93,7 @@ public class DebugListener implements EventListener {
 	public void beforeGetConnection(int connectionId, Connection connection) {
 		if (_log.isDebugEnabled()) {
 			_log.debug("Before get connection. Connection-id=" + connectionId);
-		};
+		}
 	}
 
 	@Override
