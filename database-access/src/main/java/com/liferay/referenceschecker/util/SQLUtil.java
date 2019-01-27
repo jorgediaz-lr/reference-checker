@@ -14,6 +14,8 @@
 
 package com.liferay.referenceschecker.util;
 
+import com.liferay.referenceschecker.dao.Table;
+
 import java.math.BigDecimal;
 
 import java.sql.Connection;
@@ -56,9 +58,31 @@ public class SQLUtil {
 
 	public static final String TYPE_UNKNOWN = "unknown";
 
+	public static List<String> addPrefixToSqlList(
+		List<String> sqlList, String prefix, List<String> columnNames) {
+
+		if (StringUtils.isBlank(prefix)) {
+			return sqlList;
+		}
+
+		List<String> newSqlList = new ArrayList<>();
+
+		for (int i = 0; i < sqlList.size(); i++) {
+			String column = columnNames.get(i);
+
+			String sql = sqlList.get(i);
+
+			sql = sql.replace(column, prefix + "." + column);
+
+			newSqlList.add(sql);
+		}
+
+		return newSqlList;
+	}
+
 	public static List<String> castColumnsToText(
-		String dbType, String prefix, List<String> columns,
-		List<Class<?>> columnTypes, List<Class<?>> castTypes) {
+		List<String> columns, List<Class<?>> columnTypes,
+		List<Class<?>> castTypes) {
 
 		List<String> castedColumns = new ArrayList<>();
 
@@ -68,14 +92,10 @@ public class SQLUtil {
 			Class<?> columnType = columnTypes.get(i);
 			Class<?> castType = castTypes.get(i);
 
-			if (StringUtils.isNotBlank(prefix)) {
-				column = prefix + "." + column;
-			}
-
 			if (!columnType.equals(castType) && String.class.equals(castType) &&
 				!Object.class.equals(columnType)) {
 
-				column = castColumnToText(dbType, column);
+				column = "CAST_TEXT(" + column + ")";
 			}
 
 			castedColumns.add(column);
@@ -84,8 +104,16 @@ public class SQLUtil {
 		return castedColumns;
 	}
 
-	public static String castColumnToText(String dbType, String column) {
-		return _replaceCastText(dbType, "CAST_TEXT(" + column + ")");
+	public static List<String> castColumnsToText(
+		List<String> columns, Table table, List<String> destinationColumns,
+		Table destinationTable) {
+
+		List<Class<?>> columnTypes = table.getColumnTypesClass(columns);
+
+		List<Class<?>> castTypes = destinationTable.getColumnTypesClass(
+			destinationColumns);
+
+		return castColumnsToText(columns, columnTypes, castTypes);
 	}
 
 	public static String getDBType(Connection connection) throws SQLException {

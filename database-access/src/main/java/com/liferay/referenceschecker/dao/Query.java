@@ -69,20 +69,20 @@ public class Query implements Comparable<Query> {
 	public List<String> getColumnsWithCast(
 		String dbType, Query destinationQuery) {
 
-		if ((castedColumns != null) && !castedColumns.isEmpty()) {
-			return SQLUtil.transform(dbType, castedColumns);
+		List<String> columnsWithCast = castedColumns;
+
+		if ((columnsWithCast == null) || columnsWithCast.isEmpty()) {
+			List<String> destinationColumns = destinationQuery.getColumns();
+
+			Table destinationTable = destinationQuery.getTable();
+
+			columnsWithCast = SQLUtil.castColumnsToText(
+				columns, table, destinationColumns, destinationTable);
 		}
 
-		List<String> destinationColumns = destinationQuery.getColumns();
+		columnsWithCast = SQLUtil.transform(dbType, columnsWithCast);
 
-		Table destinationTable = destinationQuery.getTable();
-
-		List<Class<?>> columnTypes = table.getColumnTypesClass(columns);
-		List<Class<?>> destinationTypes = destinationTable.getColumnTypesClass(
-			destinationColumns);
-
-		return SQLUtil.castColumnsToText(
-			dbType, tableAlias, columns, columnTypes, destinationTypes);
+		return SQLUtil.addPrefixToSqlList(columnsWithCast, tableAlias, columns);
 	}
 
 	public String getCondition() {
