@@ -84,10 +84,13 @@ references: [
   {origin: {table: "Expando*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "Workflow*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DDLRecord.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DDLRecordVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "Workflow*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "PortletPreferences", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%'"}, dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "PortletPreferences", columns: ["portletId"], castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_INSTANCE_')-1 )"], condition: "portletId like '%_INSTANCE_%'"}, dest: {table: "Portlet", columns: ["portletId"]}},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 1"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 2"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "*", columns: ["resourcePrimKey"]}, displayRaw: true, hidden: true},
+  {origin: {table: "ResourcePermission", columns: ["primKey"], castings: ["SUBSTR(primkey, 1, INSTR(primkey, '_LAYOUT_')-1 )"], condition: "scope = 4 and primkey like '%_LAYOUT_%'"}, dest: {table: "Layout", columns: ["plid"]}},
     #userId
   {origin: {table: "*", columns: ["*UserId"]},  dest: {table: "User_", columns: ["userId"]}},
   {origin: {table: "*", columns: ["userId*"]},  dest: {table: "User_", columns: ["userId"]}}

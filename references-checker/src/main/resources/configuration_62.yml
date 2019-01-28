@@ -12,7 +12,7 @@ references: [
   {origin: {table: "*", columns: ["portraitId"]},                                                    dest: {table: "Image", columns: ["imageId"]}},
   {origin: {table: "*", columns: ["layoutId"]},                                                      dest: {table: "Layout", columns: ["layoutId"]}},
   {origin: {table: "*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}},
-  {origin: {table: "*", columns: ["*layoutPrototypeUuid"]},                                           dest: {table: "LayoutPrototype", columns: ["uuid_"]}},
+  {origin: {table: "*", columns: ["*layoutPrototypeUuid"]},                                          dest: {table: "LayoutPrototype", columns: ["uuid_"]}},
   {origin: {table: "*", columns: ["*layoutSetPrototypeUuid"]},                                        dest: {table: "LayoutSetPrototype", columns: ["uuid_"]}},
     #ignore generic references
   {origin: {table: "*", columns: ["${origTable.primaryKey}"]}}, #primary keys must not be checked with any other pk
@@ -39,7 +39,7 @@ references: [
   {origin: {table: "Journal*",       columns: ["templateId"]},                                       dest: {table: "DDMTemplate",     columns: ["templateKey"]}},
   {origin: {table: "Repository",     columns: ["dlFolderId"]},                                       dest: {table: "DLFolder",        columns: ["folderId"]}},
   {origin: {table: "SocialActivity", columns: ["parentClassPk"], condition: "parentclassNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: "*",  columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
-  {origin: {table: "WikiPage",       columns: ["groupId","resourcePrimKey"]},                          dest: {table: "WikiPageResource", columns: ["groupId","resourcePrimKey"]}},
+  {origin: {table: "WikiPage",       columns: ["groupId","resourcePrimKey"]},                        dest: {table: "WikiPageResource", columns: ["groupId","resourcePrimKey"]}},
   {origin: {table: "SyncDL*",        columns: ["*${destTable.PrimaryKey}"]},                         dest: {table: "DL*",             columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "SyncDLObject",   columns: ["repositoryId"]}}, #ignore
   {origin: {table: "SyncDLObject",   columns: ["versionId"]},                                        dest: {table: "DLFileVersion", columns: ["fileVersionId"]}},
@@ -81,11 +81,14 @@ references: [
   {origin: {table: "Expando*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "Workflow*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DDLRecord.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DDLRecordVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "Workflow*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
+  {origin: {table: "PortletPreferences", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%'"}, dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "PortletPreferences", columns: ["portletId"], castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_INSTANCE_')-1 )"], condition: "portletId like '%_INSTANCE_%'"}, dest: {table: "Portlet", columns: ["portletId"]}},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 1"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 2"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: "*", columns: ["resourcePrimKey"]}, displayRaw: true, hidden: true},
-    #trash entry
+  {origin: {table: "ResourcePermission", columns: ["primKey"], castings: ["SUBSTR(primkey, 1, INSTR(primkey, '_LAYOUT_')-1 )"], condition: "scope = 4 and primkey like '%_LAYOUT_%'"}, dest: {table: "Layout", columns: ["plid"]}},
+   #trash entry
   {origin: {table: "*",              columns: ["${origTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]},          dest: {table: "TrashEntry", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${origTable.className}')"}},
   {origin: {table: "*",              columns: ["${origTable.primaryKey}"], condition: "status=8", conditionColumns: ["status","resourcePrimKey"]}}, #ignore
   {origin: {table: "*",              columns: ["resourcePrimKey"], condition: "status=8", conditionColumns: ["status"]},                  dest: {table: "TrashEntry", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${origTable.className}')"}},
