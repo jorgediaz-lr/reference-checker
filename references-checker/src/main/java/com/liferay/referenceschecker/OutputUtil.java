@@ -265,6 +265,12 @@ public class OutputUtil {
 			attributes = StringUtils.join(query.getColumns(), ",");
 		}
 
+		List<String> casting = query.getCasting();
+
+		if ((casting != null) && !casting.isEmpty()) {
+			attributes = attributes + " // " + StringUtils.join(casting, ",");
+		}
+
 		line.add(tableWithCondition);
 		line.add(attributes);
 

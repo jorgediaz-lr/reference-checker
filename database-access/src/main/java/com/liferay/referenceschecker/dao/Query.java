@@ -62,6 +62,10 @@ public class Query implements Comparable<Query> {
 		return toString().equals(query.toString());
 	}
 
+	public List<String> getCasting() {
+		return casting;
+	}
+
 	public List<String> getColumns() {
 		return columns;
 	}
