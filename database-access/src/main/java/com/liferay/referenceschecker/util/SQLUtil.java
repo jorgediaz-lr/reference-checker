@@ -14,8 +14,6 @@
 
 package com.liferay.referenceschecker.util;
 
-import com.liferay.referenceschecker.dao.Table;
-
 import java.math.BigDecimal;
 
 import java.sql.Connection;
@@ -102,18 +100,6 @@ public class SQLUtil {
 		}
 
 		return castedColumns;
-	}
-
-	public static List<String> castColumnsToText(
-		List<String> columns, Table table, List<String> destinationColumns,
-		Table destinationTable) {
-
-		List<Class<?>> columnTypes = table.getColumnTypesClass(columns);
-
-		List<Class<?>> castTypes = destinationTable.getColumnTypesClass(
-			destinationColumns);
-
-		return castColumnsToText(columns, columnTypes, castTypes);
 	}
 
 	public static String getDBType(Connection connection) throws SQLException {

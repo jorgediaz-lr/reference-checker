@@ -342,27 +342,26 @@ public class ReferenceUtil {
 		return bestReferences;
 	}
 
-	protected List<String> getCastedColumnsReplaced(
-		List<String> castedColumns, List<String> columns,
-		List<String> columnsReplaced) {
+	protected List<String> getCastingsReplaced(
+		List<String> castings, List<String> columns, List<String> newColumns) {
 
-		if (castedColumns == null) {
+		if (castings == null) {
 			return null;
 		}
 
-		List<String> castedColumnsReplaced = new ArrayList<>();
+		List<String> castingsReplaced = new ArrayList<>();
 
 		for (int i = 0; i < columns.size(); i++) {
-			String castedColumn = castedColumns.get(i);
+			String casting = castings.get(i);
 			String column = columns.get(i);
-			String columnReplaced = columnsReplaced.get(i);
+			String newColumn = newColumns.get(i);
 
-			castedColumn = castedColumn.replace(column, columnReplaced);
+			casting = casting.replace(column, newColumn);
 
-			castedColumnsReplaced.add(castedColumn);
+			castingsReplaced.add(casting);
 		}
 
-		return castedColumnsReplaced;
+		return castingsReplaced;
 	}
 
 	protected List<List<String>> getListColumns(
@@ -385,8 +384,8 @@ public class ReferenceUtil {
 		Configuration.Query originQueryConf = referenceConfig.getOrigin();
 
 		Query rawOriginQuery = new Query(
-			originTable, originQueryConf.getCastedColumns(),
-			originQueryConf.getColumns(), originQueryConf.getCondition());
+			originTable, originQueryConf.getColumns(),
+			originQueryConf.getCastings(), originQueryConf.getCondition());
 
 		Configuration.Query destinationQueryConf = referenceConfig.getDest();
 
@@ -403,8 +402,8 @@ public class ReferenceUtil {
 		}
 
 		Query rawDestinationQuery = new Query(
-			destinationTable, destinationQueryConf.getCastedColumns(),
-			destinationQueryConf.getColumns(),
+			destinationTable, destinationQueryConf.getColumns(),
+			destinationQueryConf.getCastings(),
 			destinationQueryConf.getCondition());
 
 		Reference reference = new Reference(
@@ -416,11 +415,10 @@ public class ReferenceUtil {
 	}
 
 	protected Reference getReference(
-		Connection connection, Table originTable,
-		List<String> originCastedColumns, List<String> originColumns,
-		String originCondition, Table destinationTable,
-		List<String> destinationCastedColumns, List<String> destinationColumns,
-		String destinationCondition) {
+		Connection connection, Table originTable, List<String> originCastings,
+		List<String> originColumns, String originCondition,
+		Table destinationTable, List<String> destinationCastings,
+		List<String> destinationColumns, String destinationCondition) {
 
 		if (!hasColumns(originTable, originColumns)) {
 			if (_log.isDebugEnabled()) {
@@ -480,15 +478,15 @@ public class ReferenceUtil {
 		}
 
 		Query originQuery = new Query(
-			originTable, originCastedColumns, originColumns, originCondition);
+			originTable, originColumns, originCastings, originCondition);
 
 		Query destinationQuery = null;
 
 		if (destinationTable != null) {
 			if (checkUndefinedTables || (originTableClassModel != null)) {
 				destinationQuery = new Query(
-					destinationTable, destinationCastedColumns,
-					destinationColumns, destinationCondition);
+					destinationTable, destinationColumns, destinationCastings,
+					destinationCondition);
 			}
 			else if (_log.isDebugEnabled()) {
 				_log.debug(
@@ -517,20 +515,19 @@ public class ReferenceUtil {
 			return Collections.emptyList();
 		}
 
-		List<String> originCastedColumns = originConfig.getCastedColumns();
+		List<String> originCastings = originConfig.getCastings();
 		List<String> originColumns = originConfig.getColumns();
 		String originCondition = originConfig.getCondition();
 
 		if ((destinationConfig == null) || destinationTables.isEmpty()) {
 			return getReferences(
-				connection, originTable, originCastedColumns, originColumns,
+				connection, originTable, originCastings, originColumns,
 				originCondition, null, null, null, null);
 		}
 
 		Map<Query, List<Reference>> mapReferences = new HashMap<>();
 
-		List<String> destinationCastedColumns =
-			destinationConfig.getCastedColumns();
+		List<String> destinationCastings = destinationConfig.getCastings();
 		List<String> destinationColumns = destinationConfig.getColumns();
 		String destinationCondition = destinationConfig.getCondition();
 		List<String> destinationConditionColumns =
@@ -544,8 +541,8 @@ public class ReferenceUtil {
 			}
 
 			List<Reference> references = getReferences(
-				connection, originTable, originCastedColumns, originColumns,
-				originCondition, destinationTable, destinationCastedColumns,
+				connection, originTable, originCastings, originColumns,
+				originCondition, destinationTable, destinationCastings,
 				destinationColumns, destinationCondition);
 
 			for (Reference reference : references) {
@@ -585,20 +582,19 @@ public class ReferenceUtil {
 	}
 
 	protected List<Reference> getReferences(
-		Connection connection, Table originTable,
-		List<String> originCastedColumns, List<String> originColumns,
-		String originCondition, Table destinationTable,
-		List<String> destinationCastedColumns, List<String> destinationColumns,
-		String destinationCondition) {
+		Connection connection, Table originTable, List<String> originCastings,
+		List<String> originColumns, String originCondition,
+		Table destinationTable, List<String> destinationCastings,
+		List<String> destinationColumns, String destinationCondition) {
 
 		originColumns = replaceVars(
 			originTable, destinationTable, originColumns);
-		originCastedColumns = replaceVars(
-			originTable, destinationTable, originCastedColumns);
+		originCastings = replaceVars(
+			originTable, destinationTable, originCastings);
 		originCondition = replaceVars(
 			originTable, destinationTable, originCondition);
-		destinationCastedColumns = replaceVars(
-			originTable, destinationTable, destinationCastedColumns);
+		destinationCastings = replaceVars(
+			originTable, destinationTable, destinationCastings);
 		destinationColumns = replaceVars(
 			originTable, destinationTable, destinationColumns);
 		destinationCondition = replaceVars(
@@ -617,14 +613,13 @@ public class ReferenceUtil {
 		List<Reference> listReferences = new ArrayList<>();
 
 		for (List<String> originColumnsReplaced : listOriginColumnsReplaced) {
-			List<String> originCastedColumnsReplaced = getCastedColumnsReplaced(
-				originCastedColumns, originColumns, originColumnsReplaced);
+			List<String> originCastingsReplaced = getCastingsReplaced(
+				originCastings, originColumns, originColumnsReplaced);
 
 			Reference reference = getReference(
-				connection, originTable, originCastedColumnsReplaced,
+				connection, originTable, originCastingsReplaced,
 				originColumnsReplaced, originCondition, destinationTable,
-				destinationCastedColumns, destinationColumns,
-				destinationCondition);
+				destinationCastings, destinationColumns, destinationCondition);
 
 			if (reference != null) {
 				listReferences.add(reference);

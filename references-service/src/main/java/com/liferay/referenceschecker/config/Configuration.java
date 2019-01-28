@@ -68,8 +68,8 @@ public class Configuration {
 
 	public static class Query {
 
-		public List<String> getCastedColumns() {
-			return castedColumns;
+		public List<String> getCastings() {
+			return castings;
 		}
 
 		public List<String> getColumns() {
@@ -88,8 +88,8 @@ public class Configuration {
 			return table;
 		}
 
-		public void setCastedColumns(List<String> castedColumns) {
-			this.castedColumns = castedColumns;
+		public void setCastings(List<String> castings) {
+			this.castings = castings;
 		}
 
 		public void setColumns(List<String> columns) {
@@ -109,11 +109,11 @@ public class Configuration {
 		}
 
 		public String toString() {
-			return "table=" + table + ", castedColumns=" + castedColumns +
-				", columns=" + columns + ", condition=" + condition;
+			return "table=" + table + ", castings=" + castings + ", columns=" +
+				columns + ", condition=" + condition;
 		}
 
-		protected List<String> castedColumns;
+		protected List<String> castings;
 		protected List<String> columns;
 		protected String condition;
 		protected List<String> conditionColumns;

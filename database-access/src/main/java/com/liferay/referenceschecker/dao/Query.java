@@ -28,11 +28,11 @@ import org.apache.commons.lang3.StringUtils;
 public class Query implements Comparable<Query> {
 
 	public Query(
-		Table table, List<String> castedColumns, List<String> columns,
+		Table table, List<String> columns, List<String> casting,
 		String condition) {
 
 		this.columns = _rewriteConstants(columns);
-		this.castedColumns = castedColumns;
+		this.casting = casting;
 		columnsString = StringUtils.join(this.columns, ",");
 		this.condition = condition;
 		this.table = table;
@@ -69,20 +69,24 @@ public class Query implements Comparable<Query> {
 	public List<String> getColumnsWithCast(
 		String dbType, Query destinationQuery) {
 
-		List<String> columnsWithCast = castedColumns;
+		List<String> castedColumns = casting;
 
-		if ((columnsWithCast == null) || columnsWithCast.isEmpty()) {
+		if ((castedColumns == null) || castedColumns.isEmpty()) {
 			List<String> destinationColumns = destinationQuery.getColumns();
 
 			Table destinationTable = destinationQuery.getTable();
 
-			columnsWithCast = SQLUtil.castColumnsToText(
-				columns, table, destinationColumns, destinationTable);
+			List<Class<?>> columnTypes = table.getColumnTypesClass(columns);
+			List<Class<?>> destinationTypes =
+				destinationTable.getColumnTypesClass(destinationColumns);
+
+			castedColumns = SQLUtil.castColumnsToText(
+				columns, columnTypes, destinationTypes);
 		}
 
-		columnsWithCast = SQLUtil.transform(dbType, columnsWithCast);
+		castedColumns = SQLUtil.transform(dbType, castedColumns);
 
-		return SQLUtil.addPrefixToSqlList(columnsWithCast, tableAlias, columns);
+		return SQLUtil.addPrefixToSqlList(castedColumns, tableAlias, columns);
 	}
 
 	public String getCondition() {
@@ -163,7 +167,7 @@ public class Query implements Comparable<Query> {
 		return toString;
 	}
 
-	protected List<String> castedColumns;
+	protected List<String> casting;
 	protected List<String> columns;
 	protected String columnsString;
 	protected String condition;
