@@ -43,8 +43,12 @@ import java.security.ProtectionDomain;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -101,7 +105,10 @@ public class ReferencesChecker {
 		}
 
 		if (filenameSuffix == null) {
-			filenameSuffix = "_" + System.currentTimeMillis();
+			DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+			Date date = new Date();
+
+			filenameSuffix = "_" + dateFormat.format(date);
 		}
 
 		File logFile = new File(
