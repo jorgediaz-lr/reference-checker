@@ -69,7 +69,8 @@ public class CommandArguments {
 	}
 
 	@Parameter(
-		description = "Check undefined tables", names = "--checkUndefinedTables"
+		description = "Check undefined tables", hidden = true,
+		names = "--checkUndefinedTables"
 	)
 	private boolean _checkUndefinedTables;
 

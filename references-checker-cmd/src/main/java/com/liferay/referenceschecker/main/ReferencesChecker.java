@@ -151,11 +151,7 @@ public class ReferencesChecker {
 			referencesChecker.calculateTableCount();
 		}
 
-		if (commandArguments.showMissingReferences() ||
-			(!commandArguments.showInformation() &&
-			 !commandArguments.showRelations() &&
-			 !commandArguments.countTables())) {
-
+		if (commandArguments.showMissingReferences()) {
 			referencesChecker.execute();
 		}
 	}
@@ -232,6 +228,20 @@ public class ReferencesChecker {
 
 			if (commandArguments.isHelp()) {
 				_printHelp(jCommander);
+
+				return null;
+			}
+
+			if (!commandArguments.showInformation() &&
+				!commandArguments.showRelations() &&
+				!commandArguments.countTables() &&
+				!commandArguments.showMissingReferences()) {
+
+				System.out.println(
+					"!! Please specify parameter -i, -m or -r !!");
+				System.out.println();
+				System.out.println(
+					"For more information execute: referenceschecker -h");
 
 				return null;
 			}
