@@ -120,6 +120,12 @@ public class ReferencesChecker {
 		ReferencesChecker referencesChecker;
 
 		try {
+			System.out.println("");
+			System.out.println("Loading database model...");
+			System.out.println("");
+
+			long startTime = System.currentTimeMillis();
+
 			InitDatabase initDB = new InitDatabase();
 
 			DataSource dataSource = initDB.connectToDatabase(databaseCfg);
@@ -130,6 +136,10 @@ public class ReferencesChecker {
 			referencesChecker = new ReferencesChecker(
 				dataSource, filenamePrefix, filenameSuffix,
 				missingReferencesLimit, checkUndefinedTables);
+
+			long endTime = System.currentTimeMillis();
+			System.out.println("");
+			System.out.println("Total time: " + (endTime - startTime) + " ms");
 		}
 		catch (Throwable t) {
 			t.printStackTrace(System.out);
@@ -278,6 +288,9 @@ public class ReferencesChecker {
 	}
 
 	protected void calculateReferences() throws IOException, SQLException {
+		System.out.println("");
+		System.out.println("Executing calculate references...");
+
 		long startTime = System.currentTimeMillis();
 
 		Connection connection = null;
@@ -301,6 +314,9 @@ public class ReferencesChecker {
 	}
 
 	protected void calculateTableCount() throws IOException, SQLException {
+		System.out.println("");
+		System.out.println("Executing count tables...");
+
 		long startTime = System.currentTimeMillis();
 
 		Connection connection = null;
@@ -325,6 +341,9 @@ public class ReferencesChecker {
 	}
 
 	protected void dumpDatabaseInfo() throws IOException, SQLException {
+		System.out.println("");
+		System.out.println("Executing dump Liferay database information...");
+
 		long startTime = System.currentTimeMillis();
 
 		Connection connection = null;
@@ -344,6 +363,9 @@ public class ReferencesChecker {
 	}
 
 	protected void execute() throws IOException, SQLException {
+		System.out.println("");
+		System.out.println("Executing dump missing references...");
+
 		long startTime = System.currentTimeMillis();
 
 		List<MissingReferences> listMissingReferences = null;
