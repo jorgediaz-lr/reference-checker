@@ -31,8 +31,14 @@ public class Query implements Comparable<Query> {
 		Table table, List<String> columns, List<String> casting,
 		String condition) {
 
-		this.columns = _rewriteConstants(columns);
 		this.casting = casting;
+		castingString = null;
+
+		if ((casting != null) && !casting.isEmpty()) {
+			castingString = StringUtils.join(this.casting, ",");
+		}
+
+		this.columns = _rewriteConstants(columns);
 		columnsString = StringUtils.join(this.columns, ",");
 		this.condition = condition;
 		this.table = table;
@@ -165,6 +171,12 @@ public class Query implements Comparable<Query> {
 			sb.append("#");
 			sb.append(columnsString);
 
+			if (castingString != null) {
+				sb.append("[");
+				sb.append(castingString);
+				sb.append("]");
+			}
+
 			toString = StringUtils.lowerCase(sb.toString());
 		}
 
@@ -172,6 +184,7 @@ public class Query implements Comparable<Query> {
 	}
 
 	protected List<String> casting;
+	protected String castingString;
 	protected List<String> columns;
 	protected String columnsString;
 	protected String condition;
