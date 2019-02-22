@@ -175,17 +175,19 @@ public class ReferencesChecker {
 
 		DatabaseMetaData databaseMetaData = connection.getMetaData();
 
+		String dbDriverName = databaseMetaData.getDriverName();
 		String dbName = databaseMetaData.getDatabaseProductName();
-		String driverName = databaseMetaData.getDriverName();
 		int dbMajorVersion = databaseMetaData.getDatabaseMajorVersion();
 		int dbMinorVersion = databaseMetaData.getDatabaseMinorVersion();
+		String dbUrl = databaseMetaData.getURL();
 
 		output.add("Liferay build number: " + liferayBuildNumber);
+		output.add("Database url: " + dbUrl);
 		output.add("Database name: " + dbName);
 		output.add(
 			"Database version major: " + dbMajorVersion + ", minor: " +
 				dbMinorVersion);
-		output.add("Driver name: " + driverName);
+		output.add("Driver name: " + dbDriverName);
 
 		output.add("");
 

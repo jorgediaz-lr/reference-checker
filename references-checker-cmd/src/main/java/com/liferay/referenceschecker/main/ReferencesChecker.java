@@ -41,6 +41,7 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 import java.text.DateFormat;
@@ -207,12 +208,15 @@ public class ReferencesChecker {
 
 		List<Map<?, ?>> data = OutputUtil.csvToMapList(sourceCsvContent);
 
+		String databaseUrl = _getDatabaseURL(dataSource);
+
 		String jsonData = OutputUtil.mapListToJSON(data);
 
 		String template = getResource("show-table_template.html");
 		String title = StringUtils.removeEnd(htmlFile.getName(), ".html");
 
 		template = template.replace("${TITLE}", title);
+		template = template.replace("${DATABASE_URL}", databaseUrl);
 		template = template.replace(
 			"${CSV_FILE_NAME}", sourceCsvFile.getName());
 		template = template.replace("${JSON_DATA}", jsonData);
@@ -442,6 +446,32 @@ public class ReferencesChecker {
 	protected String filenameSuffix;
 	protected int missingReferencesLimit;
 	protected com.liferay.referenceschecker.ReferencesChecker referencesChecker;
+
+	private static String _getDatabaseURL(DataSource dataSource) {
+		String databaseUrl = null;
+
+		Connection connection = null;
+
+		try {
+			connection = dataSource.getConnection();
+
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+			databaseUrl = databaseMetaData.getURL();
+		}
+		catch (SQLException sqle) {
+			sqle.printStackTrace();
+		}
+		finally {
+			JDBCUtil.cleanUp(connection);
+		}
+
+		if (databaseUrl == null) {
+			return StringUtils.EMPTY;
+		}
+
+		return databaseUrl;
+	}
 
 	private static File _getJarFile() throws Exception {
 		ProtectionDomain protectionDomain =
