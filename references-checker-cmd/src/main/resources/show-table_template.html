@@ -257,12 +257,12 @@
 				var tagId = randomString + "_" + Date.now();
 
 				var onClick = "onclick=\"toogleHiddenSpan('" + tagId + "');return false;\"";
-				var linkMore = "<a href='#' >(see more)</a>";
-				var linkCollapse = "<a href='#' >(collapse)</a>";
+				var linkMore = "<a href='#' " + onClick + ">(see more)</a>";
+				var linkCollapse = "<a href='#' " + onClick + ">(collapse)</a>";
 
-				return "<span id='" + tagId + "-show' " + onClick + " >" + outputStringTrimmed +
-					" " + linkMore + "</span><span id='" + tagId + "' " + onClick +
-					" style='display: none;' >" + outputString + " " + linkCollapse + "</span>";
+				return "<span id='" + tagId + "-show' >" + outputStringTrimmed +
+					" " + linkMore + "</span><span id='" + tagId + "' style='display: none;' >"
+					+ outputString + " " + linkCollapse + "</span>";
 			});
 	</script>
 </body>
