@@ -483,7 +483,12 @@ public class ReferenceUtil {
 		Query destinationQuery = null;
 
 		if (destinationTable != null) {
-			if (isCheckUndefinedTables() || (originTableClassModel != null)) {
+			String destinationTableClassModel = modelUtil.getClassName(
+				destinationTable.getTableName());
+
+			if (isCheckUndefinedTables() ||
+				(destinationTableClassModel != null)) {
+
 				destinationQuery = new Query(
 					destinationTable, destinationColumns, destinationCastings,
 					destinationCondition);
