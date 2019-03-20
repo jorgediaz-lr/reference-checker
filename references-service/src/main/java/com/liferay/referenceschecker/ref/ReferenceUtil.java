@@ -497,8 +497,8 @@ public class ReferenceUtil {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Ignoring destinationTable because className is " +
-					"undefined: " + destinationTable);
+				"Ignoring destinationTable because className is undefined: " +
+					destinationTable);
 		}
 
 		return null;
