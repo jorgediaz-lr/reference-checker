@@ -181,7 +181,7 @@ public class ReferenceUtil {
 			String originTableClassModel = modelUtil.getClassName(
 				originTable.getTableName());
 
-			if (!checkUndefinedTables && (originTableClassModel == null)) {
+			if (!isCheckUndefinedTables() && (originTableClassModel == null)) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
 						"Ignoring table because className is undefined: " +
@@ -456,7 +456,7 @@ public class ReferenceUtil {
 		String originTableClassModel = modelUtil.getClassName(
 			originTable.getTableName());
 
-		if (!checkUndefinedTables && (originTableClassModel == null)) {
+		if (!isCheckUndefinedTables() && (originTableClassModel == null)) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
 					"Ignoring originTable because className is undefined: " +
@@ -483,7 +483,7 @@ public class ReferenceUtil {
 		Query destinationQuery = null;
 
 		if (destinationTable != null) {
-			if (checkUndefinedTables || (originTableClassModel != null)) {
+			if (isCheckUndefinedTables() || (originTableClassModel != null)) {
 				destinationQuery = new Query(
 					destinationTable, destinationColumns, destinationCastings,
 					destinationCondition);
