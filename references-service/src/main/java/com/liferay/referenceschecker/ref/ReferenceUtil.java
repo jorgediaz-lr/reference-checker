@@ -480,27 +480,28 @@ public class ReferenceUtil {
 		Query originQuery = new Query(
 			originTable, originColumns, originCastings, originCondition);
 
-		Query destinationQuery = null;
-
-		if (destinationTable != null) {
-			String destinationTableClassModel = modelUtil.getClassName(
-				destinationTable.getTableName());
-
-			if (isCheckUndefinedTables() ||
-				(destinationTableClassModel != null)) {
-
-				destinationQuery = new Query(
-					destinationTable, destinationColumns, destinationCastings,
-					destinationCondition);
-			}
-			else if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Ignoring destinationTable because className is " +
-						"undefined: " + destinationTable);
-			}
+		if (destinationTable == null) {
+			return new Reference(originQuery, null);
 		}
 
-		return new Reference(originQuery, destinationQuery);
+		String destinationTableClassModel = modelUtil.getClassName(
+			destinationTable.getTableName());
+
+		if (isCheckUndefinedTables() || (destinationTableClassModel != null)) {
+			Query destinationQuery = new Query(
+				destinationTable, destinationColumns, destinationCastings,
+				destinationCondition);
+
+			return new Reference(originQuery, destinationQuery);
+		}
+
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"Ignoring destinationTable because className is " +
+					"undefined: " + destinationTable);
+		}
+
+		return null;
 	}
 
 	protected List<Reference> getReferences(
