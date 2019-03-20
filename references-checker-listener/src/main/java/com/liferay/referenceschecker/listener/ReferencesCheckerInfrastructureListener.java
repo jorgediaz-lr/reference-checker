@@ -416,6 +416,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			@Override protected Set<String> initialValue() {
 				return new TreeSet<String>();
+
 			}
 
 		};
@@ -425,6 +426,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			@Override protected Set<String> initialValue() {
 				return new TreeSet<String>();
+
 			}
 
 		};
@@ -434,6 +436,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			@Override protected Set<String> initialValue() {
 				return new TreeSet<String>();
+
 			}
 
 		};
@@ -443,6 +446,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			@Override protected Set<String> initialValue() {
 				return new TreeSet<String>();
+
 			}
 
 		};
@@ -452,6 +456,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			@Override protected Boolean initialValue() {
 				return Boolean.FALSE;
+
 			}
 
 		};
@@ -461,6 +466,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			@Override protected Map<String, Set<String>> initialValue() {
 				return new HashMap<String, Set<String>>();
+
 			}
 
 		};
@@ -470,6 +476,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			@Override protected Set<String> initialValue() {
 				return new TreeSet<String>();
+
 			}
 
 		};
