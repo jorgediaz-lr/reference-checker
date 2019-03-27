@@ -103,15 +103,34 @@ public class Query implements Comparable<Query> {
 		return condition;
 	}
 
-	public String getSQL() {
-		return getSQL(true);
+	public String getSQLDelete() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("DELETE FROM ");
+		sb.append(table.getTableName());
+		sb.append(" ");
+		sb.append(tableAlias);
+		sb.append(" WHERE ");
+
+		if (StringUtils.isBlank(condition)) {
+			sb.append("1=1");
+		}
+		else {
+			sb.append(condition);
+		}
+
+		return sb.toString();
 	}
 
-	public String getSQL(boolean distinct) {
-		return getSQL(distinct, columnsString);
+	public String getSQLSelect() {
+		return getSQLSelect(true);
 	}
 
-	public String getSQL(boolean distinct, String columnsString) {
+	public String getSQLSelect(boolean distinct) {
+		return getSQLSelect(distinct, columnsString);
+	}
+
+	public String getSQLSelect(boolean distinct, String columnsString) {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("SELECT ");
@@ -127,19 +146,18 @@ public class Query implements Comparable<Query> {
 		sb.append(tableAlias);
 		sb.append(" WHERE ");
 
-		String sqlCondition = condition;
-
-		if (StringUtils.isBlank(sqlCondition)) {
-			sqlCondition = "1=1";
+		if (StringUtils.isBlank(condition)) {
+			sb.append("1=1");
 		}
-
-		sb.append(sqlCondition);
+		else {
+			sb.append(condition);
+		}
 
 		return sb.toString();
 	}
 
-	public String getSQLCount() {
-		return getSQL(false, " COUNT(DISTINCT " + columnsString + ")");
+	public String getSQLSelectCount() {
+		return getSQLSelect(false, " COUNT(DISTINCT " + columnsString + ")");
 	}
 
 	public Table getTable() {

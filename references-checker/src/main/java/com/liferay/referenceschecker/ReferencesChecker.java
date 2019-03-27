@@ -367,6 +367,25 @@ public class ReferencesChecker {
 		return listMissingReferences;
 	}
 
+	public List<String> generateCleanupSentences(
+			Collection<MissingReferences> missingReferencesList) {
+	
+		List<String> cleanUpSentences = new ArrayList<>();
+
+		for (MissingReferences missingReferences : missingReferencesList) {
+			Reference reference = missingReferences.getReference();
+
+			String sql = getSQLDelete(
+				reference.getOriginQuery(), reference.getDestinationQuery());
+
+			sql = sql + ";";
+
+			cleanUpSentences.add(sql);
+		}
+
+		return cleanUpSentences;
+	}
+
 	public Configuration getConfiguration() {
 		return configuration;
 	}
@@ -458,7 +477,7 @@ public class ReferencesChecker {
 		ResultSet rs = null;
 
 		try {
-			String sql = getSQL(originQuery, destinationQuery);
+			String sql = getSQLSelect(originQuery, destinationQuery);
 
 			if (_log.isInfoEnabled()) {
 				_log.info("SQL: " + sql);
@@ -479,7 +498,7 @@ public class ReferencesChecker {
 					result[i] = rs.getObject(i + 1);
 				}
 
-				if (isValidValue(result)) {
+				if (_isValidValue(result)) {
 					continue;
 				}
 
@@ -541,24 +560,56 @@ public class ReferencesChecker {
 		return configuration;
 	}
 
-	protected String getSQL(Query originQuery, Query destinationQuery) {
-		return getSQL(originQuery, destinationQuery, false);
+	protected String getSQLDelete(Query originQuery, Query destinationQuery) {
+		return _getSQL(originQuery, destinationQuery, "delete");
 	}
 
-	protected String getSQL(
-		Query originQuery, Query destinationQuery, boolean count) {
+	protected String getSQLSelect(Query originQuery, Query destinationQuery) {
+		return _getSQL(originQuery, destinationQuery, "select");
+	}
+
+	protected String getSQLSelectCount(Query originQuery, Query destinationQuery) {
+		return _getSQL(originQuery, destinationQuery, "count");
+	}
+
+	protected boolean checkUndefinedTables = false;
+	protected Configuration configuration;
+	protected String dbType;
+	protected boolean ignoreNullValues = true;
+	protected ModelUtil modelUtil;
+	protected Collection<Reference> referencesCache = null;
+	protected TableUtil tableUtil;
+
+	private String _getSQL(
+		Query originQuery, Query destinationQuery, String type) {
 
 		if (dbType.equals(SQLUtil.TYPE_POSTGRESQL) ||
 			dbType.equals(SQLUtil.TYPE_SQLSERVER)) {
 
-			return getSQLNotExists(count, originQuery, destinationQuery);
+			return _getSQLNotExists(originQuery, destinationQuery, type);
 		}
 
-		return getSQLNotIn(count, originQuery, destinationQuery);
+		return _getSQLNotIn(originQuery, destinationQuery, type);
 	}
 
-	protected String getSQLNotExists(
-		boolean count, Query originQuery, Query destinationQuery) {
+	private String _getSQL(Query query, String type) {
+		if ("count".equals(type)) {
+			return query.getSQLSelectCount();
+		}
+
+		if ("delete".equals(type)) {
+			return query.getSQLDelete();
+		}
+
+		if ("select".equals(type)) {
+			return query.getSQLSelect();
+		}
+
+		throw new IllegalArgumentException(type);
+	}
+
+	private String _getSQLNotExists(
+		Query originQuery, Query destinationQuery, String type) {
 
 		List<String> conditionColumns = originQuery.getColumnsWithCast(
 			dbType, destinationQuery);
@@ -568,16 +619,11 @@ public class ReferencesChecker {
 
 		StringBuilder sb = new StringBuilder();
 
-		if (count) {
-			sb.append(originQuery.getSQLCount());
-		}
-		else {
-			sb.append(originQuery.getSQL());
-		}
+		sb.append(_getSQL(originQuery, type));
 
 		sb.append(" AND NOT EXISTS (");
 		sb.append(
-			destinationQuery.getSQL(
+			destinationQuery.getSQLSelect(
 				false, StringUtils.join(destinationColumns, ",")));
 
 		for (int i = 0; i < conditionColumns.size(); i++) {
@@ -592,8 +638,8 @@ public class ReferencesChecker {
 		return sb.toString();
 	}
 
-	protected String getSQLNotIn(
-		boolean count, Query originQuery, Query destinationQuery) {
+	private String _getSQLNotIn(
+		Query originQuery, Query destinationQuery, String type) {
 
 		List<String> conditionColumns = originQuery.getColumnsWithCast(
 			dbType, destinationQuery);
@@ -603,25 +649,42 @@ public class ReferencesChecker {
 
 		StringBuilder sb = new StringBuilder();
 
-		if (count) {
-			sb.append(originQuery.getSQLCount());
-		}
-		else {
-			sb.append(originQuery.getSQL());
-		}
+		sb.append(_getSQL(originQuery, type));
 
 		sb.append(" AND (");
 		sb.append(StringUtils.join(conditionColumns, ","));
 		sb.append(") NOT IN (");
 		sb.append(
-			destinationQuery.getSQL(
+			destinationQuery.getSQLSelect(
 				false, StringUtils.join(destinationColumns, ",")));
 		sb.append(")");
 
 		return sb.toString();
 	}
 
-	protected boolean isValidValue(Object[] result) {
+	private boolean _isNull(Object obj) {
+		if (obj == null) {
+			return true;
+		}
+
+		if (obj instanceof Number) {
+			Number n = (Number)obj;
+
+			if (n.longValue() == 0L) {
+				return true;
+			}
+
+			return false;
+		}
+
+		if (obj instanceof String) {
+			return StringUtils.isBlank((String)obj);
+		}
+
+		return false;
+	}
+
+	private boolean _isValidValue(Object[] result) {
 		if (!isIgnoreNullValues()) {
 			return false;
 		}
@@ -645,36 +708,6 @@ public class ReferencesChecker {
 		}
 
 		return true;
-	}
-
-	protected boolean checkUndefinedTables = false;
-	protected Configuration configuration;
-	protected String dbType;
-	protected boolean ignoreNullValues = true;
-	protected ModelUtil modelUtil;
-	protected Collection<Reference> referencesCache = null;
-	protected TableUtil tableUtil;
-
-	private boolean _isNull(Object obj) {
-		if (obj == null) {
-			return true;
-		}
-
-		if (obj instanceof Number) {
-			Number n = (Number)obj;
-
-			if (n.longValue() == 0L) {
-				return true;
-			}
-
-			return false;
-		}
-
-		if (obj instanceof String) {
-			return StringUtils.isBlank((String)obj);
-		}
-
-		return false;
 	}
 
 	private static Logger _log = LogManager.getLogger(ReferencesChecker.class);
