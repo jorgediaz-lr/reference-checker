@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -375,12 +376,12 @@ public class ReferencesChecker {
 		for (MissingReferences missingReferences : missingReferencesList) {
 			Reference reference = missingReferences.getReference();
 
-			String sql = getSQLDelete(
-				reference.getOriginQuery(), reference.getDestinationQuery());
+			Collection<Object[]> values = missingReferences.getValues();
 
-			sql = sql + ";";
+			String deleteSql = generateDeleteSentence(reference, values);
 
-			cleanUpSentences.add(sql);
+			cleanUpSentences.add("/* " + reference.toString() + " */");
+			cleanUpSentences.add(deleteSql);
 		}
 
 		return cleanUpSentences;
@@ -534,6 +535,22 @@ public class ReferencesChecker {
 		this.ignoreNullValues = ignoreNullValues;
 	}
 
+	protected String generateDeleteSentence(Reference reference, Collection<Object[]> values) {
+		Query originQuery = reference.getOriginQuery();
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(originQuery.getSQLDelete());
+
+		sb.append(" AND (");
+
+		_appendInClause(sb, originQuery, values);
+
+		sb.append(");");
+
+		return sb.toString();
+	}
+
 	protected Configuration getConfiguration(Connection connection)
 		throws IOException {
 
@@ -579,6 +596,80 @@ public class ReferencesChecker {
 	protected ModelUtil modelUtil;
 	protected Collection<Reference> referencesCache = null;
 	protected TableUtil tableUtil;
+
+	private static void _appendInClause(StringBuilder sb, List<String> columns, Collection<Object[]> rows) {
+		sb.append("(");
+		sb.append(StringUtils.join(columns, ","));
+		sb.append(") IN (");
+
+		boolean first = true;
+
+		for (Object[] row : rows) {
+			if (!first) {
+				sb.append(",");
+			}
+
+			first = false;
+
+			if (row.length == 1) {
+				sb.append(_castValue(row[0]));
+
+				continue;
+			}
+
+			sb.append("(");
+
+			for (int i = 0; i < row.length; i++) {
+				if (i > 0) {
+					sb.append(",");
+				}
+
+				sb.append(_castValue(row[i]));
+			}
+
+			sb.append(")");
+		}
+
+		sb.append(")");
+	}
+
+	private static String _castValue(Object value) {
+		if (value instanceof Number) {
+			return value.toString();
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("'");
+		sb.append(value);
+		sb.append("'");
+
+		return sb.toString();
+	}
+
+	private void _appendInClause(
+			StringBuilder sb, Query query, Collection<Object[]> values) {
+
+		List<Object[]> rows = new ArrayList<>(values);
+
+		List<String> columns = query.getColumns();
+
+		/* Split in sublists of 1000 elements as Oracle doesn't supports 
+		 * bigger IN clauses */
+		List<List<Object[]>> sublists = ListUtils.partition(rows, 1000);
+
+		boolean first = true;
+
+		for (List<Object[]> sublist : sublists) {
+			if (!first) {
+				sb.append(" OR ");
+			}
+
+			_appendInClause(sb, columns, sublist);
+
+			first = false;
+		}
+	}
 
 	private String _getSQL(
 		Query originQuery, Query destinationQuery, String type) {
