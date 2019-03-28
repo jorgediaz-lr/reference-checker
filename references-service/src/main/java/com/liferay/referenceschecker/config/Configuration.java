@@ -37,6 +37,10 @@ public class Configuration {
 		return references;
 	}
 
+	public Map<String, Number> getTableRank() {
+		return tableRank;
+	}
+
 	public Map<String, String> getTableToClassNameMapping() {
 		return tableToClassNameMapping;
 	}
@@ -51,6 +55,18 @@ public class Configuration {
 
 	public void setReferences(List<Reference> references) {
 		this.references = references;
+	}
+
+	public void setTableRank(Map<String, Number> tableRank) {
+
+		this.tableRank = new HashMap<>();
+
+		for (Map.Entry<String, Number> entry :
+			tableRank.entrySet()) {
+
+			this.tableRank.put(
+				StringUtils.lowerCase(entry.getKey()), entry.getValue());
+		}
 	}
 
 	public void setTableToClassNameMapping(
@@ -185,6 +201,7 @@ public class Configuration {
 	protected List<String> ignoreColumns;
 	protected List<String> ignoreTables;
 	protected List<Reference> references;
+	protected Map<String, Number> tableRank;
 	protected Map<String, String> tableToClassNameMapping;
 
 }

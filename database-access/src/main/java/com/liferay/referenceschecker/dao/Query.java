@@ -160,6 +160,45 @@ public class Query implements Comparable<Query> {
 		return getSQLSelect(false, " COUNT(DISTINCT " + columnsString + ")");
 	}
 
+	public String getSQLUpdate(String setClause) {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("UPDATE ");
+		sb.append(table.getTableName());
+		sb.append(" ");
+		sb.append(tableAlias);
+		sb.append(" SET ");
+		sb.append(setClause);
+		sb.append(" WHERE ");
+
+		if (StringUtils.isBlank(condition)) {
+			sb.append("1=1");
+		}
+		else {
+			sb.append(condition);
+		}
+
+		return sb.toString();
+	}
+
+	public String getSQLUpdateToNull() {
+		StringBuilder sb = new StringBuilder();
+		
+		boolean first = true;
+
+		for (String column : columns) {
+			if (!first) {
+				sb.append(",");
+			}
+
+			sb.append(column);
+			sb.append("=NULL");
+			first = false;
+		}
+
+		return getSQLUpdate(sb.toString());
+	}
+
 	public Table getTable() {
 		return table;
 	}

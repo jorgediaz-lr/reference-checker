@@ -184,7 +184,7 @@ public class OutputUtil {
 
 		List<String> out = new ArrayList<>();
 
-		List<String> headers = Arrays.asList(HEADERS_MISSING_REFERENCES);
+		List<String> headers = Arrays.asList(HEADERS_REFERENCES);
 
 		out.add(getCSVRow(headers));
 
@@ -209,6 +209,7 @@ public class OutputUtil {
 
 		line.addAll(generateReferenceCells(originQuery, withTypes));
 		line.addAll(generateReferenceCells(destinationQuery, withTypes));
+		line.add(reference.getFixAction());
 
 		return line;
 	}
@@ -293,11 +294,12 @@ public class OutputUtil {
 
 	protected static final String[] HEADERS_MISSING_REFERENCES = {
 		"origin table", "attributes", "destination table", "dest attributes",
-		"#", "missing references"
+		"fix action", "#", "missing references"
 	};
 
 	protected static final String[] HEADERS_REFERENCES = {
-		"origin table", "attributes", "destination table", "dest attributes"
+		"origin table", "attributes", "destination table", "dest attributes",
+		"fix action"
 	};
 
 }

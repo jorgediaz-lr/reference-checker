@@ -33,9 +33,12 @@ public interface ModelUtil {
 
 	public String getTableName(String className);
 
+	public long getTableRank(String tableName);
+
 	public void init(
 			Connection connection,
-			Map<String, String> tableNameToClassNameMapping)
+			Map<String, String> tableNameToClassNameMapping,
+			Map<String, Number> tableRank)
 		throws SQLException;
 
 }

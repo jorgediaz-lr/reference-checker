@@ -39,6 +39,7 @@ public class Reference implements Comparable<Reference>, Cloneable {
 		Reference copy = new Reference(originQuery, destinationQuery);
 
 		copy.setHidden(isHidden());
+		copy.setFixAction(getFixAction());
 		copy.setRaw(isRaw());
 
 		return copy;
@@ -80,6 +81,10 @@ public class Reference implements Comparable<Reference>, Cloneable {
 		return destinationQuery;
 	}
 
+	public String getFixAction() {
+		return fixAction;
+	}
+
 	public Query getOriginQuery() {
 		return originQuery;
 	}
@@ -103,11 +108,15 @@ public class Reference implements Comparable<Reference>, Cloneable {
 		return raw;
 	}
 
+	public void setFixAction(String fixAction) {
+		this.fixAction = fixAction;
+	}
+
 	public String toString() {
 		String rawRule = isRaw() ? "raw" : StringUtils.EMPTY;
 
 		return String.valueOf(originQuery) + " => " +
-			String.valueOf(destinationQuery) + " " + rawRule;
+			String.valueOf(destinationQuery) + " " + fixAction + " " + rawRule;
 	}
 
 	protected void setHidden(boolean hidden) {
@@ -119,6 +128,7 @@ public class Reference implements Comparable<Reference>, Cloneable {
 	}
 
 	protected Query destinationQuery;
+	protected String fixAction = null;
 	protected boolean hidden = false;
 	protected Query originQuery;
 	protected boolean raw = false;

@@ -131,10 +131,11 @@ public class ModelUtilImpl
 
 	public void init(
 			Connection connection,
-			Map<String, String> tableNameToClassNameMapping)
+			Map<String, String> tableNameToClassNameMapping,
+			Map<String, Number> tableRank)
 		throws SQLException {
 
-		super.init(connection, tableNameToClassNameMapping);
+		super.init(connection, tableNameToClassNameMapping, tableRank);
 
 		persistedModelLocalServiceRegistry =
 			getPersistedModelLocalServiceRegistry();

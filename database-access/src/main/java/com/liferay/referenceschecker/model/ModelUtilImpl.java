@@ -70,9 +70,21 @@ public class ModelUtilImpl implements ModelUtil {
 		return classNameToTableNameMapping.get(className);
 	}
 
+	@Override
+	public long getTableRank(String tableName) {
+		Number rank = tableRank.get(StringUtils.lowerCase(tableName));
+
+		if (rank == null) {
+			return 0L;
+		}
+
+		return rank.longValue();
+	}
+
 	public void init(
 			Connection connection,
-			Map<String, String> tableNameToClassNameMapping)
+			Map<String, String> tableNameToClassNameMapping,
+			Map<String, Number> tableRank)
 		throws SQLException {
 
 		Map<String, String> tableNameToClassNameMappingAux =
@@ -106,6 +118,8 @@ public class ModelUtilImpl implements ModelUtil {
 		classNameToClassNameIdMapping = getClassNameIdsMapping(connection);
 
 		classNameToTableNameMapping = classNameToTableNameMappingAux;
+
+		this.tableRank = tableRank;
 	}
 
 	protected Map<String, Long> getClassNameIdsMapping(Connection connection)
@@ -139,5 +153,6 @@ public class ModelUtilImpl implements ModelUtil {
 	protected Map<String, Long> classNameToClassNameIdMapping;
 	protected Map<String, String> classNameToTableNameMapping;
 	protected Map<String, String> tableNameToClassNameMapping;
+	protected Map<String, Number> tableRank;
 
 }

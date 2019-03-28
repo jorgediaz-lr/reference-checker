@@ -359,3 +359,46 @@ tableToClassNameMapping : {
     "Users_Teams" : "",
     "Users_UserGroups" : ""
 }
+#tableRank is used to calculate fixAction:
+# 1. table rank is not set => default value=0
+# 2. (originRank < destinationRank) => "delete_origin"
+# 3. (originRank == 0) => "manual_review" (unless its table className is "" => "delete_origin"
+# 4. ((destinationRank == 0)||(originRank == destinationRank)) => "manual_review"
+# 5. (originRank > destinationRank) => "update_origin"
+#
+tableRank : {
+    #Root tables
+    "ClassName_" : 100,
+    "Company" : 99,
+    "Group_" : 98,
+    "DDMStructure" : 80,
+    "LayoutSet" : 80,
+    #Main entities, don't delete
+    "BlogsEntry" : 50,
+    "DLFileEntry" : 50,
+    "DLFileVersion" : 50,
+    "JournalArticle" : 50,
+    "JournalArticleResource" : 50,
+    "Layout" : 50,
+    #Other entities
+    "DLFileShortcut" : 40,
+    "DLFolder" : 30,
+    "DLFileEntryMetadata" : 20,
+    "DLFileEntryType" : 20,
+    "DLFileRank" : 10,
+    "JournalArticleImage" : 40,
+    "JournalContentSearch" : 20,
+    "JournalFeed" : 20,
+    "JournalFolder" : 20,
+    "DDMTemplate" : -10,
+    "Image" : -10,
+    #Auxiliary tables, safe to delete
+    "AssetEntry" : -10,
+    "MBDiscussion" : -10,
+    "RatingsEntry" : -10,
+    "RatingsStats" : -10,
+    "ResourceBlockPermission" : -10,
+    "ResourcePermission" : -10,
+    "SocialActivity" : -10,
+    "Subscription" : -10
+}

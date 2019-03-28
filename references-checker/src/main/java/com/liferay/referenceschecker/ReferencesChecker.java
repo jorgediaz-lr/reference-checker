@@ -378,10 +378,22 @@ public class ReferencesChecker {
 
 			Collection<Object[]> values = missingReferences.getValues();
 
-			String deleteSql = generateDeleteSentence(reference, values);
+			String sql;
+
+			String fixAction = reference.getFixAction();
+
+			if ("delete_origin".equals(fixAction)) {
+				sql = generateDeleteSentence(reference, values);
+			}
+			else if ("update_origin".equals(fixAction)) {
+				sql = generateUpdateSentence(reference, values);
+			}
+			else {
+				continue;
+			}
 
 			cleanUpSentences.add("/* " + reference.toString() + " */");
-			cleanUpSentences.add(deleteSql);
+			cleanUpSentences.add(sql);
 		}
 
 		return cleanUpSentences;
@@ -443,7 +455,9 @@ public class ReferencesChecker {
 		Map<String, String> tableNameToClassNameMapping =
 			configuration.getTableToClassNameMapping();
 
-		modelUtil.init(connection, tableNameToClassNameMapping);
+		Map<String, Number> tableRank = configuration.getTableRank();
+
+		modelUtil.init(connection, tableNameToClassNameMapping, tableRank);
 
 		this.modelUtil = modelUtil;
 	}
@@ -541,6 +555,22 @@ public class ReferencesChecker {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(originQuery.getSQLDelete());
+
+		sb.append(" AND (");
+
+		_appendInClause(sb, originQuery, values);
+
+		sb.append(");");
+
+		return sb.toString();
+	}
+
+	protected String generateUpdateSentence(Reference reference, Collection<Object[]> values) {
+		Query originQuery = reference.getOriginQuery();
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(originQuery.getSQLUpdateToNull());
 
 		sb.append(" AND (");
 

@@ -364,6 +364,49 @@ public class ReferenceUtil {
 		return castingsReplaced;
 	}
 
+	protected String getFixAction(Query originQuery, Query destinationQuery) {
+		if ((originQuery == null) || (destinationQuery == null)) {
+			return null;
+		}
+
+		Table originTable = originQuery.getTable();
+
+		Table destinationTable = destinationQuery.getTable();
+
+		if (originTable.equals(destinationTable)) {
+			return "manual_review";
+		}
+
+		long destinationRank = modelUtil.getTableRank(
+			destinationTable.getTableName());
+
+		long originRank = modelUtil.getTableRank(
+			originTable.getTableName());
+
+		if (originRank < destinationRank) {
+			return "delete_origin";
+		}
+
+		if (originRank == 0) {
+			String originClassName = modelUtil.getClassName(
+					originTable.getTableName());
+
+			if ((originClassName != null) &&
+				StringUtils.isBlank(originClassName)) {
+
+				return "delete_origin";
+			}
+
+			return "manual_review";
+		}
+
+		if ((destinationRank == 0) || (originRank == destinationRank)) {
+			return "manual_review";
+		}
+
+		return "update_origin";
+	}
+
 	protected List<List<String>> getListColumns(
 		Table table, List<String> columnsFilters) {
 
@@ -406,10 +449,13 @@ public class ReferenceUtil {
 			destinationQueryConf.getCastings(),
 			destinationQueryConf.getCondition());
 
+		String fixAction = getFixAction(rawOriginQuery, rawDestinationQuery);
+
 		Reference reference = new Reference(
 			rawOriginQuery, rawDestinationQuery);
 
 		reference.setRaw(true);
+		reference.setFixAction(fixAction);
 
 		return reference;
 	}
@@ -492,7 +538,13 @@ public class ReferenceUtil {
 				destinationTable, destinationColumns, destinationCastings,
 				destinationCondition);
 
-			return new Reference(originQuery, destinationQuery);
+			String fixAction = getFixAction(originQuery, destinationQuery);
+
+			Reference reference = new Reference(originQuery, destinationQuery);
+
+			reference.setFixAction(fixAction);
+
+			return reference;
 		}
 
 		if (_log.isDebugEnabled()) {
