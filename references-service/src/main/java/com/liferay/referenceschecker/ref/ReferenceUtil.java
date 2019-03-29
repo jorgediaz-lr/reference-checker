@@ -175,7 +175,7 @@ public class ReferenceUtil {
 			referenceConfig.getDest());
 
 		/* generate references */
-		List<Reference> listReferences = new ArrayList<>();
+		List<Reference> referenceList = new ArrayList<>();
 
 		for (Table originTable : originTables) {
 			String originTableClassModel = modelUtil.getClassName(
@@ -202,13 +202,13 @@ public class ReferenceUtil {
 				continue;
 			}
 
-			listReferences.addAll(
+			referenceList.addAll(
 				getReferences(
 					connection, referenceConfig, originTable,
 					destinationTables));
 		}
 
-		return listReferences;
+		return referenceList;
 	}
 
 	public boolean isCheckUndefinedTables() {
@@ -613,23 +613,23 @@ public class ReferenceUtil {
 			}
 		}
 
-		List<Reference> listReferences = new ArrayList<>();
+		List<Reference> referenceList = new ArrayList<>();
 
 		for (Entry<Query, List<Reference>> entry : mapReferences.entrySet()) {
 			Collection<Reference> bestReferences = getBestMatchingReferences(
 				entry.getKey(), entry.getValue());
 
-			listReferences.addAll(bestReferences);
+			referenceList.addAll(bestReferences);
 		}
 
 		if (referenceConfig.isDisplayRaw()) {
 			Reference rawReference = getRawReference(
 				originTable, referenceConfig);
 
-			listReferences.add(0, rawReference);
+			referenceList.add(0, rawReference);
 		}
 
-		for (Reference reference : listReferences) {
+		for (Reference reference : referenceList) {
 			String fixAction = referenceConfig.getFixAction();
 
 			if (fixAction == null) {
@@ -641,7 +641,7 @@ public class ReferenceUtil {
 			reference.setFixAction(fixAction);
 		}
 
-		return listReferences;
+		return referenceList;
 	}
 
 	protected List<Reference> getReferences(
@@ -673,7 +673,7 @@ public class ReferenceUtil {
 			destinationCondition = null;
 		}
 
-		List<Reference> listReferences = new ArrayList<>();
+		List<Reference> referenceList = new ArrayList<>();
 
 		for (List<String> originColumnsReplaced : listOriginColumnsReplaced) {
 			List<String> originCastingsReplaced = getCastingsReplaced(
@@ -685,11 +685,11 @@ public class ReferenceUtil {
 				destinationCastings, destinationColumns, destinationCondition);
 
 			if (reference != null) {
-				listReferences.add(reference);
+				referenceList.add(reference);
 			}
 		}
 
-		return listReferences;
+		return referenceList;
 	}
 
 	protected List<Table> getTablesToApply(Configuration.Query queryConfig) {

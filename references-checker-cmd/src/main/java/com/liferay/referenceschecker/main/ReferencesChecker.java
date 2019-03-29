@@ -372,21 +372,21 @@ public class ReferencesChecker {
 
 		long startTime = System.currentTimeMillis();
 
-		List<MissingReferences> listMissingReferences = null;
+		List<MissingReferences> missingReferenceList = null;
 
 		Connection connection = null;
 
 		try {
 			connection = dataSource.getConnection();
 
-			listMissingReferences = referencesChecker.execute(connection);
+			missingReferenceList = referencesChecker.execute(connection);
 		}
 		finally {
 			JDBCUtil.cleanUp(connection);
 		}
 
 		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
-			listMissingReferences, missingReferencesLimit);
+			missingReferenceList, missingReferencesLimit);
 
 		writeOutput("missing-references", "csv", startTime, outputList);
 	}
