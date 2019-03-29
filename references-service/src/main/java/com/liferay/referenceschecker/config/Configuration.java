@@ -151,6 +151,10 @@ public class Configuration {
 			return displayRaw;
 		}
 
+		public String getFixAction() {
+			return fixAction;
+		}
+
 		public Boolean getHidden() {
 			if (hidden == null) {
 				return false;
@@ -179,6 +183,10 @@ public class Configuration {
 			this.displayRaw = displayRaw;
 		}
 
+		public void setFixAction(String fixAction) {
+			this.fixAction = fixAction;
+		}
+
 		public void setHidden(Boolean hidden) {
 			this.hidden = hidden;
 		}
@@ -193,6 +201,7 @@ public class Configuration {
 
 		protected Query dest;
 		protected Boolean displayRaw;
+		protected String fixAction;
 		protected Boolean hidden;
 		protected Query origin;
 
