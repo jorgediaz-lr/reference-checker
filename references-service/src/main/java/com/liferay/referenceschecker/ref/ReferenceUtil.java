@@ -437,7 +437,7 @@ public class ReferenceUtil {
 		Table destinationTable = tableUtil.getTable(destinationTableName);
 
 		if (destinationTable == null) {
-			if (_STAR.equals(destinationTableName)) {
+			if (".*".equals(destinationTableName)) {
 				destinationTableName = "ANY";
 			}
 

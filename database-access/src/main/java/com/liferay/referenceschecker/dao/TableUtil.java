@@ -174,45 +174,8 @@ public class TableUtil {
 	}
 
 	public List<Table> getTables(String filter) {
-		if (StringUtils.isBlank(filter) || "*".equals(filter) ||
-			".*".equals(filter)) {
-
+		if (StringUtils.isBlank(filter) || ".*".equals(filter)) {
 			return getTables();
-		}
-
-		filter = StringUtils.lowerCase(filter);
-
-		if (filter.endsWith("*")) {
-			String tablePrefix = filter.substring(0, filter.indexOf("*"));
-
-			List<Table> tableList = new ArrayList<>();
-
-			for (Table table : getTables()) {
-				String tableNameLowerCase = table.getTableNameLowerCase();
-
-				if (tableNameLowerCase.startsWith(tablePrefix)) {
-					tableList.add(table);
-				}
-			}
-
-			return tableList;
-		}
-
-		if (filter.startsWith("*")) {
-			String tableSuffix = filter.substring(
-				filter.indexOf("*") + 1, filter.length());
-
-			List<Table> tableList = new ArrayList<>();
-
-			for (Table table : getTables()) {
-				String tableNameLowerCase = table.getTableNameLowerCase();
-
-				if (tableNameLowerCase.endsWith(tableSuffix)) {
-					tableList.add(table);
-				}
-			}
-
-			return tableList;
 		}
 
 		Table singleTable = getTable(filter);
@@ -225,7 +188,9 @@ public class TableUtil {
 
 		if (pattern == null) {
 			try {
-				pattern = Pattern.compile(filter);
+				String lowerCaseFilter = StringUtils.lowerCase(filter);
+
+				pattern = Pattern.compile(lowerCaseFilter);
 			}
 			catch (PatternSyntaxException pse) {
 				_log.warn(pse);
