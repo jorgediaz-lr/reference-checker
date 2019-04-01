@@ -382,10 +382,10 @@ public class ReferencesChecker {
 
 			String fixAction = reference.getFixAction();
 
-			if ("delete_origin".equals(fixAction)) {
+			if ("delete".equals(fixAction)) {
 				sql = generateDeleteSentence(reference, values);
 			}
-			else if ("update_origin".equals(fixAction)) {
+			else if ("update".equals(fixAction)) {
 				sql = generateUpdateSentence(reference, values);
 			}
 			else {

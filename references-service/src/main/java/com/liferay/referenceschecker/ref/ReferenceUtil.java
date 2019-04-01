@@ -237,7 +237,7 @@ public class ReferenceUtil {
 		Table destinationTable = destinationQuery.getTable();
 
 		if (originTable.equals(destinationTable)) {
-			return "manual_review";
+			return "???";
 		}
 
 		long destinationRank = modelUtil.getTableRank(
@@ -247,7 +247,7 @@ public class ReferenceUtil {
 			originTable.getTableName());
 
 		if (originRank < destinationRank) {
-			return "delete_origin";
+			return "delete";
 		}
 
 		if (originRank == 0) {
@@ -257,17 +257,17 @@ public class ReferenceUtil {
 			if ((originClassName != null) &&
 				StringUtils.isBlank(originClassName)) {
 
-				return "delete_origin";
+				return "delete";
 			}
 
-			return "manual_review";
+			return "???";
 		}
 
 		if ((destinationRank == 0) || (originRank == destinationRank)) {
-			return "manual_review";
+			return "???";
 		}
 
-		return "update_origin";
+		return "update";
 	}
 
 	protected <T> List<List<T>> cartesianProduct(List<List<T>> lists) {
@@ -437,7 +437,7 @@ public class ReferenceUtil {
 		Table destinationTable = tableUtil.getTable(destinationTableName);
 
 		if (destinationTable == null) {
-			if ("*".equals(destinationTableName)) {
+			if (_STAR.equals(destinationTableName)) {
 				destinationTableName = "ANY";
 			}
 
