@@ -163,7 +163,14 @@ public class ReferencesChecker {
 		}
 
 		if (commandArguments.showMissingReferences()) {
-			referencesChecker.execute();
+			List<MissingReferences> missingReferenceList =
+				referencesChecker.execute();
+
+			boolean dumpCleanupScript = commandArguments.dumpCleanupScript();
+
+			if (dumpCleanupScript) {
+				referencesChecker.dumpCleanup(missingReferenceList);
+			}
 		}
 	}
 
@@ -344,6 +351,19 @@ public class ReferencesChecker {
 		writeOutput("tablesCount", "csv", startTime, outputList);
 	}
 
+	protected void dumpCleanup(List<MissingReferences> missingReferenceList)
+			throws IOException, SQLException {
+		System.out.println("");
+		System.out.println("Executing dump cleanup script...");
+
+		long startTime = System.currentTimeMillis();
+
+		List<String> cleanup = referencesChecker.generateCleanupSentences(
+				missingReferenceList);
+
+		writeOutput("missing-references_cleanup", "sql", startTime, cleanup);
+	}
+
 	protected void dumpDatabaseInfo() throws IOException, SQLException {
 		System.out.println("");
 		System.out.println("Executing dump Liferay database information...");
@@ -366,7 +386,7 @@ public class ReferencesChecker {
 		writeOutput("information", "txt", startTime, outputList);
 	}
 
-	protected void execute() throws IOException, SQLException {
+	protected List<MissingReferences> execute() throws IOException, SQLException {
 		System.out.println("");
 		System.out.println("Executing dump missing references...");
 
@@ -389,6 +409,8 @@ public class ReferencesChecker {
 			missingReferenceList, missingReferencesLimit);
 
 		writeOutput("missing-references", "csv", startTime, outputList);
+
+		return missingReferenceList;
 	}
 
 	protected String getResource(String resourceName)

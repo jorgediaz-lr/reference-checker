@@ -31,6 +31,10 @@ public class CommandArguments {
 		return _countTables;
 	}
 
+	public boolean dumpCleanupScript() {
+		return _dumpCleanupScript;
+	}
+
 	public String getDatabaseConfiguration() throws IOException {
 		return _databaseConfiguration;
 	}
@@ -74,6 +78,7 @@ public class CommandArguments {
 	)
 	private boolean _checkUndefinedTables;
 
+
 	@Parameter(
 		description = "Count all tables.", names = {"-c", "--countTables"}
 	)
@@ -84,6 +89,12 @@ public class CommandArguments {
 		names = {"-d", "--databaseConfiguration"}
 	)
 	private String _databaseConfiguration;
+
+	@Parameter(
+		description = "Dump cleanup script", hidden = true,
+		names = "--dumpCleanupScript"
+	)
+	private boolean _dumpCleanupScript;
 
 	@Parameter(
 		description = "Print this message.", help = true,
