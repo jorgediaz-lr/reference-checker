@@ -35,6 +35,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
@@ -171,14 +174,16 @@ public class TableUtil {
 	}
 
 	public List<Table> getTables(String filter) {
-		if (StringUtils.isBlank(filter) || "*".equals(filter)) {
+		if (StringUtils.isBlank(filter) || "*".equals(filter) ||
+			".*".equals(filter)) {
+
 			return getTables();
 		}
 
+		filter = StringUtils.lowerCase(filter);
+
 		if (filter.endsWith("*")) {
 			String tablePrefix = filter.substring(0, filter.indexOf("*"));
-
-			tablePrefix = StringUtils.lowerCase(tablePrefix);
 
 			List<Table> tableList = new ArrayList<>();
 
@@ -197,8 +202,6 @@ public class TableUtil {
 			String tableSuffix = filter.substring(
 				filter.indexOf("*") + 1, filter.length());
 
-			tableSuffix = StringUtils.lowerCase(tableSuffix);
-
 			List<Table> tableList = new ArrayList<>();
 
 			for (Table table : getTables()) {
@@ -212,13 +215,40 @@ public class TableUtil {
 			return tableList;
 		}
 
-		Table table = getTable(filter);
+		Table singleTable = getTable(filter);
 
-		if (table == null) {
-			return Collections.emptyList();
+		if (singleTable != null) {
+			return Collections.singletonList(singleTable);
 		}
 
-		return Collections.singletonList(table);
+		Pattern pattern = patternCache.get(filter);
+
+		if (pattern == null) {
+			try {
+				pattern = Pattern.compile(filter);
+			}
+			catch (PatternSyntaxException pse) {
+				_log.warn(pse);
+	
+				return Collections.emptyList();
+			}
+
+			patternCache.put(filter, pattern);
+		}
+
+		List<Table> tableList = new ArrayList<>();
+
+		for (Table table : getTables()) {
+			String tableNameLowerCase = table.getTableNameLowerCase();
+
+			Matcher matcher = pattern.matcher(tableNameLowerCase);
+
+			if (matcher.matches()) {
+				tableList.add(table);
+			}
+		}
+
+		return tableList;
 	}
 
 	public boolean ignoreColumn(String tableName, String columnName) {
@@ -640,6 +670,7 @@ public class TableUtil {
 	protected List<String[]> ignoreColumns;
 	protected List<String> ignoreTables;
 	protected ModelUtil modelUtil;
+	protected Map<String, Pattern> patternCache = new ConcurrentHashMap<>();
 	protected Map<String, Table> tableMap = new TreeMap<>();
 	protected Set<String> tableNames = new TreeSet<>();
 
