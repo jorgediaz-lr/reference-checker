@@ -398,7 +398,7 @@ public class ReferencesChecker {
 			}
 
 			cleanUpSentences.add("/* " + reference.toString() + " */");
-			cleanUpSentences.add(sql);
+			cleanUpSentences.add(sql+";");
 		}
 
 		return cleanUpSentences;
@@ -414,10 +414,14 @@ public class ReferencesChecker {
 
 			Collection<Object[]> values = missingReferences.getValues();
 
+			if (values == null) {
+				continue;
+			}
+
 			String sql = generateSelectSentence(reference, values, true, "*");
 
 			selectSentences.add("/* " + reference.toString() + " */");
-			selectSentences.add(sql);
+			selectSentences.add(sql + ";");
 		}
 
 		return selectSentences;
@@ -586,7 +590,7 @@ public class ReferencesChecker {
 
 		_appendInClause(sb, originQuery, values);
 
-		sb.append(");");
+		sb.append(")");
 
 		return sb.toString();
 	}
@@ -605,7 +609,7 @@ public class ReferencesChecker {
 
 		_appendInClause(sb, originQuery, values);
 
-		sb.append(");");
+		sb.append(")");
 
 		return sb.toString();
 	}
@@ -623,7 +627,7 @@ public class ReferencesChecker {
 
 		_appendInClause(sb, originQuery, values);
 
-		sb.append(");");
+		sb.append(")");
 
 		return sb.toString();
 	}
