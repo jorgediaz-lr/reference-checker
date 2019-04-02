@@ -25,9 +25,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 /**
  * @author Jorge Díaz
@@ -127,45 +132,45 @@ public class Table implements Comparable<Table> {
 		return ArrayUtils.clone(columnNames);
 	}
 
-	public List<String> getColumnNames(String filter) {
+	public List<String> getColumnNames(String regex) {
+		if (".*".equals(regex)) {
+			return Arrays.asList(getColumnNames());
+		}
+
+		if (hasColumn(regex)) {
+			return Collections.singletonList(regex);
+		}
+
+		Pattern pattern = patternCache.get(regex);
+
+		if (pattern == null) {
+			try {
+				String lowerCaseRegex = StringUtils.lowerCase(regex);
+
+				pattern = Pattern.compile(lowerCaseRegex);
+			}
+			catch (PatternSyntaxException pse) {
+				_log.warn(pse, pse);
+	
+				return Collections.emptyList();
+			}
+
+			patternCache.put(regex, pattern);
+		}
+
 		List<String> list = new ArrayList<>();
 
-		int pos = filter.indexOf("*");
+		for (String columnName : getColumnNames()) {
+			String columnNameLowerCase = StringUtils.lowerCase(columnName);
 
-		if (filter.endsWith("*")) {
-			String prefix = StringUtils.lowerCase(filter.substring(0, pos));
+			Matcher matcher = pattern.matcher(columnNameLowerCase);
 
-			for (String columnName : getColumnNames()) {
-				String columnNameLowerCase = StringUtils.lowerCase(columnName);
-
-				if (columnNameLowerCase.startsWith(prefix)) {
-					list.add(columnName);
-				}
+			if (matcher.matches()) {
+				list.add(columnName);
 			}
-
-			return list;
 		}
 
-		if (filter.startsWith("*")) {
-			String suffix = StringUtils.lowerCase(
-				filter.substring(pos + 1, filter.length()));
-
-			for (String columnName : getColumnNames()) {
-				String columnNameLowerCase = StringUtils.lowerCase(columnName);
-
-				if (columnNameLowerCase.endsWith(suffix)) {
-					list.add(columnName);
-				}
-			}
-
-			return list;
-		}
-
-		if (hasColumn(filter)) {
-			return Collections.singletonList(filter);
-		}
-
-		return Collections.emptyList();
+		return list;
 	}
 
 	public int getColumnPosition(String columnName) {
@@ -345,6 +350,7 @@ public class Table implements Comparable<Table> {
 	protected String[] compoundPrimaryKey;
 	protected Map<String, Integer> mapColumnPosition =
 		new ConcurrentHashMap<>();
+	protected Map<String, Pattern> patternCache = new ConcurrentHashMap<>();
 	protected String primaryKey;
 	protected String tableName;
 	protected String tableNameLowerCase;
@@ -363,5 +369,7 @@ public class Table implements Comparable<Table> {
 
 		return newArray;
 	}
+
+	private static Logger _log = LogManager.getLogger(Table.class);
 
 }

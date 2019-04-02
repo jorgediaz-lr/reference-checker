@@ -762,11 +762,13 @@ public class ReferenceUtil {
 
 	protected String replaceVars(String varPrefix, Table table, String text) {
 		String primaryKeyColumn = table.getPrimaryKey();
-		String primaryKeyColumnFirstUpper = StringUtils.EMPTY;
 
-		if (primaryKeyColumn != null) {
-			primaryKeyColumnFirstUpper = WordUtils.capitalize(
-				primaryKeyColumn, new char[0]);
+		String primaryKeyColumnFirstUpper = WordUtils.capitalize(
+			primaryKeyColumn, new char[0]);
+
+		if (primaryKeyColumn == null) {
+			primaryKeyColumn = "INVALID_PK";
+			primaryKeyColumnFirstUpper = "INVALID_PK"; 
 		}
 
 		String tableName = table.getTableName();

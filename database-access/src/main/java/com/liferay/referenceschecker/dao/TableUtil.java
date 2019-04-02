@@ -173,32 +173,32 @@ public class TableUtil {
 		return new ArrayList<>(tableMap.values());
 	}
 
-	public List<Table> getTables(String filter) {
-		if (StringUtils.isBlank(filter) || ".*".equals(filter)) {
+	public List<Table> getTables(String regex) {
+		if (StringUtils.isBlank(regex) || ".*".equals(regex)) {
 			return getTables();
 		}
 
-		Table singleTable = getTable(filter);
+		Table singleTable = getTable(regex);
 
 		if (singleTable != null) {
 			return Collections.singletonList(singleTable);
 		}
 
-		Pattern pattern = patternCache.get(filter);
+		Pattern pattern = patternCache.get(regex);
 
 		if (pattern == null) {
 			try {
-				String lowerCaseFilter = StringUtils.lowerCase(filter);
+				String lowerCaseFilter = StringUtils.lowerCase(regex);
 
 				pattern = Pattern.compile(lowerCaseFilter);
 			}
 			catch (PatternSyntaxException pse) {
-				_log.warn(pse);
+				_log.warn(pse, pse);
 	
 				return Collections.emptyList();
 			}
 
-			patternCache.put(filter, pattern);
+			patternCache.put(regex, pattern);
 		}
 
 		List<Table> tableList = new ArrayList<>();
@@ -223,19 +223,17 @@ public class TableUtil {
 
 		columnName = StringUtils.lowerCase(columnName);
 
-		for (String[] ignoreColumnArray : ignoreColumns) {
-			String ignoreTable = ignoreColumnArray[0];
-			String ignoreTableType = ignoreColumnArray[1];
-			String ignoreColumn = ignoreColumnArray[2];
-			String ignoreColumnType = ignoreColumnArray[3];
+		for (Pattern[] ignoreColumnArray : ignoreColumns) {
+			Pattern ignoreTable = ignoreColumnArray[0];
+			Pattern ignoreColumn = ignoreColumnArray[1];
 
 			if ((ignoreTable != null) &&
-				!matchesValue(tableName, ignoreTable, ignoreTableType)) {
+				!matchesRegex(tableName, ignoreTable)) {
 
 				continue;
 			}
 
-			if (matchesValue(columnName, ignoreColumn, ignoreColumnType)) {
+			if (matchesRegex(columnName, ignoreColumn)) {
 				return true;
 			}
 		}
@@ -248,8 +246,12 @@ public class TableUtil {
 			return true;
 		}
 
-		for (String ignoreTable : ignoreTables) {
-			if (StringUtils.equalsIgnoreCase(ignoreTable, tableName)) {
+		tableName = StringUtils.lowerCase(tableName);
+
+		for (Pattern ignoreTable : ignoreTables) {
+			Matcher matcher = ignoreTable.matcher(tableName);
+
+			if (matcher.matches()) {
 				return true;
 			}
 		}
@@ -531,42 +533,43 @@ public class TableUtil {
 	protected void initIgnore(
 		List<String> ignoreTables, List<String> ignoreColumns) {
 
-		List<String[]> ignoreColumnsArray = new ArrayList<>();
+		List<Pattern[]> ignoreColumnsArray = new ArrayList<>();
 
 		for (String ignoreColumn : ignoreColumns) {
-			if (ignoreColumn == null) {
-				continue;
-			}
-
 			ignoreColumn = StringUtils.lowerCase(ignoreColumn);
 
-			int pos = ignoreColumn.indexOf('.');
+			int pos = ignoreColumn.indexOf('#');
 
-			String[] ignoreColumnArray = new String[4];
+			Pattern[] ignoreColumnArray = new Pattern[2];
 
 			if (pos == -1) {
 				ignoreColumnArray[0] = null;
-				ignoreColumnArray[2] = ignoreColumn.trim();
+				ignoreColumnArray[1] = Pattern.compile(ignoreColumn);
 			}
 			else {
 				String table = ignoreColumn.substring(0, pos);
 
-				ignoreColumnArray[0] = table.trim();
+				ignoreColumnArray[0] = Pattern.compile(table);
 
 				String column = ignoreColumn.substring(pos + 1);
 
-				ignoreColumnArray[2] = column.trim();
+				ignoreColumnArray[1] = Pattern.compile(column);
 			}
-
-			_manageStar(ignoreColumnArray, 0);
-			_manageStar(ignoreColumnArray, 2);
 
 			ignoreColumnsArray.add(ignoreColumnArray);
 		}
 
 		this.ignoreColumns = ignoreColumnsArray;
 
-		this.ignoreTables = new ArrayList<>(ignoreTables);
+		List<Pattern> ignoreTablePatterns = new ArrayList<>();
+
+		for (String table : ignoreTables) {
+			table = StringUtils.lowerCase(table);
+
+			ignoreTablePatterns.add(Pattern.compile(table));
+		}
+
+		this.ignoreTables = ignoreTablePatterns;
 	}
 
 	protected Map<String, Table> initTableMap(
@@ -607,33 +610,17 @@ public class TableUtil {
 		return tableMap;
 	}
 
-	protected boolean matchesValue(
-		String value, String match, String matchType) {
+	protected boolean matchesRegex(String value, Pattern pattern) {
+		Matcher matcher = pattern.matcher(value);
 
-		if ("*".equals(match)) {
-			return true;
-		}
-
-		if ("prefix".equals(matchType)) {
-			return value.startsWith(match);
-		}
-
-		if ("suffix".equals(matchType)) {
-			return value.endsWith(match);
-		}
-
-		if (matchType == null) {
-			return StringUtils.equals(match, value);
-		}
-
-		return false;
+		return matcher.matches();
 	}
 
 	protected Map<String, Boolean> emptyTableCache = new ConcurrentHashMap<>();
 	protected Map<String, Set<String>> emptyTableKeys =
 		new ConcurrentHashMap<>();
-	protected List<String[]> ignoreColumns;
-	protected List<String> ignoreTables;
+	protected List<Pattern[]> ignoreColumns;
+	protected List<Pattern> ignoreTables;
 	protected ModelUtil modelUtil;
 	protected Map<String, Pattern> patternCache = new ConcurrentHashMap<>();
 	protected Map<String, Table> tableMap = new TreeMap<>();
@@ -647,36 +634,6 @@ public class TableUtil {
 		}
 
 		return list;
-	}
-
-	private void _manageStar(String[] ignoreColumnArray, int i) {
-		String column = ignoreColumnArray[i];
-
-		if (column == null) {
-			return;
-		}
-
-		int pos = column.indexOf("*");
-
-		if (pos == -1) {
-			return;
-		}
-
-		if ("*".equals(column)) {
-			ignoreColumnArray[i] = "*";
-			ignoreColumnArray[i + 1] = null;
-
-			return;
-		}
-
-		if (column.endsWith("*")) {
-			ignoreColumnArray[i] = column.substring(0, pos);
-			ignoreColumnArray[i + 1] = "prefix";
-		}
-		else if (column.startsWith("*")) {
-			ignoreColumnArray[i] = column.substring(pos + 1, column.length());
-			ignoreColumnArray[i + 1] = "suffix";
-		}
 	}
 
 	private static Logger _log = LogManager.getLogger(TableUtil.class);

@@ -1,8 +1,8 @@
-ignoreColumns: [actionId, userId, "*userId"]
+ignoreColumns: [actionId]
 ignoreTables: [counter, cyrusUser, cyrusVirtual, systemEvent]
 references: [
     #generic references
-  {origin: {table: ".*", columns: ["*${destTable.PrimaryKey}"]},                                      dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
+  {origin: {table: ".*", columns: [".*${destTable.PrimaryKey}"]},                                     dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: ".*", columns: ["${destTable.primaryKey}"]},                                       dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: ".*", columns: ["groupId", "companyId"], condition: "groupId<>0"},                 dest: {table: "Group_", columns: ["groupId", "companyId"]}},
   {origin: {table: ".*", columns: ["groupId", "folderId"], condition: "folderId<>0"},                 dest: {table: ".*Folder", columns: ["groupId","folderId"]}},
@@ -12,8 +12,8 @@ references: [
   {origin: {table: ".*", columns: ["portraitId"]},                                                    dest: {table: "Image", columns: ["imageId"]}},
   {origin: {table: ".*", columns: ["layoutId"]},                                                      dest: {table: "Layout", columns: ["layoutId"]}},
   {origin: {table: ".*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}, fixAction: "update" },
-  {origin: {table: ".*", columns: ["*layoutPrototypeUuid"]},                                          dest: {table: "LayoutPrototype", columns: ["uuid_"]}, fixAction: "update" },
-  {origin: {table: ".*", columns: ["*layoutSetPrototypeUuid"]},                                       dest: {table: "LayoutSetPrototype", columns: ["uuid_"]}, fixAction: "update" },
+  {origin: {table: ".*", columns: [".*layoutPrototypeUuid"]},                                         dest: {table: "LayoutPrototype", columns: ["uuid_"]}, fixAction: "update" },
+  {origin: {table: ".*", columns: [".*layoutSetPrototypeUuid"]},                                      dest: {table: "LayoutSetPrototype", columns: ["uuid_"]}, fixAction: "update" },
     #portletId
   {origin: {table: ".*", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId not like '%_USER_%'"},                                                                        dest: {table: "Portlet", columns: ["portletId"]}},
   {origin: {table: ".*", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},         dest: {table: "Portlet", columns: ["portletId"]}},
@@ -25,11 +25,11 @@ references: [
   {origin: {table: ".*", columns: ["groupId", "${origTable.primaryKey}"], condition: "folderId<>0", conditionColumns: ["folderId"]}}, #primary keys must not be checked with any other pk
   {origin: {table: ".*", columns: ["${origTable.primaryKey}", "treePath"], condition: "folderId<>0", conditionColumns: ["folderId"]}}, #primary keys must not be checked with any other pk
   {origin: {table: ".*", columns: ["uuid_"]}}, #ignore
-  {origin: {table: ".*", columns: ["*statusId"]}}, #ignore
+  {origin: {table: ".*", columns: [".*statusId"]}}, #ignore
     #force other references
   {origin: {table: "AssetCategory",  columns: ["leftCategoryid"]}}, #ignore
   {origin: {table: "AssetCategory",  columns: ["rightCategoryid"]}}, #ignore
-  {origin: {table: "AssetLink",      columns: ["entryId*"]},                                         dest: {table: "AssetEntry",  columns: ["entryId"]}},
+  {origin: {table: "AssetLink",      columns: ["entryId.*"]},                                         dest: {table: "AssetEntry",  columns: ["entryId"]}},
   {origin: {table: "DL.*",           columns: ["repositoryId"]}}, #ignore
   {origin: {table: "DL.*",           columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
   {origin: {table: "DL.*",           columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
@@ -46,7 +46,7 @@ references: [
   {origin: {table: "Repository",     columns: ["dlFolderId"]},                                       dest: {table: "DLFolder",        columns: ["folderId"]}},
   {origin: {table: "SocialActivity", columns: ["parentClassPk"], condition: "parentclassNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: ".*",  columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "WikiPage",       columns: ["groupId","resourcePrimKey"]},                        dest: {table: "WikiPageResource", columns: ["groupId","resourcePrimKey"]}},
-  {origin: {table: "SyncDL.*",       columns: ["*${destTable.PrimaryKey}"]},                         dest: {table: "DL.*",             columns: ["${destTable.primaryKey}"]}},
+  {origin: {table: "SyncDL.*",       columns: [".*${destTable.PrimaryKey}"]},                        dest: {table: "DL.*",             columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "SyncDLObject",   columns: ["repositoryId"]}}, #ignore
   {origin: {table: "SyncDLObject",   columns: ["versionId"]},                                        dest: {table: "DLFileVersion", columns: ["fileVersionId"]}},
     #relations with ListType columns
@@ -108,8 +108,7 @@ references: [
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL"}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
 
     #userId
-  {origin: {table: ".*", columns: ["*UserId"]},  dest: {table: "User_", columns: ["userId"]}},
-  {origin: {table: ".*", columns: ["userId*"]},  dest: {table: "User_", columns: ["userId"]}},
+  {origin: {table: "^(?!Contact_\\b|User_\\b).*$", columns: [".*userId.*"]},  dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
     #liferay sync
   {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "typeUuid", "parentFolderId", "name"], condition: "type_ = 'folder' and event not in ('delete', 'trash')"}, dest: {table: "DLFolder",     columns: ["companyId", "groupId", "folderId", "uuid_", parentFolderId", "name"],    condition: "groupId=repositoryId and status<>8"}},
   {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "typeUuid", "parentFolderId"], condition: "type_ = 'file' and event not in ('delete', 'trash')"},   dest: {table: "DLFileEntry",  columns: ["companyId", "groupId", "fileEntryId", "uuid_", "folderId"],   condition: "groupId=repositoryId and fileEntryId not in (select fileEntryId from DLFileVersion where status=8)"}},
@@ -383,7 +382,7 @@ tableRank : {
     "DLFileRank" : 10,
     "DLFileShortcut" : 40,
     "DLFolder" : 30,
-    "Image" : -10,
+    "Image" : -20,
     "JournalArticleImage" : 40,
     "JournalContentSearch" : 20,
     "JournalFeed" : 20,
