@@ -121,23 +121,27 @@ public class OutputUtil {
 			Throwable throwable = missingReferences.getThrowable();
 			Collection<Object[]> missingValues = missingReferences.getValues();
 
-			if ((throwable != null) || (missingValues == null)) {
-				line.add("-1");
-				line.add("Error checking references");
-			}
-
-			if (throwable != null) {
-				line.add(
-					"EXCEPTION: " + throwable.getClass() + " - " +
-						throwable.getMessage());
-			}
-			else if (missingValues != null) {
+			if (missingValues != null) {
+				line.add(String.valueOf(missingReferences.getAffectedRows()));
 				line.add(String.valueOf(missingValues.size()));
 
 				String missingReferencesString = concatenate(
 					missingValues, missingReferencesLimit);
 
 				line.add(missingReferencesString);
+			}
+			else if (throwable == null) {
+				line.add("-1");
+				line.add("-1");
+
+				line.add("Error checking references");
+			}
+			else {
+				line.add("-1");
+				line.add("-1");
+				line.add(
+					"EXCEPTION: " + throwable.getClass() + " - " +
+						throwable.getMessage());
 			}
 
 			out.add(getCSVRow(line));
@@ -294,7 +298,7 @@ public class OutputUtil {
 
 	protected static final String[] HEADERS_MISSING_REFERENCES = {
 		"origin table", "attributes", "destination table", "dest attributes",
-		"fix action", "#", "missing references"
+		"fix action", "aff. rows", "#", "missing references"
 	};
 
 	protected static final String[] HEADERS_REFERENCES = {

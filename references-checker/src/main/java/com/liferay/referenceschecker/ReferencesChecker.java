@@ -347,15 +347,20 @@ public class ReferencesChecker {
 					continue;
 				}
 
-				Collection<Object[]> missingReferences = queryInvalidValues(
+				Collection<Object[]> invalidValues = queryInvalidValues(
 					connection, originQuery, destinationQuery);
 
-				if ((missingReferences == null) ||
-					!missingReferences.isEmpty()) {
-
-					listMissingReferences.add(
-						new MissingReferences(reference, missingReferences));
+				if (invalidValues.isEmpty()) {
+					continue;
 				}
+				
+				long affectedRows = queryCount(
+					connection, reference, invalidValues);
+
+				MissingReferences missingReferences = new MissingReferences(
+					reference, invalidValues, affectedRows);
+
+				listMissingReferences.add(missingReferences);
 			}
 			catch (Throwable t) {
 				_log.error(
@@ -397,6 +402,25 @@ public class ReferencesChecker {
 		}
 
 		return cleanUpSentences;
+	}
+
+	public List<String> generateSelectSentences(
+			Collection<MissingReferences> missingReferencesList) {
+	
+		List<String> selectSentences = new ArrayList<>();
+
+		for (MissingReferences missingReferences : missingReferencesList) {
+			Reference reference = missingReferences.getReference();
+
+			Collection<Object[]> values = missingReferences.getValues();
+
+			String sql = generateSelectSentence(reference, values, true, "*");
+
+			selectSentences.add("/* " + reference.toString() + " */");
+			selectSentences.add(sql);
+		}
+
+		return selectSentences;
 	}
 
 	public Configuration getConfiguration() {
@@ -549,7 +573,9 @@ public class ReferencesChecker {
 		this.ignoreNullValues = ignoreNullValues;
 	}
 
-	protected String generateDeleteSentence(Reference reference, Collection<Object[]> values) {
+	protected String generateDeleteSentence(
+		Reference reference, Collection<Object[]> values) {
+
 		Query originQuery = reference.getOriginQuery();
 
 		StringBuilder sb = new StringBuilder();
@@ -565,7 +591,28 @@ public class ReferencesChecker {
 		return sb.toString();
 	}
 
-	protected String generateUpdateSentence(Reference reference, Collection<Object[]> values) {
+	protected String generateSelectSentence(
+		Reference reference, Collection<Object[]> values, boolean distinct,
+		String columnsString) {
+
+		Query originQuery = reference.getOriginQuery();
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(originQuery.getSQLSelect(distinct, columnsString));
+
+		sb.append(" AND (");
+
+		_appendInClause(sb, originQuery, values);
+
+		sb.append(");");
+
+		return sb.toString();
+	}
+
+	protected String generateUpdateSentence(
+		Reference reference, Collection<Object[]> values) {
+
 		Query originQuery = reference.getOriginQuery();
 
 		StringBuilder sb = new StringBuilder();
@@ -617,6 +664,53 @@ public class ReferencesChecker {
 
 	protected String getSQLSelectCount(Query originQuery, Query destinationQuery) {
 		return _getSQL(originQuery, destinationQuery, "count");
+	}
+
+	protected long queryCount(Connection connection, Reference reference, Collection<Object[]> invalidValues)
+			throws SQLException {
+
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		try {
+			Query originQuery = reference.getOriginQuery();
+
+			Table originTable = originQuery.getTable();
+
+			String primaryKey = originTable.getPrimaryKey();
+
+			if (primaryKey == null) {
+				primaryKey = "DISTINCT (" +
+					StringUtils.join(originTable.getCompoundPrimaryKey(), ",") +
+						")";
+			}
+
+			String attributesSqlCount = " COUNT(" + primaryKey + ")";
+
+			String sqlCount = generateSelectSentence(
+				reference, invalidValues, false, attributesSqlCount);
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("SQL count: " + sqlCount);
+			}
+
+			ps = connection.prepareStatement(sqlCount);
+
+			rs = ps.executeQuery();
+
+			while (rs.next()) {
+				return rs.getLong(1);
+			}
+			
+		}
+		catch (SQLException sqle) {
+			_log.warn(sqle);
+		}
+		finally {
+			JDBCUtil.cleanUp(ps, rs);
+		}
+
+		return -1;
 	}
 
 	protected boolean checkUndefinedTables = false;

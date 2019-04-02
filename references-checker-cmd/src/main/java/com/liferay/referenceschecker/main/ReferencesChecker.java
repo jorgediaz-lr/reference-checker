@@ -356,12 +356,10 @@ public class ReferencesChecker {
 		System.out.println("");
 		System.out.println("Executing dump cleanup script...");
 
-		long startTime = System.currentTimeMillis();
-
 		List<String> cleanup = referencesChecker.generateCleanupSentences(
 				missingReferenceList);
 
-		writeOutput("missing-references_cleanup", "sql", startTime, cleanup);
+		writeOutput("missing-references_cleanup", "sql", cleanup);
 	}
 
 	protected void dumpDatabaseInfo() throws IOException, SQLException {
@@ -405,6 +403,11 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
+		List<String> selectSentences = referencesChecker.generateSelectSentences(
+				missingReferenceList);
+		
+		writeOutput("missing-references", "sql", selectSentences);
+
 		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
 			missingReferenceList, missingReferencesLimit);
 
@@ -424,7 +427,14 @@ public class ReferencesChecker {
 	}
 
 	protected void writeOutput(
-			String name, String format, long startTime, List<String> outputList)
+			String name, String format, List<String> outputList)
+		throws IOException {
+
+		writeOutput(name, format, null, outputList);
+	}
+
+	protected void writeOutput(
+			String name, String format, Long startTime, List<String> outputList)
 		throws IOException {
 
 		File outputFile = _getOutputFile(name, format);
@@ -456,10 +466,14 @@ public class ReferencesChecker {
 			}
 		}
 
-		long endTime = System.currentTimeMillis();
-
 		System.out.println("");
-		System.out.println("Total time: " + (endTime - startTime) + " ms");
+
+		if (startTime != null) {
+			long endTime = System.currentTimeMillis();
+
+			System.out.println("Total time: " + (endTime - startTime) + " ms");
+		}
+
 		System.out.println("Output was written to file: " + outputFileName);
 	}
 

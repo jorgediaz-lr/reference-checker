@@ -157,7 +157,7 @@ public class Query implements Comparable<Query> {
 	}
 
 	public String getSQLSelectCount() {
-		return getSQLSelect(false, " COUNT(DISTINCT " + columnsString + ")");
+		return getSQLSelect(false, " COUNT(DISTINCT (" + columnsString + "))");
 	}
 
 	public String getSQLUpdate(String setClause) {
