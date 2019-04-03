@@ -15,12 +15,16 @@ references: [
   {origin: {table: ".*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}, fixAction: "update" },
   {origin: {table: ".*", columns: [".*layoutPrototypeUuid"]},                                         dest: {table: "LayoutPrototype", columns: ["uuid_"]}, fixAction: "update" },
   {origin: {table: ".*", columns: [".*layoutSetPrototypeUuid"]},                                      dest: {table: "LayoutSetPrototype", columns: ["uuid_"]}, fixAction: "update" },
+    #userId
+  {origin: {table: "^(?!Contact_\\b).*$", columns: ["^(userId|completionUserId|creatorUserId|lastPostByUserId|lockUserId|receiverUserId|replierUserId|rootMessageUserId|statusByUserId|versionUserId)$"]}, dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
+  {origin: {table: ".*", columns: ["userId.+"]}, dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
+  {origin: {table: "PollsVote", columns: ["userId"]}}, #ignore
     #portletId
-  {origin: {table: ".*", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId not like '%_USER_%'"},                                                                        dest: {table: "Portlet", columns: ["portletId"]}},
-  {origin: {table: ".*", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},         dest: {table: "Portlet", columns: ["portletId"]}},
-  {origin: {table: ".*", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId not like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_INSTANCE_')-1 )"]},     dest: {table: "Portlet", columns: ["portletId"]}},
-  {origin: {table: ".*", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},             dest: {table: "Portlet", columns: ["portletId"]}},
-  {origin: {table: ".*", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, INSTR(portletId, '_USER_')+6, INSTR(portletId, '_INSTANCE_')-(INSTR(portletId, '_USER_')+6) )"]},    dest: {table: "User_", columns: ["userId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId not like '%_USER_%'"},                                                                        dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},         dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId not like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_INSTANCE_')-1 )"]},     dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},             dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, INSTR(portletId, '_USER_')+6, INSTR(portletId, '_INSTANCE_')-(INSTR(portletId, '_USER_')+6) )"]},    dest: {table: "User_", columns: ["userId"]}},
     #ignore generic references
   {origin: {table: ".*", columns: ["${origTable.primaryKey}"]}}, #primary keys must not be checked with any other pk
   {origin: {table: ".*", columns: ["groupId", "${origTable.primaryKey}"], condition: "folderId<>0", conditionColumns: ["folderId"]}}, #primary keys must not be checked with any other pk
@@ -110,14 +114,11 @@ references: [
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk IS NOT NULL"}, dest: {table: ".*", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileVersion.className}') and classPk IS NOT NULL"}}, #ignore
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL"}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
-
-    #userId
-  {origin: {table: "^(?!Contact_\\b|User_\\b).*$", columns: [".*userId.*"]},  dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
     #liferay sync
-  {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "typeUuid", "parentFolderId", "name"], condition: "type_ = 'folder' and event not in ('delete', 'trash')"}, dest: {table: "DLFolder",     columns: ["companyId", "groupId", "folderId", "uuid_", parentFolderId", "name"],    condition: "groupId=repositoryId and status<>8"}},
-  {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "typeUuid", "parentFolderId", "name"], condition: "type_ = 'file' and event not in ('delete', 'trash')"},   dest: {table: "DLFileEntry",  columns: ["companyId", "groupId", "fileEntryId", "uuid_", "folderId", "fileName"],   condition: "groupId=repositoryId and fileEntryId not in (select fileEntryId from DLFileVersion where status=8)"}},
-  {origin: {table: "DLFolder",     columns: ["companyId", "groupId", "folderId", "uuid_", "parentFolderId", "name"],    condition: "groupId=repositoryId and status<>8"},                    dest: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "typeUuid", "parentFolderId", "name"], condition: "type_ = 'folder' and event not in ('delete', 'trash')"}},
-  {origin: {table: "DLFileEntry",  columns: ["companyId", "groupId", "fileEntryId", "uuid_", "folderId", "fileName"],   condition: "groupId=repositoryId and fileEntryId not in (select fileEntryId from DLFileVersion where status=8)"}, dest: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "typeUuid", "parentFolderId", "name"], condition: "type_ = 'file' and event not in ('delete', 'trash')"}},
+  {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "parentFolderId"], condition: "type_ = 'folder' and event not in ('delete', 'trash')"}, dest: {table: "DLFolder",     columns: ["companyId", "groupId", "folderId", parentFolderId"],    condition: "groupId=repositoryId and status<>8"}},
+  {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "parentFolderId"], condition: "type_ = 'file' and event not in ('delete', 'trash')"},   dest: {table: "DLFileEntry",  columns: ["companyId", "groupId", "fileEntryId", "folderId"],   condition: "groupId=repositoryId and fileEntryId not in (select fileEntryId from DLFileVersion where status=8)"}},
+  {origin: {table: "DLFolder",     columns: ["companyId", "groupId", "folderId", "parentFolderId"],    condition: "groupId=repositoryId and status<>8"},                    dest: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "parentFolderId"], condition: "type_ = 'folder' and event not in ('delete', 'trash')"}},
+  {origin: {table: "DLFileEntry",  columns: ["companyId", "groupId", "fileEntryId", "folderId"],   condition: "groupId=repositoryId and fileEntryId not in (select fileEntryId from DLFileVersion where status=8)"}, dest: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "parentFolderId"], condition: "type_ = 'file' and event not in ('delete', 'trash')"}},
   {origin: {table: "SyncDLObject", columns: ["repositoryId", "companyId"], condition: "repositoryId<>0"},     dest: {table: "Group_", columns: ["groupId", "companyId"]}},
     #commerce
   {origin: {table: "Commerce.*", columns: [".*addressId"]}, dest: {table: "CommerceAddress", columns: ["${destTable.primaryKey}"]}}
@@ -488,25 +489,24 @@ tableToClassNameMapping : {
 # 5. (originRank > destinationRank) => "update"
 #
 tableRank : {
-    #Root tables
-    "AssetEntry" : -10,
+#Root tables
     "ClassName_" : 100,
     "Company" : 99,
     "Group_" : 98,
     "LayoutSet" : 80,
-    #Main entities, don't delete
+#Main entities, don't delete
     "BlogsEntry" : 50,
     "DLFileEntry" : 50,
-    "DLFileEntryMetadata" : 20,
-    "DLFileEntryType" : 20,
     "DLFileVersion" : 50,
     "JournalArticle" : 50,
     "JournalArticleResource" : 50,
     "Layout" : 50,
-    #Other entities
+#Other entities
     "DDMStructureLink" : -20,
     "DDMTemplate" : -10,
     "DDMTemplateLink" : -20,
+    "DLFileEntryMetadata" : 20,
+    "DLFileEntryType" : 20,
     "DLFileRank" : 10,
     "DLFileShortcut" : 40,
     "DLFolder" : 30,
@@ -515,7 +515,10 @@ tableRank : {
     "JournalContentSearch" : 20,
     "JournalFeed" : 20,
     "JournalFolder" : 20,
-    #Auxiliary tables, safe to delete
+#Auxiliary tables, safe to delete
+    "AssetEntry" : -10,
+    "AssetLink" : -20,
+    "AssetTagStats" : -10,
     "MBDiscussion" : -10,
     "RatingsEntry" : -10,
     "RatingsStats" : -10,
