@@ -15,6 +15,7 @@
 package com.liferay.referenceschecker.model;
 
 import com.liferay.referenceschecker.util.JDBCUtil;
+import com.liferay.referenceschecker.util.SQLUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -133,6 +134,8 @@ public class ModelUtilImpl implements ModelUtil {
 		try {
 			ps = connection.prepareStatement(
 				"select classNameId, value from ClassName_");
+
+			ps.setQueryTimeout(SQLUtil.QUERY_TIMEOUT);
 
 			rs = ps.executeQuery();
 

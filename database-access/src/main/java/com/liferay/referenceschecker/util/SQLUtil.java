@@ -38,6 +38,10 @@ import org.apache.log4j.Logger;
  */
 public class SQLUtil {
 
+	public static final int HEAVY_QUERY_TIMEOUT = 300;
+
+	public static final int QUERY_TIMEOUT = 10;
+
 	public static final String TYPE_DB2 = "db2";
 
 	public static final String TYPE_HYPERSONIC = "hypersonic";

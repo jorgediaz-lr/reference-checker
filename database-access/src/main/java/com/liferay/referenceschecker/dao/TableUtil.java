@@ -80,6 +80,8 @@ public class TableUtil {
 
 			ps = connection.prepareStatement(sql);
 
+			ps.setQueryTimeout(SQLUtil.QUERY_TIMEOUT);
+
 			rs = ps.executeQuery();
 
 			while (rs.next()) {
