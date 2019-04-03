@@ -267,6 +267,14 @@ public class ReferenceUtil {
 			return "???";
 		}
 
+		for (String originColumn : originQuery.getColumns()) {
+			if (StringUtils.equalsIgnoreCase(
+					originColumn, originTable.getPrimaryKey())) {
+
+				return "???";
+			}
+		}
+
 		return "update";
 	}
 
