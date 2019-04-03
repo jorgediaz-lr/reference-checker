@@ -39,11 +39,17 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -70,6 +76,8 @@ public class ReferencesChecker {
 			}
 
 			ps = connection.prepareStatement(sql);
+
+			ps.setQueryTimeout(SQLUtil.QUERY_TIMEOUT);
 
 			rs = ps.executeQuery();
 
@@ -327,46 +335,45 @@ public class ReferencesChecker {
 	public List<MissingReferences> execute(
 		Connection connection, Collection<Reference> references) {
 
-		List<MissingReferences> listMissingReferences = new ArrayList<>();
+		ExecutorService executorService = Executors.newWorkStealingPool();
+
+		Map<Reference, Future<MissingReferences>> futures =
+			new LinkedHashMap<>();
 
 		for (Reference reference : references) {
+			CreateMissingReferences createMissingReferences =
+				new CreateMissingReferences(connection, reference);
+
+			Future<MissingReferences> future =
+				executorService.submit(createMissingReferences);
+
+			futures.put(reference, future);
+		}
+
+		List<MissingReferences> listMissingReferences = new ArrayList<>();
+
+		for (Entry<Reference, Future<MissingReferences>> entry : futures.entrySet()) {
+			MissingReferences missingReferences = null;
+
+			Reference reference = entry.getKey();
+			Future<MissingReferences> future = entry.getValue();
+
 			try {
+				missingReferences = future.get();
+
 				if (_log.isInfoEnabled()) {
-					_log.info("Processing: " + reference);
+					_log.info("Processed: " + reference);
 				}
-
-				if (reference.isRaw()) {
-					continue;
-				}
-
-				Query originQuery = reference.getOriginQuery();
-
-				Query destinationQuery = reference.getDestinationQuery();
-
-				if (destinationQuery == null) {
-					continue;
-				}
-
-				Collection<Object[]> invalidValues = queryInvalidValues(
-					connection, originQuery, destinationQuery);
-
-				if (invalidValues.isEmpty()) {
-					continue;
-				}
-				
-				long affectedRows = queryCount(
-					connection, reference, invalidValues);
-
-				MissingReferences missingReferences = new MissingReferences(
-					reference, invalidValues, affectedRows);
-
-				listMissingReferences.add(missingReferences);
 			}
 			catch (Throwable t) {
 				_log.error(
 					"EXCEPTION: " + t.getClass() + " - " + t.getMessage(), t);
+	
+				missingReferences = new MissingReferences(reference, t);
+			}
 
-				listMissingReferences.add(new MissingReferences(reference, t));
+			if (missingReferences != null) {
+				listMissingReferences.add(missingReferences);
 			}
 		}
 
@@ -383,22 +390,25 @@ public class ReferencesChecker {
 
 			Collection<Object[]> values = missingReferences.getValues();
 
-			String sql;
+			List<String> sqls;
 
 			String fixAction = reference.getFixAction();
 
 			if ("delete".equals(fixAction)) {
-				sql = generateDeleteSentence(reference, values);
+				sqls = generateDeleteSentences(reference, values, 2000);
 			}
 			else if ("update".equals(fixAction)) {
-				sql = generateUpdateSentence(reference, values);
+				sqls = generateUpdateSentences(reference, values, 2000);
 			}
 			else {
 				continue;
 			}
 
 			cleanUpSentences.add("/* " + reference.toString() + " */");
-			cleanUpSentences.add(sql+";");
+
+			for (String sql : sqls) {
+				cleanUpSentences.add(sql + ";");
+			}
 		}
 
 		return cleanUpSentences;
@@ -418,10 +428,14 @@ public class ReferencesChecker {
 				continue;
 			}
 
-			String sql = generateSelectSentence(reference, values, true, "*");
+			List<String> sqls = generateSelectSentences(
+				reference, values, true, "*", 2000);
 
 			selectSentences.add("/* " + reference.toString() + " */");
-			selectSentences.add(sql + ";");
+
+			for (String sql : sqls) {
+				selectSentences.add(sql + ";");
+			}
 		}
 
 		return selectSentences;
@@ -528,6 +542,8 @@ public class ReferencesChecker {
 
 			ps = connection.prepareStatement(sql);
 
+			ps.setQueryTimeout(SQLUtil.HEAVY_QUERY_TIMEOUT);
+
 			rs = ps.executeQuery();
 
 			ResultSetMetaData rsmd = rs.getMetaData();
@@ -595,6 +611,22 @@ public class ReferencesChecker {
 		return sb.toString();
 	}
 
+	protected List<String> generateDeleteSentences(
+			Reference reference, Collection<Object[]> values, int batchSize) {
+
+		List<String> sentences = new ArrayList<>();
+
+		List<Object[]> list = new ArrayList<>(values);
+
+		List<List<Object[]>> sublists = ListUtils.partition(list, batchSize);
+
+		for (List<Object[]> sublist : sublists) {
+			sentences.add(generateDeleteSentence(reference, sublist));
+		}
+
+		return sentences;
+	}
+
 	protected String generateSelectSentence(
 		Reference reference, Collection<Object[]> values, boolean distinct,
 		String columnsString) {
@@ -614,6 +646,24 @@ public class ReferencesChecker {
 		return sb.toString();
 	}
 
+	protected List<String> generateSelectSentences(
+			Reference reference, Collection<Object[]> values, boolean distinct,
+			String columnsString, int batchSize) {
+
+		List<String> sentences = new ArrayList<>();
+
+		List<Object[]> list = new ArrayList<>(values);
+
+		List<List<Object[]>> sublists = ListUtils.partition(list, batchSize);
+
+		for (List<Object[]> sublist : sublists) {
+			sentences.add(generateSelectSentence(
+				reference, sublist, distinct, columnsString));
+		}
+
+		return sentences;
+	}
+
 	protected String generateUpdateSentence(
 		Reference reference, Collection<Object[]> values) {
 
@@ -630,6 +680,22 @@ public class ReferencesChecker {
 		sb.append(")");
 
 		return sb.toString();
+	}
+
+	protected List<String> generateUpdateSentences(
+			Reference reference, Collection<Object[]> values, int batchSize) {
+
+		List<String> sentences = new ArrayList<>();
+
+		List<Object[]> list = new ArrayList<>(values);
+
+		List<List<Object[]>> sublists = ListUtils.partition(list, batchSize);
+
+		for (List<Object[]> sublist : sublists) {
+			sentences.add(generateUpdateSentence(reference, sublist));
+		}
+
+		return sentences;
 	}
 
 	protected Configuration getConfiguration(Connection connection)
@@ -681,31 +747,36 @@ public class ReferencesChecker {
 
 			Table originTable = originQuery.getTable();
 
-			String primaryKey = originTable.getPrimaryKey();
+			String key = "*";
 
-			if (primaryKey == null) {
-				primaryKey = "DISTINCT (" +
-					StringUtils.join(originTable.getCompoundPrimaryKey(), ",") +
-						")";
+			if (!originTable.hasCompoundPrimKey()) {
+				key = originTable.getPrimaryKey();
 			}
 
-			String attributesSqlCount = " COUNT(" + primaryKey + ")";
+			String attributesSqlCount = " COUNT(" + key + ")";
 
-			String sqlCount = generateSelectSentence(
-				reference, invalidValues, false, attributesSqlCount);
+			List<String> sqlCounts = generateSelectSentences(
+				reference, invalidValues, false, attributesSqlCount, 2000);
 
-			if (_log.isDebugEnabled()) {
-				_log.debug("SQL count: " + sqlCount);
+			int count = 0;
+
+			for (String sqlCount : sqlCounts) {
+				if (_log.isDebugEnabled()) {
+					_log.debug("SQL count: " + sqlCount);
+				}
+	
+				ps = connection.prepareStatement(sqlCount);
+
+				ps.setQueryTimeout(SQLUtil.HEAVY_QUERY_TIMEOUT);
+	
+				rs = ps.executeQuery();
+	
+				while (rs.next()) {
+					count += rs.getLong(1);
+				}
 			}
 
-			ps = connection.prepareStatement(sqlCount);
-
-			rs = ps.executeQuery();
-
-			while (rs.next()) {
-				return rs.getLong(1);
-			}
-			
+			return count;
 		}
 		catch (SQLException sqle) {
 			_log.warn(sqle);
@@ -724,6 +795,63 @@ public class ReferencesChecker {
 	protected ModelUtil modelUtil;
 	protected Collection<Reference> referencesCache = null;
 	protected TableUtil tableUtil;
+
+	protected class CreateMissingReferences
+		implements Callable<MissingReferences> {
+
+		public CreateMissingReferences(
+				Connection connection, Reference reference) {
+
+			this.connection = connection;
+			this.reference = reference;
+		}
+
+		@Override
+		public MissingReferences call() {
+			try {
+				if (_log.isInfoEnabled()) {
+					_log.info("Processing: " + reference);
+				}
+
+				if (reference.isRaw()) {
+					return null;
+				}
+	
+				Query originQuery = reference.getOriginQuery();
+	
+				Query destinationQuery = reference.getDestinationQuery();
+	
+
+				if (destinationQuery == null) {
+					return null;
+				}
+	
+				Collection<Object[]> invalidValues = queryInvalidValues(
+					connection, originQuery, destinationQuery);
+	
+
+				if (invalidValues.isEmpty()) {
+					return null;
+				}
+				
+				long affectedRows = queryCount(
+					connection, reference, invalidValues);
+	
+				return new MissingReferences(
+					reference, invalidValues, affectedRows);
+			}
+			catch (Throwable t) {
+				_log.error(
+					"EXCEPTION: " + t.getClass() + " - " + t.getMessage(), t);
+
+				return new MissingReferences(reference, t);
+			}
+		}
+
+		protected Connection connection;
+		protected Reference reference;
+
+	}
 
 	private static void _appendInClause(StringBuilder sb, List<String> columns, Collection<Object[]> rows) {
 		sb.append("(");
@@ -764,6 +892,12 @@ public class ReferencesChecker {
 	private static String _castValue(Object value) {
 		if (value instanceof Number) {
 			return value.toString();
+		}
+
+		if ((value instanceof String) &&
+			StringUtils.equalsIgnoreCase("null", (String)value)) {
+
+			return "NULL";
 		}
 
 		StringBuilder sb = new StringBuilder();

@@ -467,14 +467,13 @@ public class ReferencesChecker {
 		}
 
 		System.out.println("");
+		System.out.println("Output was written to file: " + outputFileName);
 
 		if (startTime != null) {
 			long endTime = System.currentTimeMillis();
 
 			System.out.println("Total time: " + (endTime - startTime) + " ms");
 		}
-
-		System.out.println("Output was written to file: " + outputFileName);
 	}
 
 	protected DataSource dataSource;

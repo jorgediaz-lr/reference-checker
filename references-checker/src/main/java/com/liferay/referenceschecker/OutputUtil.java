@@ -298,7 +298,7 @@ public class OutputUtil {
 
 	protected static final String[] HEADERS_MISSING_REFERENCES = {
 		"origin table", "attributes", "destination table", "dest attributes",
-		"fix action", "aff. rows", "#", "missing references"
+		"fix action", "affec. rows", "affec. values", "missing references"
 	};
 
 	protected static final String[] HEADERS_REFERENCES = {

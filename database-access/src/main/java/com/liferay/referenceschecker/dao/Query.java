@@ -191,8 +191,13 @@ public class Query implements Comparable<Query> {
 				sb.append(",");
 			}
 
+			Class<?> clazz = table.getColumnTypeClass(column);
+
+			String nullValue = _getSQLEmptyValue(clazz);
+
 			sb.append(column);
-			sb.append("=NULL");
+			sb.append("=");
+			sb.append(nullValue);
 			first = false;
 		}
 
@@ -262,6 +267,22 @@ public class Query implements Comparable<Query> {
 		}
 
 		return true;
+	}
+
+	private String _getSQLEmptyValue(Class<?> clazz) {
+		String nullValue;
+
+		if (String.class.isAssignableFrom(clazz)) {
+			nullValue = "''";
+		}
+		else if (Number.class.isAssignableFrom(clazz)) {
+			nullValue = "0";
+		}
+		else {
+			nullValue = "NULL";
+		}
+
+		return nullValue;
 	}
 
 	private List<String> _rewriteConstants(List<String> columns) {
