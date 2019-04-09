@@ -2,7 +2,42 @@
 <!DOCTYPE project>
 
 <project name="references_checker-portlet" basedir="." default="deploy">
+	<!-- libs from references checker gradle project -->
+	<property name="references.checker.lib.version" value="0.5.0" />
+	<!-- set root folder where gradle project is located -->
+	<!-- you can set it here or in the build.UserName.properties file: -->
+	<!-- <property name="references.checker.root"/> -->
+
 	<property name="plugin.full.version.default" value="6x-0.5" />
 	<property name="lp.version" value="6" />
 	<import file="../build-common-portlet.xml" />
+
+	<target name="clean">
+		<delete>
+			<fileset dir="docroot/WEB-INF/lib">
+				<include name="database-access-${references.checker.lib.version}.jar" />
+				<include name="references-checker-${references.checker.lib.version}.jar" />
+				<include name="references-checker-portal-${references.checker.lib.version}.jar" />
+				<include name="references-service-${references.checker.lib.version}.jar" />
+			</fileset>
+		</delete>
+
+		<antcall target="build-common-plugin.clean" />
+	</target>
+
+	<target name="compile">
+		<exec executable="${references.checker.root}/gradlew.bat" dir="${references.checker.root}">
+			<arg value="deploy"/>
+		</exec>
+		<copy todir="docroot/WEB-INF/lib">
+			<fileset dir="${references.checker.root}/lib">
+				<include name="database-access-${references.checker.lib.version}.jar" />
+				<include name="references-checker-${references.checker.lib.version}.jar" />
+				<include name="references-checker-portal-${references.checker.lib.version}.jar" />
+				<include name="references-service-${references.checker.lib.version}.jar" />
+			</fileset>
+		</copy>
+
+		<antcall target="build-common-plugin.compile" />
+	</target>
 </project>
