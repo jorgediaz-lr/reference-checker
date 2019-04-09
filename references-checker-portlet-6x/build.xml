@@ -2,23 +2,27 @@
 <!DOCTYPE project>
 
 <project name="references_checker-portlet" basedir="." default="deploy">
-	<!-- libs from references checker gradle project -->
-	<property name="references.checker.lib.version" value="0.5.0" />
-	<!-- set root folder where gradle project is located -->
-	<!-- you can set it here or in the build.UserName.properties file: -->
-	<!-- <property name="references.checker.root"/> -->
 
-	<property name="plugin.full.version.default" value="6x-0.5" />
-	<property name="lp.version" value="6" />
+	<property file="./build.${user.name}.properties" />
+	<property file="./build.${env.COMPUTERNAME}.properties" />
+	<property file="./build.${env.HOST}.properties" />
+	<property file="./build.${env.HOSTNAME}.properties" />
+	<property file="./build.properties" />
+
+	<fail unless="references.checker.root">You have to set 'references.checker.root' property with the root folder where gradle project are located. You can set it in a build.UserName.properties file in portlet project folder</fail>
+
+	<property file="${references.checker.root}/gradle.properties" />
+	<property name="plugin.full.version.default" value="${lp.version}x-${referenceCheckerVersion}" />
+
 	<import file="../build-common-portlet.xml" />
 
 	<target name="clean">
 		<delete>
 			<fileset dir="docroot/WEB-INF/lib">
-				<include name="database-access-${references.checker.lib.version}.jar" />
-				<include name="references-checker-${references.checker.lib.version}.jar" />
-				<include name="references-checker-portal-${references.checker.lib.version}.jar" />
-				<include name="references-service-${references.checker.lib.version}.jar" />
+				<include name="database-access-${referenceCheckerVersion}.jar" />
+				<include name="references-checker-${referenceCheckerVersion}.jar" />
+				<include name="references-checker-portal-${referenceCheckerVersion}.jar" />
+				<include name="references-service-${referenceCheckerVersion}.jar" />
 			</fileset>
 		</delete>
 
@@ -31,10 +35,10 @@
 		</exec>
 		<copy todir="docroot/WEB-INF/lib">
 			<fileset dir="${references.checker.root}/lib">
-				<include name="database-access-${references.checker.lib.version}.jar" />
-				<include name="references-checker-${references.checker.lib.version}.jar" />
-				<include name="references-checker-portal-${references.checker.lib.version}.jar" />
-				<include name="references-service-${references.checker.lib.version}.jar" />
+				<include name="database-access-${referenceCheckerVersion}.jar" />
+				<include name="references-checker-${referenceCheckerVersion}.jar" />
+				<include name="references-checker-portal-${referenceCheckerVersion}.jar" />
+				<include name="references-service-${referenceCheckerVersion}.jar" />
 			</fileset>
 		</copy>
 
