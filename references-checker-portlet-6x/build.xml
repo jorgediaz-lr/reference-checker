@@ -12,7 +12,7 @@
 	<fail unless="references.checker.root">You have to set 'references.checker.root' property with the root folder where gradle project are located. You can set it in a build.UserName.properties file in portlet project folder</fail>
 
 	<property file="${references.checker.root}/gradle.properties" />
-	<property name="plugin.full.version.default" value="${lp.version}x-${referenceCheckerVersion}" />
+	<property name="plugin-package.module-full-version" value="${lp.version}x-${referenceCheckerVersion}" />
 
 	<import file="../build-common-portlet.xml" />
 
@@ -26,7 +26,7 @@
 			</fileset>
 		</delete>
 
-		<antcall target="build-common-plugin.clean" />
+		<clean module.dir="." />
 	</target>
 
 	<target name="compile">
@@ -42,6 +42,6 @@
 			</fileset>
 		</copy>
 
-		<antcall target="build-common-plugin.compile" />
+		<compile module.dir="." />
 	</target>
 </project>
