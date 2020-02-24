@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -157,7 +156,7 @@ public class OutputUtil {
 
 		out.add(getCSVRow(headers));
 
-		for (Entry<String, ?> entry : mapTableCount.entrySet()) {
+		for (Map.Entry<String, ?> entry : mapTableCount.entrySet()) {
 			List<String> line = new ArrayList<>();
 
 			line.add(entry.getKey());
@@ -208,11 +207,10 @@ public class OutputUtil {
 
 		List<String> line = new ArrayList<>();
 
-		Query originQuery = reference.getOriginQuery();
-		Query destinationQuery = reference.getDestinationQuery();
-
-		line.addAll(generateReferenceCells(originQuery, withTypes));
-		line.addAll(generateReferenceCells(destinationQuery, withTypes));
+		line.addAll(
+			generateReferenceCells(reference.getOriginQuery(), withTypes));
+		line.addAll(
+			generateReferenceCells(reference.getDestinationQuery(), withTypes));
 		line.add(reference.getFixAction());
 
 		return line;

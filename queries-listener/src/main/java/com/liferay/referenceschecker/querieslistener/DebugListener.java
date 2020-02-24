@@ -14,8 +14,6 @@
 
 package com.liferay.referenceschecker.querieslistener;
 
-import com.liferay.referenceschecker.querieslistener.Query.QueryType;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -165,13 +163,13 @@ public class DebugListener implements EventListener {
 			return;
 		}
 
-		if (query.getQueryType() == QueryType.INSERT) {
+		if (query.getQueryType() == Query.QueryType.INSERT) {
 			addQueryToThreadLocal(_insertQueriesThreadLocal, query);
 		}
-		else if (query.getQueryType() == QueryType.UPDATE) {
+		else if (query.getQueryType() == Query.QueryType.UPDATE) {
 			addQueryToThreadLocal(_updateQueriesThreadLocal, query);
 		}
-		else if (query.getQueryType() == QueryType.DELETE) {
+		else if (query.getQueryType() == Query.QueryType.DELETE) {
 			addQueryToThreadLocal(_deleteQueriesThreadLocal, query);
 		}
 		else {

@@ -43,7 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -344,15 +344,17 @@ public class ReferencesChecker {
 			CreateMissingReferences createMissingReferences =
 				new CreateMissingReferences(connection, reference);
 
-			Future<MissingReferences> future =
-				executorService.submit(createMissingReferences);
+			Future<MissingReferences> future = executorService.submit(
+				createMissingReferences);
 
 			futures.put(reference, future);
 		}
 
 		List<MissingReferences> listMissingReferences = new ArrayList<>();
 
-		for (Entry<Reference, Future<MissingReferences>> entry : futures.entrySet()) {
+		for (Map.Entry<Reference, Future<MissingReferences>> entry :
+				futures.entrySet()) {
+
 			MissingReferences missingReferences = null;
 
 			Reference reference = entry.getKey();
@@ -368,7 +370,7 @@ public class ReferencesChecker {
 			catch (Throwable t) {
 				_log.error(
 					"EXCEPTION: " + t.getClass() + " - " + t.getMessage(), t);
-	
+
 				missingReferences = new MissingReferences(reference, t);
 			}
 
@@ -381,8 +383,8 @@ public class ReferencesChecker {
 	}
 
 	public List<String> generateCleanupSentences(
-			Collection<MissingReferences> missingReferencesList) {
-	
+		Collection<MissingReferences> missingReferencesList) {
+
 		List<String> cleanUpSentences = new ArrayList<>();
 
 		for (MissingReferences missingReferences : missingReferencesList) {
@@ -394,10 +396,10 @@ public class ReferencesChecker {
 
 			String fixAction = reference.getFixAction();
 
-			if ("delete".equals(fixAction)) {
+			if (Objects.equals(fixAction, "delete")) {
 				sqls = generateDeleteSentences(reference, values, 2000);
 			}
-			else if ("update".equals(fixAction)) {
+			else if (Objects.equals(fixAction, "update")) {
 				sqls = generateUpdateSentences(reference, values, 2000);
 			}
 			else {
@@ -415,18 +417,18 @@ public class ReferencesChecker {
 	}
 
 	public List<String> generateSelectSentences(
-			Collection<MissingReferences> missingReferencesList) {
-	
+		Collection<MissingReferences> missingReferencesList) {
+
 		List<String> selectSentences = new ArrayList<>();
 
 		for (MissingReferences missingReferences : missingReferencesList) {
-			Reference reference = missingReferences.getReference();
-
 			Collection<Object[]> values = missingReferences.getValues();
 
 			if (values == null) {
 				continue;
 			}
+
+			Reference reference = missingReferences.getReference();
 
 			List<String> sqls = generateSelectSentences(
 				reference, values, true, "*", 2000);
@@ -497,9 +499,9 @@ public class ReferencesChecker {
 		Map<String, String> tableNameToClassNameMapping =
 			configuration.getTableToClassNameMapping();
 
-		Map<String, Number> tableRank = configuration.getTableRank();
-
-		modelUtil.init(connection, tableNameToClassNameMapping, tableRank);
+		modelUtil.init(
+			connection, tableNameToClassNameMapping,
+			configuration.getTableRank());
 
 		this.modelUtil = modelUtil;
 	}
@@ -612,7 +614,7 @@ public class ReferencesChecker {
 	}
 
 	protected List<String> generateDeleteSentences(
-			Reference reference, Collection<Object[]> values, int batchSize) {
+		Reference reference, Collection<Object[]> values, int batchSize) {
 
 		List<String> sentences = new ArrayList<>();
 
@@ -647,8 +649,8 @@ public class ReferencesChecker {
 	}
 
 	protected List<String> generateSelectSentences(
-			Reference reference, Collection<Object[]> values, boolean distinct,
-			String columnsString, int batchSize) {
+		Reference reference, Collection<Object[]> values, boolean distinct,
+		String columnsString, int batchSize) {
 
 		List<String> sentences = new ArrayList<>();
 
@@ -657,8 +659,9 @@ public class ReferencesChecker {
 		List<List<Object[]>> sublists = ListUtils.partition(list, batchSize);
 
 		for (List<Object[]> sublist : sublists) {
-			sentences.add(generateSelectSentence(
-				reference, sublist, distinct, columnsString));
+			sentences.add(
+				generateSelectSentence(
+					reference, sublist, distinct, columnsString));
 		}
 
 		return sentences;
@@ -683,7 +686,7 @@ public class ReferencesChecker {
 	}
 
 	protected List<String> generateUpdateSentences(
-			Reference reference, Collection<Object[]> values, int batchSize) {
+		Reference reference, Collection<Object[]> values, int batchSize) {
 
 		List<String> sentences = new ArrayList<>();
 
@@ -718,10 +721,8 @@ public class ReferencesChecker {
 
 		Class<?> clazz = getClass();
 
-		Configuration configuration = ConfigurationUtil.readConfigurationFile(
+		return ConfigurationUtil.readConfigurationFile(
 			clazz.getClassLoader(), configurationFile);
-
-		return configuration;
 	}
 
 	protected String getSQLDelete(Query originQuery, Query destinationQuery) {
@@ -732,12 +733,16 @@ public class ReferencesChecker {
 		return _getSQL(originQuery, destinationQuery, "select");
 	}
 
-	protected String getSQLSelectCount(Query originQuery, Query destinationQuery) {
+	protected String getSQLSelectCount(
+		Query originQuery, Query destinationQuery) {
+
 		return _getSQL(originQuery, destinationQuery, "count");
 	}
 
-	protected long queryCount(Connection connection, Reference reference, Collection<Object[]> invalidValues)
-			throws SQLException {
+	protected long queryCount(
+			Connection connection, Reference reference,
+			Collection<Object[]> invalidValues)
+		throws SQLException {
 
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -764,13 +769,13 @@ public class ReferencesChecker {
 				if (_log.isDebugEnabled()) {
 					_log.debug("SQL count: " + sqlCount);
 				}
-	
+
 				ps = connection.prepareStatement(sqlCount);
 
 				ps.setQueryTimeout(SQLUtil.HEAVY_QUERY_TIMEOUT);
-	
+
 				rs = ps.executeQuery();
-	
+
 				while (rs.next()) {
 					count += rs.getLong(1);
 				}
@@ -800,7 +805,7 @@ public class ReferencesChecker {
 		implements Callable<MissingReferences> {
 
 		public CreateMissingReferences(
-				Connection connection, Reference reference) {
+			Connection connection, Reference reference) {
 
 			this.connection = connection;
 			this.reference = reference;
@@ -816,27 +821,23 @@ public class ReferencesChecker {
 				if (reference.isRaw()) {
 					return null;
 				}
-	
-				Query originQuery = reference.getOriginQuery();
-	
+
 				Query destinationQuery = reference.getDestinationQuery();
-	
 
 				if (destinationQuery == null) {
 					return null;
 				}
-	
+
 				Collection<Object[]> invalidValues = queryInvalidValues(
-					connection, originQuery, destinationQuery);
-	
+					connection, reference.getOriginQuery(), destinationQuery);
 
 				if (invalidValues.isEmpty()) {
 					return null;
 				}
-				
+
 				long affectedRows = queryCount(
 					connection, reference, invalidValues);
-	
+
 				return new MissingReferences(
 					reference, invalidValues, affectedRows);
 			}
@@ -853,7 +854,9 @@ public class ReferencesChecker {
 
 	}
 
-	private static void _appendInClause(StringBuilder sb, List<String> columns, Collection<Object[]> rows) {
+	private static void _appendInClause(
+		StringBuilder sb, List<String> columns, Collection<Object[]> rows) {
+
 		sb.append("(");
 		sb.append(StringUtils.join(columns, ","));
 		sb.append(") IN (");
@@ -910,13 +913,13 @@ public class ReferencesChecker {
 	}
 
 	private void _appendInClause(
-			StringBuilder sb, Query query, Collection<Object[]> values) {
+		StringBuilder sb, Query query, Collection<Object[]> values) {
 
 		List<Object[]> rows = new ArrayList<>(values);
 
 		List<String> columns = query.getColumns();
 
-		/* Split in sublists of 1000 elements as Oracle doesn't supports 
+		/* Split in sublists of 1000 elements as Oracle doesn't support
 		 * bigger IN clauses */
 		List<List<Object[]>> sublists = ListUtils.partition(rows, 1000);
 
@@ -946,15 +949,15 @@ public class ReferencesChecker {
 	}
 
 	private String _getSQL(Query query, String type) {
-		if ("count".equals(type)) {
+		if (Objects.equals(type, "count")) {
 			return query.getSQLSelectCount();
 		}
 
-		if ("delete".equals(type)) {
+		if (Objects.equals(type, "delete")) {
 			return query.getSQLDelete();
 		}
 
-		if ("select".equals(type)) {
+		if (Objects.equals(type, "select")) {
 			return query.getSQLSelect();
 		}
 
@@ -1055,7 +1058,7 @@ public class ReferencesChecker {
 				}
 			}
 
-			if (!_isNull(o) && !"0".equals(o.toString())) {
+			if (!_isNull(o) && !Objects.equals(o, "0")) {
 				return false;
 			}
 		}

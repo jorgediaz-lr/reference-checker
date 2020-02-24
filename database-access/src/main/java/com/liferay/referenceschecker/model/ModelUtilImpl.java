@@ -24,7 +24,6 @@ import java.sql.SQLException;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -91,13 +90,12 @@ public class ModelUtilImpl implements ModelUtil {
 		Map<String, String> tableNameToClassNameMappingAux =
 			new ConcurrentHashMap<>();
 
-		for (Entry<String, String> entry :
+		for (Map.Entry<String, String> entry :
 				tableNameToClassNameMapping.entrySet()) {
 
 			String key = StringUtils.lowerCase(entry.getKey());
-			String value = entry.getValue();
 
-			tableNameToClassNameMappingAux.put(key, value);
+			tableNameToClassNameMappingAux.put(key, entry.getValue());
 		}
 
 		Map<String, String> classNameToTableNameMappingAux =

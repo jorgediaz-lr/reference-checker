@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -89,7 +89,7 @@ public class ReferenceUtil {
 				columnName = StringUtils.lowerCase(columnName);
 
 				if (tableUtil.ignoreColumn(tableName, columnName) ||
-					"uuid_".equals(columnName) ||
+					columnName.equals("uuid_") ||
 					columnName.equals(primaryKey)) {
 
 					continue;
@@ -227,7 +227,9 @@ public class ReferenceUtil {
 		this.ignoreEmptyTables = ignoreEmptyTables;
 	}
 
-	protected String calculateFixAction(Query originQuery, Query destinationQuery) {
+	protected String calculateFixAction(
+		Query originQuery, Query destinationQuery) {
+
 		if ((originQuery == null) || (destinationQuery == null)) {
 			return null;
 		}
@@ -243,8 +245,7 @@ public class ReferenceUtil {
 		long destinationRank = modelUtil.getTableRank(
 			destinationTable.getTableName());
 
-		long originRank = modelUtil.getTableRank(
-			originTable.getTableName());
+		long originRank = modelUtil.getTableRank(originTable.getTableName());
 
 		if (originRank < destinationRank) {
 			return "delete";
@@ -252,7 +253,7 @@ public class ReferenceUtil {
 
 		if (originRank == 0) {
 			String originClassName = modelUtil.getClassName(
-					originTable.getTableName());
+				originTable.getTableName());
 
 			if ((originClassName != null) &&
 				StringUtils.isBlank(originClassName)) {
@@ -445,7 +446,7 @@ public class ReferenceUtil {
 		Table destinationTable = tableUtil.getTable(destinationTableName);
 
 		if (destinationTable == null) {
-			if (".*".equals(destinationTableName)) {
+			if (Objects.equals(destinationTableName, ".*")) {
 				destinationTableName = "ANY";
 			}
 
@@ -543,9 +544,7 @@ public class ReferenceUtil {
 				destinationTable, destinationColumns, destinationCastings,
 				destinationCondition);
 
-			Reference reference = new Reference(originQuery, destinationQuery);
-
-			return reference;
+			return new Reference(originQuery, destinationQuery);
 		}
 
 		if (_log.isDebugEnabled()) {
@@ -562,8 +561,6 @@ public class ReferenceUtil {
 		Table originTable, List<Table> destinationTables) {
 
 		Configuration.Query originConfig = referenceConfig.getOrigin();
-		Configuration.Query destinationConfig = referenceConfig.getDest();
-		boolean hiddenReference = referenceConfig.isHidden();
 
 		List<String> originConditionColumns =
 			originConfig.getConditionColumns();
@@ -578,6 +575,8 @@ public class ReferenceUtil {
 		List<String> originColumns = originConfig.getColumns();
 		String originCondition = originConfig.getCondition();
 
+		Configuration.Query destinationConfig = referenceConfig.getDest();
+
 		if ((destinationConfig == null) || destinationTables.isEmpty()) {
 			return getReferences(
 				connection, originTable, originCastings, originColumns,
@@ -591,6 +590,8 @@ public class ReferenceUtil {
 		String destinationCondition = destinationConfig.getCondition();
 		List<String> destinationConditionColumns =
 			destinationConfig.getConditionColumns();
+
+		boolean hiddenReference = referenceConfig.isHidden();
 
 		for (Table destinationTable : destinationTables) {
 			if ((destinationConditionColumns != null) &&
@@ -623,7 +624,9 @@ public class ReferenceUtil {
 
 		List<Reference> referenceList = new ArrayList<>();
 
-		for (Entry<Query, List<Reference>> entry : mapReferences.entrySet()) {
+		for (Map.Entry<Query, List<Reference>> entry :
+				mapReferences.entrySet()) {
+
 			Collection<Reference> bestReferences = getBestMatchingReferences(
 				entry.getKey(), entry.getValue());
 
@@ -675,7 +678,7 @@ public class ReferenceUtil {
 			originTable, originColumns);
 
 		if ((destinationColumns != null) && (destinationColumns.size() == 1) &&
-			"ignoreReference".equals(destinationColumns.get(0))) {
+			Objects.equals(destinationColumns.get(0), "ignoreReference")) {
 
 			destinationTable = null;
 			destinationCondition = null;
@@ -776,14 +779,12 @@ public class ReferenceUtil {
 
 		if (primaryKeyColumn == null) {
 			primaryKeyColumn = "INVALID_PK";
-			primaryKeyColumnFirstUpper = "INVALID_PK"; 
+			primaryKeyColumnFirstUpper = "INVALID_PK";
 		}
 
 		String tableName = table.getTableName();
 
 		String className = modelUtil.getClassName(tableName);
-
-		Long classNameId = modelUtil.getClassNameId(className);
 
 		return StringUtils.replaceEach(
 			text,
@@ -795,8 +796,8 @@ public class ReferenceUtil {
 				"${" + varPrefix + ".tableName}"
 			},
 			new String[] {
-				className, String.valueOf(classNameId), primaryKeyColumn,
-				primaryKeyColumnFirstUpper, tableName
+				className, String.valueOf(modelUtil.getClassNameId(className)),
+				primaryKeyColumn, primaryKeyColumnFirstUpper, tableName
 			});
 	}
 

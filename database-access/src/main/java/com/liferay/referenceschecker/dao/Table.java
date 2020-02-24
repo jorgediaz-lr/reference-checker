@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,6 +78,7 @@ public class Table implements Comparable<Table> {
 
 		this.columnNames = columnNames.toArray(new String[0]);
 		this.columnTypes = _toIntArray(columnTypes);
+
 		columnTypesClass = new Class<?>[columnTypes.size()];
 
 		for (int i = 0; i < columnTypes.size(); i++) {
@@ -133,7 +135,7 @@ public class Table implements Comparable<Table> {
 	}
 
 	public List<String> getColumnNames(String regex) {
-		if (".*".equals(regex)) {
+		if (Objects.equals(regex, ".*")) {
 			return Arrays.asList(getColumnNames());
 		}
 
@@ -151,7 +153,7 @@ public class Table implements Comparable<Table> {
 			}
 			catch (PatternSyntaxException pse) {
 				_log.warn(pse, pse);
-	
+
 				return Collections.emptyList();
 			}
 

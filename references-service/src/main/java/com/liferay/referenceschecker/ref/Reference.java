@@ -24,7 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * @author Jorge Díaz
  */
-public class Reference implements Comparable<Reference>, Cloneable {
+public class Reference implements Cloneable, Comparable<Reference> {
 
 	public Reference(Query originQuery, Query destinationQuery) {
 		this.originQuery = originQuery;

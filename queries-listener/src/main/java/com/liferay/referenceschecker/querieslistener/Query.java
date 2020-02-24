@@ -189,9 +189,7 @@ public class Query implements Comparable<Query> {
 			return _queryType;
 		}
 
-		Statement statement = getStatement();
-
-		_queryType = getQueryType(statement);
+		_queryType = getQueryType(getStatement());
 
 		return _queryType;
 	}
@@ -310,41 +308,31 @@ public class Query implements Comparable<Query> {
 		if (statement instanceof Alter) {
 			Alter alter = (Alter)statement;
 
-			Table table = alter.getTable();
-
-			return Collections.singletonList(table);
+			return Collections.singletonList(alter.getTable());
 		}
 
 		if (statement instanceof CreateTable) {
 			CreateTable createTable = (CreateTable)statement;
 
-			Table table = createTable.getTable();
-
-			return Collections.singletonList(table);
+			return Collections.singletonList(createTable.getTable());
 		}
 
 		if (statement instanceof Delete) {
 			Delete delete = (Delete)statement;
 
-			Table table = delete.getTable();
-
-			return Collections.singletonList(table);
+			return Collections.singletonList(delete.getTable());
 		}
 
 		if (statement instanceof Drop) {
 			Drop drop = (Drop)statement;
 
-			Table table = drop.getName();
-
-			return Collections.singletonList(table);
+			return Collections.singletonList(drop.getName());
 		}
 
 		if (statement instanceof Insert) {
 			Insert insert = (Insert)statement;
 
-			Table table = insert.getTable();
-
-			return Collections.singletonList(table);
+			return Collections.singletonList(insert.getTable());
 		}
 
 		if (statement instanceof Update) {

@@ -58,12 +58,9 @@ public class Configuration {
 	}
 
 	public void setTableRank(Map<String, Number> tableRank) {
-
 		this.tableRank = new HashMap<>();
 
-		for (Map.Entry<String, Number> entry :
-			tableRank.entrySet()) {
-
+		for (Map.Entry<String, Number> entry : tableRank.entrySet()) {
 			this.tableRank.put(
 				StringUtils.lowerCase(entry.getKey()), entry.getValue());
 		}

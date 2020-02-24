@@ -78,7 +78,6 @@ public class CommandArguments {
 	)
 	private boolean _checkUndefinedTables;
 
-
 	@Parameter(
 		description = "Count all tables.", names = {"-c", "--countTables"}
 	)

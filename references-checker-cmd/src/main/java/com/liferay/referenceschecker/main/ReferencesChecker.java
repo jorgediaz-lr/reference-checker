@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.sql.DataSource;
 
@@ -352,12 +353,13 @@ public class ReferencesChecker {
 	}
 
 	protected void dumpCleanup(List<MissingReferences> missingReferenceList)
-			throws IOException, SQLException {
+		throws IOException, SQLException {
+
 		System.out.println("");
 		System.out.println("Executing dump cleanup script...");
 
 		List<String> cleanup = referencesChecker.generateCleanupSentences(
-				missingReferenceList);
+			missingReferenceList);
 
 		writeOutput("missing-references_cleanup", "sql", cleanup);
 	}
@@ -384,7 +386,9 @@ public class ReferencesChecker {
 		writeOutput("information", "txt", startTime, outputList);
 	}
 
-	protected List<MissingReferences> execute() throws IOException, SQLException {
+	protected List<MissingReferences> execute()
+		throws IOException, SQLException {
+
 		System.out.println("");
 		System.out.println("Executing dump missing references...");
 
@@ -403,9 +407,9 @@ public class ReferencesChecker {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		List<String> selectSentences = referencesChecker.generateSelectSentences(
-				missingReferenceList);
-		
+		List<String> selectSentences =
+			referencesChecker.generateSelectSentences(missingReferenceList);
+
 		writeOutput("missing-references", "sql", selectSentences);
 
 		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
@@ -449,7 +453,7 @@ public class ReferencesChecker {
 
 		String outputFileName = outputFile.getName();
 
-		if ("csv".equals(format)) {
+		if (Objects.equals(format, "csv")) {
 			File htmlFile = _getOutputFile(name, "html");
 
 			try {

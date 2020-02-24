@@ -32,6 +32,7 @@ public class Query implements Comparable<Query> {
 		String condition) {
 
 		this.casting = casting;
+
 		castingString = null;
 
 		if ((casting != null) && !casting.isEmpty()) {
@@ -183,7 +184,7 @@ public class Query implements Comparable<Query> {
 
 	public String getSQLUpdateToNull() {
 		StringBuilder sb = new StringBuilder();
-		
+
 		boolean first = true;
 
 		for (String column : columns) {
@@ -254,15 +255,11 @@ public class Query implements Comparable<Query> {
 	protected String tableAlias;
 	protected String toString;
 
-	private static boolean _isNumeric(String str)
-	{
-
-		try
-		{
+	private static boolean _isNumeric(String str) {
+		try {
 			Double.parseDouble(str);
 		}
-		catch (NumberFormatException nfe)
-		{
+		catch (NumberFormatException nfe) {
 			return false;
 		}
 

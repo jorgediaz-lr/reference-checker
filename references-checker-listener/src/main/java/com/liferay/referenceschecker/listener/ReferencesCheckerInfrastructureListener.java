@@ -20,7 +20,6 @@ import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.querieslistener.EventListener;
 import com.liferay.referenceschecker.querieslistener.EventListenerRegistry;
 import com.liferay.referenceschecker.querieslistener.Query;
-import com.liferay.referenceschecker.querieslistener.Query.QueryType;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 
@@ -52,11 +51,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
-		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get();
 		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
-		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
-		Map<String, Set<String>> updatedTablesColumns =
-			_updatedTablesColumns.get();
 
 		if (updatedTablesLowerCase.contains(_RELEASE_TABLE_LOWERCASE)) {
 			referencesChecker = null;
@@ -82,6 +77,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			connection, _modifiedTables.get(), _droppedTables.get(),
 			_regenerateModelUtil.get());
 
+		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get();
+		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
+
 		if (insertedTablesLowerCase.isEmpty() &&
 			updatedTablesLowerCase.isEmpty() &&
 			deletedTablesLowerCase.isEmpty()) {
@@ -103,7 +101,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		checkMissingReferences(
 			connection, insertedTablesLowerCase, updatedTablesLowerCase,
-			updatedTablesColumns, deletedTablesLowerCase);
+			_updatedTablesColumns.get(), deletedTablesLowerCase);
 	}
 
 	@Override
@@ -141,8 +139,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
-		if ((query.getQueryType() == QueryType.CREATE_TABLE) ||
-			(query.getQueryType() == QueryType.ALTER)) {
+		if ((query.getQueryType() == Query.QueryType.CREATE_TABLE) ||
+			(query.getQueryType() == Query.QueryType.ALTER)) {
 
 			Set<String> updatedTables = _modifiedTables.get();
 
@@ -150,24 +148,24 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			_regenerateModelUtil.set(Boolean.TRUE);
 		}
-		else if (query.getQueryType() == QueryType.DROP_TABLE) {
+		else if (query.getQueryType() == Query.QueryType.DROP_TABLE) {
 			Set<String> deletedTables = _droppedTables.get();
 
 			deletedTables.addAll(query.getModifiedTables());
 
 			_regenerateModelUtil.set(Boolean.TRUE);
 		}
-		else if (query.getQueryType() == QueryType.INSERT) {
+		else if (query.getQueryType() == Query.QueryType.INSERT) {
 			Set<String> insertedTables = _insertedTablesLowerCase.get();
 
 			insertedTables.addAll(query.getModifiedTablesLowerCase());
 		}
-		else if (query.getQueryType() == QueryType.DELETE) {
+		else if (query.getQueryType() == Query.QueryType.DELETE) {
 			Set<String> deletedTables = _deletedTablesLowerCase.get();
 
 			deletedTables.addAll(query.getModifiedTablesLowerCase());
 		}
-		else if (query.getQueryType() == QueryType.UPDATE) {
+		else if (query.getQueryType() == Query.QueryType.UPDATE) {
 			Set<String> updatedTables = _updatedTablesLowerCase.get();
 
 			Map<String, Set<String>> updatedTablesColumns =
@@ -275,15 +273,15 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		for (Reference reference : references) {
 			com.liferay.referenceschecker.dao.Query originQuery =
 				reference.getOriginQuery();
+
 			com.liferay.referenceschecker.dao.Query destinationQuery =
 				reference.getDestinationQuery();
-
-			Table originTable = originQuery.getTable();
 
 			if (destinationQuery == null) {
 				continue;
 			}
 
+			Table originTable = originQuery.getTable();
 			Table destinationTable = destinationQuery.getTable();
 
 			String originTableName = originTable.getTableNameLowerCase();
@@ -361,8 +359,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 		catch (SQLException sqle) {
 			_log.error(
-				"Error adding tables to tableUtil object" +
-					sqle.getMessage(),
+				"Error adding tables to tableUtil object" + sqle.getMessage(),
 				sqle);
 		}
 
@@ -414,9 +411,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private ThreadLocal<Set<String>> _deletedTablesLowerCase =
 		new ThreadLocal<Set<String>>() {
 
-			@Override protected Set<String> initialValue() {
+			@Override
+			protected Set<String> initialValue() {
 				return new TreeSet<String>();
-
 			}
 
 		};
@@ -424,9 +421,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private ThreadLocal<Set<String>> _droppedTables =
 		new ThreadLocal<Set<String>>() {
 
-			@Override protected Set<String> initialValue() {
+			@Override
+			protected Set<String> initialValue() {
 				return new TreeSet<String>();
-
 			}
 
 		};
@@ -434,9 +431,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private ThreadLocal<Set<String>> _insertedTablesLowerCase =
 		new ThreadLocal<Set<String>>() {
 
-			@Override protected Set<String> initialValue() {
+			@Override
+			protected Set<String> initialValue() {
 				return new TreeSet<String>();
-
 			}
 
 		};
@@ -444,9 +441,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private ThreadLocal<Set<String>> _modifiedTables =
 		new ThreadLocal<Set<String>>() {
 
-			@Override protected Set<String> initialValue() {
+			@Override
+			protected Set<String> initialValue() {
 				return new TreeSet<String>();
-
 			}
 
 		};
@@ -454,9 +451,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private ThreadLocal<Boolean> _regenerateModelUtil =
 		new ThreadLocal<Boolean>() {
 
-			@Override protected Boolean initialValue() {
+			@Override
+			protected Boolean initialValue() {
 				return Boolean.FALSE;
-
 			}
 
 		};
@@ -464,9 +461,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private ThreadLocal<Map<String, Set<String>>> _updatedTablesColumns =
 		new ThreadLocal<Map<String, Set<String>>>() {
 
-			@Override protected Map<String, Set<String>> initialValue() {
+			@Override
+			protected Map<String, Set<String>> initialValue() {
 				return new HashMap<String, Set<String>>();
-
 			}
 
 		};
@@ -474,9 +471,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private ThreadLocal<Set<String>> _updatedTablesLowerCase =
 		new ThreadLocal<Set<String>>() {
 
-			@Override protected Set<String> initialValue() {
+			@Override
+			protected Set<String> initialValue() {
 				return new TreeSet<String>();
-
 			}
 
 		};

@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -176,7 +177,7 @@ public class TableUtil {
 	}
 
 	public List<Table> getTables(String regex) {
-		if (StringUtils.isBlank(regex) || ".*".equals(regex)) {
+		if (StringUtils.isBlank(regex) || Objects.equals(regex, ".*")) {
 			return getTables();
 		}
 
@@ -196,7 +197,7 @@ public class TableUtil {
 			}
 			catch (PatternSyntaxException pse) {
 				_log.warn(pse, pse);
-	
+
 				return Collections.emptyList();
 			}
 
@@ -206,9 +207,7 @@ public class TableUtil {
 		List<Table> tableList = new ArrayList<>();
 
 		for (Table table : getTables()) {
-			String tableNameLowerCase = table.getTableNameLowerCase();
-
-			Matcher matcher = pattern.matcher(tableNameLowerCase);
+			Matcher matcher = pattern.matcher(table.getTableNameLowerCase());
 
 			if (matcher.matches()) {
 				tableList.add(table);
@@ -227,13 +226,14 @@ public class TableUtil {
 
 		for (Pattern[] ignoreColumnArray : ignoreColumns) {
 			Pattern ignoreTable = ignoreColumnArray[0];
-			Pattern ignoreColumn = ignoreColumnArray[1];
 
 			if ((ignoreTable != null) &&
 				!matchesRegex(tableName, ignoreTable)) {
 
 				continue;
 			}
+
+			Pattern ignoreColumn = ignoreColumnArray[1];
 
 			if (matchesRegex(columnName, ignoreColumn)) {
 				return true;
@@ -297,7 +297,11 @@ public class TableUtil {
 		String key = table.getTableNameLowerCase();
 
 		if (whereClause != null) {
-			key = key.concat("_").concat(whereClause);
+			key = key.concat(
+				"_"
+			).concat(
+				whereClause
+			);
 		}
 
 		Boolean tableEmpty = emptyTableCache.get(key);
@@ -508,7 +512,6 @@ public class TableUtil {
 
 			while (rs.next()) {
 				String tableName = rs.getString("TABLE_NAME");
-				String tableType = rs.getString("TABLE_TYPE");
 
 				if (ignoreTable(tableName)) {
 					if (_log.isDebugEnabled()) {
@@ -517,6 +520,8 @@ public class TableUtil {
 
 					continue;
 				}
+
+				String tableType = rs.getString("TABLE_TYPE");
 
 				if ((tableType == null) || !tableType.equals("TABLE")) {
 					continue;

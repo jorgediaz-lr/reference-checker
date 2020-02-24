@@ -29,10 +29,7 @@ public class ConfigurationUtil {
 	public static String getConfigurationFileName(long liferayBuildNumber) {
 		long liferayVersion = liferayBuildNumber / 100;
 
-		String configurationFile = String.format(
-			_CONFIGURATION_FILE, liferayVersion);
-
-		return configurationFile;
+		return String.format(_CONFIGURATION_FILE, liferayVersion);
 	}
 
 	public static Configuration readConfigurationFile(
