@@ -37,7 +37,7 @@
 			<fileset dir="${references.checker.root}/lib">
 				<include name="database-access-${referenceCheckerVersion}.jar" />
 				<include name="references-checker-${referenceCheckerVersion}.jar" />
-				<include name="references-checker-portal-${referenceCheckerVersion}.jar" />
+				<!-- <include name="references-checker-portal-${referenceCheckerVersion}.jar" /> -->
 				<include name="references-service-${referenceCheckerVersion}.jar" />
 			</fileset>
 		</copy>

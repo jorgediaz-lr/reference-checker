@@ -42,7 +42,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.model.ModelUtil;
-import com.liferay.referenceschecker.portal.ModelUtilImpl;
+import com.liferay.referenceschecker.model.ModelUtilImpl;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 
@@ -184,32 +184,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		super.doView(renderRequest, renderResponse);
 	}
 
-	protected void handleOutput(
-		PortletRequest request, PortletResponse response,
-		String portletId, List<String> outputList)
-		throws PortletException, IOException, JsonProcessingException {
-
-		long groupId = getGlobalGroupId();
-		long userId = PortalUtil.getUserId(request);
-
-		String outputContent = StringUtils.join(
-			outputList, StringPool.NEW_LINE);
-
-		FileEntry exportCsvFileEntry =
-			ReferencesCheckerPortlet.addPortletOutputFileEntry(
-				groupId, portletId, userId, outputContent);
-
-		if (exportCsvFileEntry != null) {
-			request.setAttribute(
-				"exportCsvTitle", exportCsvFileEntry.getTitle());
-		}
-
-		List<Map<?, ?>> data = OutputUtil.csvToMapList(outputContent);
-		String jsonData = OutputUtil.mapListToJSON(data);
-
-		request.setAttribute("jsonData", jsonData);
-	}
-
 	public void executeCheckReferences(
 			ActionRequest request, ActionResponse response)
 		throws Exception {
@@ -230,8 +204,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		try {
 			connection = DataAccess.getConnection();
 
-			ModelUtil modelUtil = new ModelUtilImpl();
-
 			ReferencesChecker referencesChecker = new ReferencesChecker(
 				connection);
 
@@ -243,7 +215,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			}
 
 			referencesChecker.setIgnoreNullValues(ignoreNullValues);
-			referencesChecker.initModelUtil(connection, modelUtil);
+			referencesChecker.initModelUtil(connection, getModelUtil());
 			referencesChecker.initTableUtil(connection);
 
 			listMissingReferences = referencesChecker.execute(connection);
@@ -288,8 +260,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		try {
 			connection = DataAccess.getConnection();
 
-			ModelUtil modelUtil = new ModelUtilImpl();
-
 			ReferencesChecker referencesChecker = new ReferencesChecker(
 				connection);
 
@@ -300,7 +270,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 				referencesChecker.addExcludeColumns(excludeColumns);
 			}
 
-			referencesChecker.initModelUtil(connection, modelUtil);
+			referencesChecker.initModelUtil(connection, getModelUtil());
 			referencesChecker.initTableUtil(connection);
 
 
@@ -371,6 +341,49 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		catch (Exception e) {
 			throw new PortletException(e);
 		}
+	}
+
+	protected ModelUtil getModelUtil() {
+		String className = "com.liferay.referenceschecker.portal.ModelUtilImpl";
+
+		try {
+			Class<?> clazz = Class.forName(className);
+
+			return (ModelUtil) clazz.newInstance(); 
+		}
+		catch (Throwable t) {
+			_log.info(
+				className + " is not available in classloader. Exception: " +
+				t.getMessage());
+		}
+
+		return new ModelUtilImpl();
+	}
+
+	protected void handleOutput(
+		PortletRequest request, PortletResponse response,
+		String portletId, List<String> outputList)
+		throws PortletException, IOException, JsonProcessingException {
+
+		long groupId = getGlobalGroupId();
+		long userId = PortalUtil.getUserId(request);
+
+		String outputContent = StringUtils.join(
+			outputList, StringPool.NEW_LINE);
+
+		FileEntry exportCsvFileEntry =
+			ReferencesCheckerPortlet.addPortletOutputFileEntry(
+				groupId, portletId, userId, outputContent);
+
+		if (exportCsvFileEntry != null) {
+			request.setAttribute(
+				"exportCsvTitle", exportCsvFileEntry.getTitle());
+		}
+
+		List<Map<?, ?>> data = OutputUtil.csvToMapList(outputContent);
+		String jsonData = OutputUtil.mapListToJSON(data);
+
+		request.setAttribute("jsonData", jsonData);
 	}
 
 	private static Log _log = LogFactoryUtil.getLog(
