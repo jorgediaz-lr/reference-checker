@@ -249,15 +249,19 @@
 					return d.value;
 				}
 
-				var maxLenght = 40;
+				var maxLength = 0;
 
 				var outputString = "" + d.value;
 
-				if (outputString.length < maxLenght) {
+				if (outputString.length < maxLength) {
 					return outputString;
 				}
 
-				var outputStringTrimmed = outputString.substring(0,maxLenght) + "...";
+				var outputStringTrimmed = "";
+
+				if (maxLength > 0) {
+					outputStringTrimmed = outputString.substring(0,maxLength) + "...";
+				}
 
 				outputString = outputString.replace(/,/g, ', ');
 
@@ -268,6 +272,10 @@
 				var onClick = "onclick=\"toogleHiddenSpan('" + tagId + "');return false;\"";
 				var linkMore = "<a href='#' " + onClick + ">(see more)</a>";
 				var linkCollapse = "<a href='#' " + onClick + ">(collapse)</a>";
+
+				if (maxLength == 0) {
+					linkMore = "<a href='#' " + onClick + ">(click to display)</a>";
+				}
 
 				return "<span id='" + tagId + "-show' >" + outputStringTrimmed +
 					" " + linkMore + "</span><span id='" + tagId + "' style='display: none;' >"
