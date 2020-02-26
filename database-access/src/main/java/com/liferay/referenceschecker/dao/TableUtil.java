@@ -407,6 +407,13 @@ public class TableUtil {
 			JDBCUtil.cleanUp(rsPK);
 		}
 
+		String[] blacklistedPrimaryKeys = {"CTCollectionId"};
+
+		if (primaryKeys.size() > 1) {
+			primaryKeys = removeBlacklistedPrimaryKeys(
+				primaryKeys, blacklistedPrimaryKeys);
+		}
+
 		List<String> columnNames = new ArrayList<>();
 		List<Integer> columnDataTypes = new ArrayList<>();
 		List<String> columnTypeNames = new ArrayList<>();
@@ -617,10 +624,51 @@ public class TableUtil {
 		return tableMap;
 	}
 
+	protected boolean isBlacklistedPrimaryKey(
+		String primaryKey, String[] blacklistedPrimaryKeys) {
+
+		for (String blacklistedPrimaryKey : blacklistedPrimaryKeys) {
+			if (StringUtils.equalsIgnoreCase(
+					blacklistedPrimaryKey, primaryKey)) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	protected boolean matchesRegex(String value, Pattern pattern) {
 		Matcher matcher = pattern.matcher(value);
 
 		return matcher.matches();
+	}
+
+	protected List<String> removeBlacklistedPrimaryKeys(
+		List<String> primaryKey, String[] blacklistedPrimaryKeyColumns) {
+
+		List<String> newPrimaryKey = new ArrayList<>();
+
+		for (String primaryKeyColumn : primaryKey) {
+			if (isBlacklistedPrimaryKey(
+					primaryKeyColumn, blacklistedPrimaryKeyColumns)) {
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Removing " + primaryKeyColumn + " from primaryKey");
+				}
+
+				continue;
+			}
+
+			newPrimaryKey.add(primaryKeyColumn);
+		}
+
+		if (newPrimaryKey.isEmpty()) {
+			return primaryKey;
+		}
+
+		return newPrimaryKey;
 	}
 
 	protected Map<String, Boolean> emptyTableCache = new ConcurrentHashMap<>();
