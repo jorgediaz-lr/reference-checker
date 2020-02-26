@@ -376,8 +376,6 @@ tableToClassNameMapping : {
     "UserTrackerPath" : "com.liferay.portal.kernel.model.UserTrackerPath",
     "User_" : "com.liferay.portal.kernel.model.User",
     "VirtualHost" : "com.liferay.portal.kernel.model.VirtualHost",
-    "WeDeployAuth_WeDeployAuthApp" : "com.liferay.portal.security.wedeploy.auth.model.WeDeployAuthApp",
-    "WeDeployAuth_WeDeployAuthToken" : "com.liferay.portal.security.wedeploy.auth.model.WeDeployAuthToken",
     "WebDAVProps" : "com.liferay.portal.kernel.model.WebDAVProps",
     "Website" : "com.liferay.portal.kernel.model.Website",
     "WikiNode" : "com.liferay.wiki.model.WikiNode",
