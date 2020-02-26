@@ -19,9 +19,14 @@
 			<em>Click on column headings to sort the table data</em>
 		</p>
 	</div>
-	<div id="page-footer"><p>Generated in <%= renderRequest.getParameter("processTime") %> ms</p></div>
+
+	<div id="page-footer">
+		<p>Generated in <%= renderRequest.getParameter("processTime") %> ms</p>
+	</div>
+
 	<script src="http://d3js.org/d3.v3.min.js" type="text/javascript">
 	</script>
+
 	<script type="text/javascript">
 		function toogleHiddenSpan(id) {
 			if (document.getElementById(id)) {
@@ -36,6 +41,7 @@
 			}
 		}
 	</script>
+
 	<script type="text/javascript">
 		var jsonData = <%= jsonData %>
 
@@ -120,7 +126,7 @@
 
 				var maxLenght = 40;
 
-				var outputString =  "" + d.value;
+				var outputString = "" + d.value;
 
 				if (outputString.length < maxLenght) {
 					return outputString;
@@ -135,11 +141,11 @@
 				var tagId = randomString + "_" + Date.now();
 
 				var onClick = "onclick=\"toogleHiddenSpan('" + tagId + "');return false;\"";
-				var linkMore = "<a href='#' >(see more)</a>";
-				var linkCollapse = "<a href='#' >(collapse)</a>";
+				var linkMore = "<a href='#' " + onClick + ">(see more)</a>";
+				var linkCollapse = "<a href='#' " + onClick + ">(collapse)</a>";
 
-				return "<span id='" + tagId + "-show' " + onClick + " >" + outputStringTrimmed +
-					" " + linkMore + "</span><span id='" + tagId + "' " + onClick +
-					" style='display: none;' >" + outputString + " " + linkCollapse + "</span>";
+				return "<span id='" + tagId + "-show' >" + outputStringTrimmed +
+					" " + linkMore + "</span><span id='" + tagId + "' style='display: none;' >"
+					+ outputString + " " + linkCollapse + "</span>";
 			});
 	</script>
