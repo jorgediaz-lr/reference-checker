@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -100,6 +101,122 @@ public class TableUtil {
 		}
 
 		return count;
+	}
+
+	public static Map<String, Long> countTableClassName(
+		Connection connection, Table table, String classNameAttr,
+		String classNamePkAttr) {
+
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		Map<String, Long> map = new HashMap<>();
+
+		String sql = null;
+
+		try {
+			String key = "*";
+
+			if (!table.hasCompoundPrimKey()) {
+				key = table.getPrimaryKey();
+			}
+
+			sql =
+				"SELECT " + classNameAttr + ", COUNT(" + key + ") FROM " +
+					table.getTableName();
+
+			if (classNamePkAttr != null) {
+				sql += " WHERE " + classNamePkAttr + "<>0 ";
+			}
+
+			sql += " GROUP BY " + classNameAttr;
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("SQL: " + sql);
+			}
+
+			ps = connection.prepareStatement(sql);
+
+			ps.setQueryTimeout(SQLUtil.QUERY_TIMEOUT);
+
+			rs = ps.executeQuery();
+
+			while (rs.next()) {
+				String className = rs.getString(1);
+				long count = rs.getLong(2);
+
+				map.put(className, count);
+			}
+		}
+		catch (SQLException sqle) {
+			_log.error(
+				"Error executing sql: " + sql + " EXCEPTION: " + sqle, sqle);
+
+			return null;
+		}
+		finally {
+			JDBCUtil.cleanUp(ps, rs);
+		}
+
+		return map;
+	}
+
+	public static Map<Long, Long> countTableClassNameId(
+		Connection connection, Table table, String classNameIdAttr,
+		String classNamePkAttr) {
+
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		Map<Long, Long> map = new HashMap<>();
+
+		String sql = null;
+
+		try {
+			String key = "*";
+
+			if (!table.hasCompoundPrimKey()) {
+				key = table.getPrimaryKey();
+			}
+
+			sql =
+				"SELECT " + classNameIdAttr + ", COUNT(" + key + ") FROM " +
+					table.getTableName();
+
+			if (classNamePkAttr != null) {
+				sql += " WHERE " + classNamePkAttr + " IS NOT NULL ";
+			}
+
+			sql += " GROUP BY " + classNameIdAttr;
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("SQL: " + sql);
+			}
+
+			ps = connection.prepareStatement(sql);
+
+			ps.setQueryTimeout(SQLUtil.QUERY_TIMEOUT);
+
+			rs = ps.executeQuery();
+
+			while (rs.next()) {
+				long classNameId = rs.getLong(1);
+				long count = rs.getLong(2);
+
+				map.put(classNameId, count);
+			}
+		}
+		catch (SQLException sqle) {
+			_log.error(
+				"Error executing sql: " + sql + " EXCEPTION: " + sqle, sqle);
+
+			return null;
+		}
+		finally {
+			JDBCUtil.cleanUp(ps, rs);
+		}
+
+		return map;
 	}
 
 	public void addTable(
@@ -263,7 +380,7 @@ public class TableUtil {
 
 	public void init(
 			Connection connection, List<String> ignoreColumns,
-			List<String> ignoreTables)
+			List<String> ignoreTables, ModelUtil modelUtil)
 		throws SQLException {
 
 		initIgnore(ignoreTables, ignoreColumns);
@@ -285,6 +402,8 @@ public class TableUtil {
 			databaseMetaData, catalog, schema, "%");
 
 		addTables(databaseMetaData, catalog, schema, tableNames);
+
+		this.modelUtil = modelUtil;
 	}
 
 	public boolean isTableEmpty(Connection connection, Table table) {
@@ -314,6 +433,18 @@ public class TableUtil {
 			tableEmpty = countTable(connection, table, null) <= 0;
 		}
 		else {
+			Matcher matcher = classNameIdPattern.matcher(whereClause);
+
+			if (matcher.matches()) {
+				return isTableEmptyClassNameId(connection, table, matcher);
+			}
+
+			matcher = classNamePattern.matcher(whereClause);
+
+			if (matcher.matches()) {
+				return isTableEmptyClassName(connection, table, matcher);
+			}
+
 			tableEmpty = isTableEmpty(connection, table);
 
 			if (!tableEmpty) {
@@ -334,6 +465,119 @@ public class TableUtil {
 		emptyTableCache.put(key, tableEmpty);
 
 		return tableEmpty;
+	}
+
+	public boolean isTableEmptyClassName(
+		Connection connection, Table table, Matcher matcher) {
+
+		String classNameAttr = matcher.group(1);
+		String classNameValue = matcher.group(2);
+		String classNamePkAttr = matcher.group(3);
+
+		String key = table.getTableNameLowerCase();
+
+		key = key.concat(
+			"_"
+		).concat(
+			classNameAttr
+		);
+
+		if (classNamePkAttr != null) {
+			key = key.concat(
+				"_"
+			).concat(
+				classNamePkAttr
+			);
+		}
+
+		Set<String> keySet = emptyTableKeysClassName.get(
+			table.getTableNameLowerCase());
+
+		if (keySet == null) {
+			keySet = new HashSet<>();
+
+			emptyTableKeysClassName.put(table.getTableNameLowerCase(), keySet);
+		}
+
+		keySet.add(key);
+
+		Map<String, Long> map = emptyTableCacheClassName.get(key);
+
+		if (map == null) {
+			map = countTableClassName(
+				connection, table, classNameAttr, classNamePkAttr);
+
+			emptyTableCacheClassName.put(key, map);
+		}
+
+		Long count = map.get(classNameValue);
+
+		if (count == null) {
+			return true;
+		}
+
+		if (count == 0) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isTableEmptyClassNameId(
+		Connection connection, Table table, Matcher matcher) {
+
+		String classNameIdAttr = matcher.group(1);
+		String classNameValue = matcher.group(2);
+		String classNamePkAttr = matcher.group(4);
+
+		String key = table.getTableNameLowerCase();
+
+		key = key.concat(
+			"_"
+		).concat(
+			classNameIdAttr
+		);
+
+		if (classNamePkAttr != null) {
+			key = key.concat(
+				"_"
+			).concat(
+				classNamePkAttr
+			);
+		}
+
+		Set<String> keySet = emptyTableKeysClassNameId.get(
+			table.getTableNameLowerCase());
+
+		if (keySet == null) {
+			keySet = new HashSet<>();
+
+			emptyTableKeysClassNameId.put(
+				table.getTableNameLowerCase(), keySet);
+		}
+
+		keySet.add(key);
+
+		Map<Long, Long> map = emptyTableCacheClassNameId.get(key);
+
+		if (map == null) {
+			map = countTableClassNameId(
+				connection, table, classNameIdAttr, classNamePkAttr);
+
+			emptyTableCacheClassNameId.put(key, map);
+		}
+
+		Long count = map.get(modelUtil.getClassNameId(classNameValue));
+
+		if (count == null) {
+			return true;
+		}
+
+		if (count == 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public void removeTable(String tableName) {
@@ -357,7 +601,7 @@ public class TableUtil {
 		Set<String> keySet = emptyTableKeys.get(tableNameLowerCase);
 
 		if (keySet == null) {
-			return;
+			keySet = Collections.emptySet();
 		}
 
 		for (String tableKey : keySet) {
@@ -370,6 +614,26 @@ public class TableUtil {
 			}
 
 			emptyTableCache.remove(tableKey);
+		}
+
+		keySet = emptyTableKeysClassName.get(tableNameLowerCase);
+
+		if (keySet == null) {
+			keySet = Collections.emptySet();
+		}
+
+		for (String tableKey : keySet) {
+			emptyTableCacheClassName.remove(tableKey);
+		}
+
+		keySet = emptyTableKeysClassNameId.get(tableNameLowerCase);
+
+		if (keySet == null) {
+			keySet = Collections.emptySet();
+		}
+
+		for (String tableKey : keySet) {
+			emptyTableCacheClassNameId.remove(tableKey);
 		}
 	}
 
@@ -671,8 +935,24 @@ public class TableUtil {
 		return newPrimaryKey;
 	}
 
+	protected Pattern classNameIdPattern = Pattern.compile(
+		"\\s*(\\w*)\\s*in\\s*\\(\\s*select\\s*classNameId\\s*from\\s*" +
+			"ClassName_\\s*where\\s*value='(.*)'\\)" +
+				"(\\s*and\\s*(\\w*)\\s*IS\\s*NOT\\s*NULL)?",
+		Pattern.CASE_INSENSITIVE);
+	protected Pattern classNamePattern = Pattern.compile(
+		"(\\w*)\\s*=\\s*'(.*)'\\s*and\\s*(\\w*)\\s*<>\\s*0",
+		Pattern.CASE_INSENSITIVE);
 	protected Map<String, Boolean> emptyTableCache = new ConcurrentHashMap<>();
+	protected Map<String, Map<String, Long>> emptyTableCacheClassName =
+		new ConcurrentHashMap<>();
+	protected Map<String, Map<Long, Long>> emptyTableCacheClassNameId =
+		new ConcurrentHashMap<>();
 	protected Map<String, Set<String>> emptyTableKeys =
+		new ConcurrentHashMap<>();
+	protected Map<String, Set<String>> emptyTableKeysClassName =
+		new ConcurrentHashMap<>();
+	protected Map<String, Set<String>> emptyTableKeysClassNameId =
 		new ConcurrentHashMap<>();
 	protected List<Pattern[]> ignoreColumns;
 	protected List<Pattern> ignoreTables;

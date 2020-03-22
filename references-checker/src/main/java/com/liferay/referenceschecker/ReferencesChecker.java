@@ -515,7 +515,7 @@ public class ReferencesChecker {
 
 		tableUtil = new TableUtil();
 
-		tableUtil.init(connection, ignoreColumns, ignoreTables);
+		tableUtil.init(connection, ignoreColumns, ignoreTables, modelUtil);
 	}
 
 	public boolean isCheckUndefinedTables() {
