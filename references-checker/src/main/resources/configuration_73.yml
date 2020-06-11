@@ -93,6 +93,8 @@ references: [
   {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 4 and ownerId <> 0"}, dest: {table: "User", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 5 and ownerId <> 0"}, dest: {table: "PortletItem", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 6 and ownerId <> 0"}, dest: {table: "Organization_", columns: ["${destTable.primaryKey}"]}},
+  {origin: {table: "PortletPreferences", columns: ["plid"]}}, #ignore
+  {origin: {table: "PortletPreferences", columns: ["plid"], condition: "plid not in (select layoutRevisionId from LayoutRevision)"}, dest: {table: "Layout", columns: ["plid"]}},
   {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 1"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 2"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: ".*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
