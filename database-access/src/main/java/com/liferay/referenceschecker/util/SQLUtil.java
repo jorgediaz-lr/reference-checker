@@ -254,6 +254,7 @@ public class SQLUtil {
 
 		String newSQL = sql;
 
+		newSQL = _replaceBoolean(dbType, newSQL);
 		newSQL = _replaceCastText(dbType, newSQL);
 		newSQL = _replaceInstr(dbType, newSQL);
 		newSQL = _replaceSubstr(dbType, newSQL);
@@ -264,6 +265,18 @@ public class SQLUtil {
 		}
 
 		return newSQL;
+	}
+
+	private static String _replaceBoolean(String dbType, String sql) {
+		if (dbType.equals(TYPE_HYPERSONIC) || dbType.equals(TYPE_POSTGRESQL)) {
+			return StringUtils.replaceEach(
+				sql, new String[] {"[$FALSE$]", "[$TRUE$]"},
+				new String[] {"false", "true"});
+		}
+
+		return StringUtils.replaceEach(
+			sql, new String[] {"[$FALSE$]", "[$TRUE$]"},
+			new String[] {"0", "1"});
 	}
 
 	private static String _replaceCastText(String dbType, String sql) {

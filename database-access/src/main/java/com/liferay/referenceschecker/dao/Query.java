@@ -95,8 +95,6 @@ public class Query implements Comparable<Query> {
 				columns, columnTypes, destinationTypes);
 		}
 
-		castedColumns = SQLUtil.transform(dbType, castedColumns);
-
 		return SQLUtil.addPrefixToSqlList(castedColumns, tableAlias, columns);
 	}
 

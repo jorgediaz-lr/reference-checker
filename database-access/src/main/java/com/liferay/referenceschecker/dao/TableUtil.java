@@ -80,6 +80,8 @@ public class TableUtil {
 				_log.debug("SQL: " + sql);
 			}
 
+			sql = SQLUtil.transform(SQLUtil.getDBType(connection), sql);
+
 			ps = connection.prepareStatement(sql);
 
 			ps.setQueryTimeout(SQLUtil.QUERY_TIMEOUT);
@@ -134,6 +136,8 @@ public class TableUtil {
 			if (_log.isDebugEnabled()) {
 				_log.debug("SQL: " + sql);
 			}
+
+			sql = SQLUtil.transform(SQLUtil.getDBType(connection), sql);
 
 			ps = connection.prepareStatement(sql);
 
@@ -192,6 +196,8 @@ public class TableUtil {
 			if (_log.isDebugEnabled()) {
 				_log.debug("SQL: " + sql);
 			}
+
+			sql = SQLUtil.transform(SQLUtil.getDBType(connection), sql);
 
 			ps = connection.prepareStatement(sql);
 

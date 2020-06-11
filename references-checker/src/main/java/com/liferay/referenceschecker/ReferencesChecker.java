@@ -610,7 +610,7 @@ public class ReferencesChecker {
 
 		sb.append(")");
 
-		return sb.toString();
+		return SQLUtil.transform(dbType, sb.toString());
 	}
 
 	protected List<String> generateDeleteSentences(
@@ -645,7 +645,7 @@ public class ReferencesChecker {
 
 		sb.append(")");
 
-		return sb.toString();
+		return SQLUtil.transform(dbType, sb.toString());
 	}
 
 	protected List<String> generateSelectSentences(
@@ -682,7 +682,7 @@ public class ReferencesChecker {
 
 		sb.append(")");
 
-		return sb.toString();
+		return SQLUtil.transform(dbType, sb.toString());
 	}
 
 	protected List<String> generateUpdateSentences(
@@ -942,10 +942,14 @@ public class ReferencesChecker {
 		if (dbType.equals(SQLUtil.TYPE_POSTGRESQL) ||
 			dbType.equals(SQLUtil.TYPE_SQLSERVER)) {
 
-			return _getSQLNotExists(originQuery, destinationQuery, type);
+			String sql = _getSQLNotExists(originQuery, destinationQuery, type);
+
+			return SQLUtil.transform(dbType, sql);
 		}
 
-		return _getSQLNotIn(originQuery, destinationQuery, type);
+		String sql = _getSQLNotIn(originQuery, destinationQuery, type);
+
+		return SQLUtil.transform(dbType, sql);
 	}
 
 	private String _getSQL(Query query, String type) {
