@@ -68,10 +68,10 @@ public class ReferencesChecker {
 	public static void main(String[] args) throws Exception {
 		System.out.println("========");
 		System.out.println(
-			"WARNING: This tool is for Liferay internal use only and it " +
-				"should not be distributed to customers or external users. " +
-					"False positives can be returned, if you have any " +
-						"question, contact with Jorge Diaz");
+			"WARNING: This tool is not officially supported by Liferay Inc. " +
+				"or its affiliates. Use it under your responsibility: false " +
+					"positives can be returned. If you have any question, " +
+						"contact Jorge Diaz");
 		System.out.println("========");
 		System.out.println("");
 		System.out.println("Reference checker version " + _getJarVersion());
