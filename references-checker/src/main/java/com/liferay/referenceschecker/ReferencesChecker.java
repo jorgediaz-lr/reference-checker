@@ -48,7 +48,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 
 import org.apache.commons.collections4.ListUtils;
@@ -94,6 +94,16 @@ public class ReferencesChecker {
 		}
 
 		return buildNumber;
+	}
+
+	// Replaces Executors.newWorkStealingPool() that doesn't exist in Java 7
+
+	public static ExecutorService newWorkStealingPool() {
+		Runtime runtime = Runtime.getRuntime();
+
+		return new ForkJoinPool(
+			runtime.availableProcessors(),
+			ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
 	}
 
 	public ReferencesChecker(Connection connection) {
@@ -335,7 +345,7 @@ public class ReferencesChecker {
 	public List<MissingReferences> execute(
 		Connection connection, Collection<Reference> references) {
 
-		ExecutorService executorService = Executors.newWorkStealingPool();
+		ExecutorService executorService = newWorkStealingPool();
 
 		Map<Reference, Future<MissingReferences>> futures =
 			new LinkedHashMap<>();
