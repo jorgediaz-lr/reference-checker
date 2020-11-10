@@ -35,9 +35,6 @@ references: [
   {origin: {table: "AssetCategory",  columns: ["leftCategoryid"]}}, #ignore
   {origin: {table: "AssetCategory",  columns: ["rightCategoryid"]}}, #ignore
   {origin: {table: "AssetLink",      columns: ["entryId.*"]},                                         dest: {table: "AssetEntry",  columns: ["entryId"]}},
-  {origin: {table: "DDMStorageLink", columns: ["structureVersionId"]}}, #ignore
-  {origin: {table: "DDMStorageLink", columns: ["structureVersionId"], condition: "classNameId in (select classNameId from ClassName_ where value<>'${JournalArticle.className}')"}, dest: {table: "DDMStructureVersion", columns: ["structureVersionId"]}},
-  {origin: {table: "DDMStorageLink", columns: ["structureVersionId"], condition: "classNameId in (select classNameId from ClassName_ where value='${JournalArticle.className}')"}, dest: {table: "DDMStructureVersion", columns: ["structureId"]}},
   {origin: {table: "DL.*",           columns: ["repositoryId"]}}, #ignore
   {origin: {table: "DL.*",           columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
   {origin: {table: "DL.*",           columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
