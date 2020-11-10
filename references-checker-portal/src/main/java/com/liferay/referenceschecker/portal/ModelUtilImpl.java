@@ -18,10 +18,10 @@ import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.repository.model.RepositoryModel;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.kernel.util.ReflectionUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -195,7 +195,7 @@ public class ModelUtilImpl
 			String modelTableName;
 
 			try {
-				Field field = ReflectionUtil.getDeclaredField(
+				Field field = getDeclaredField(
 					classLiferayModelImpl, "TABLE_NAME");
 
 				modelTableName = (String)field.get(null);
@@ -221,6 +221,22 @@ public class ModelUtilImpl
 
 		classNameToTableMappingFromPortal = classNameToTableMapping;
 		tableToClassNameMappingFromPortal = tableToClassNameMapping;
+	}
+
+	public static Field getDeclaredField(Class<?> clazz, String name)
+			throws Exception {
+
+		Field field = clazz.getDeclaredField(name);
+
+		field.setAccessible(true);
+
+		int modifiers = field.getModifiers();
+
+		if ((modifiers & _STATIC_FINAL) == _STATIC_FINAL) {
+			_modifiersField.setInt(field, modifiers - Modifier.FINAL);
+		}
+
+		return field;
 	}
 
 	protected static Class<?> getLiferayModelImplClass(
@@ -288,7 +304,7 @@ public class ModelUtilImpl
 
 		Class<?> clazz = object.getClass();
 
-		Field field = ReflectionUtil.getDeclaredField(clazz, fieldName);
+		Field field = getDeclaredField(clazz, fieldName);
 
 		return field.get(object);
 	}
@@ -440,6 +456,26 @@ public class ModelUtilImpl
 	protected Object persistedModelLocalServiceRegistry = null;
 	protected Map<String, String> tableToClassNameMappingFromPortal =
 		new ConcurrentHashMap<>();
+
+	private static final int _STATIC_FINAL = Modifier.STATIC + Modifier.FINAL;
+
+	private static final Method _cloneMethod;
+	private static final Field _modifiersField;
+
+	static {
+		try {
+			_cloneMethod = Object.class.getDeclaredMethod("clone");
+
+			_cloneMethod.setAccessible(true);
+
+			_modifiersField = Field.class.getDeclaredField("modifiers");
+
+			_modifiersField.setAccessible(true);
+		}
+		catch (Exception exception) {
+			throw new ExceptionInInitializerError(exception);
+		}
+	}
 
 	private static Logger _log = LogManager.getLogger(ModelUtilImpl.class);
 
