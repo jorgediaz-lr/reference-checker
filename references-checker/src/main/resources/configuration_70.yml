@@ -1,5 +1,5 @@
 ignoreColumns: [actionId]
-ignoreTables: [counter, cyrusUser, cyrusVirtual, systemEvent]
+ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, systemEvent]
 references: [
     #generic references
   {origin: {table: ".*", columns: [".*${destTable.PrimaryKey}"]},                                     dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
