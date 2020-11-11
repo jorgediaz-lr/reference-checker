@@ -24,9 +24,9 @@ public class MissingReferences {
 	public MissingReferences(
 		Reference reference, Collection<Object[]> values, long affectedRows) {
 
-		this.affectedRows = affectedRows;
 		this.reference = reference;
 		this.values = values;
+		this.affectedRows = affectedRows;
 	}
 
 	public MissingReferences(Reference reference, Throwable throwable) {

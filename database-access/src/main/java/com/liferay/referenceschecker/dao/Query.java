@@ -31,6 +31,7 @@ public class Query implements Comparable<Query> {
 		Table table, List<String> columns, List<String> casting,
 		String condition) {
 
+		this.table = table;
 		this.casting = casting;
 
 		castingString = null;
@@ -42,7 +43,6 @@ public class Query implements Comparable<Query> {
 		this.columns = _rewriteConstants(columns);
 		columnsString = StringUtils.join(this.columns, ",");
 		this.condition = condition;
-		this.table = table;
 
 		String tableName = table.getTableName();
 

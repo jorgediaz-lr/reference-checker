@@ -589,8 +589,8 @@ public class TableUtil {
 	public void removeTable(String tableName) {
 		Table table = getTable(tableName);
 
-		this.tableNames.remove(table.getTableName());
-		this.tableMap.remove(table.getTableNameLowerCase());
+		tableNames.remove(table.getTableName());
+		tableMap.remove(table.getTableNameLowerCase());
 	}
 
 	public void removeTables(Collection<String> tableNames) {
@@ -677,11 +677,9 @@ public class TableUtil {
 			JDBCUtil.cleanUp(rsPK);
 		}
 
-		String[] blacklistedPrimaryKeys = {"CTCollectionId"};
-
 		if (primaryKeys.size() > 1) {
 			primaryKeys = removeBlacklistedPrimaryKeys(
-				primaryKeys, blacklistedPrimaryKeys);
+				primaryKeys, _BLACKLISTED_PRIMARY_KEYS);
 		}
 
 		List<String> columnNames = new ArrayList<>();
@@ -976,6 +974,10 @@ public class TableUtil {
 
 		return list;
 	}
+
+	private static final String[] _BLACKLISTED_PRIMARY_KEYS = {
+		"CTCollectionId"
+	};
 
 	private static Logger _log = LogManager.getLogger(TableUtil.class);
 

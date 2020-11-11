@@ -41,6 +41,22 @@ import org.apache.log4j.Logger;
 public class ModelUtilImpl
 	extends com.liferay.referenceschecker.model.ModelUtilImpl {
 
+	public static Field getDeclaredField(Class<?> clazz, String name)
+		throws Exception {
+
+		Field field = clazz.getDeclaredField(name);
+
+		field.setAccessible(true);
+
+		int modifiers = field.getModifiers();
+
+		if ((modifiers & _STATIC_FINAL) == _STATIC_FINAL) {
+			_modifiersField.setInt(field, modifiers - Modifier.FINAL);
+		}
+
+		return field;
+	}
+
 	public static Object invokeMethod(
 		Object object, String methodName, Class<?>[] parameterTypes,
 		Object[] args) {
@@ -221,22 +237,6 @@ public class ModelUtilImpl
 
 		classNameToTableMappingFromPortal = classNameToTableMapping;
 		tableToClassNameMappingFromPortal = tableToClassNameMapping;
-	}
-
-	public static Field getDeclaredField(Class<?> clazz, String name)
-			throws Exception {
-
-		Field field = clazz.getDeclaredField(name);
-
-		field.setAccessible(true);
-
-		int modifiers = field.getModifiers();
-
-		if ((modifiers & _STATIC_FINAL) == _STATIC_FINAL) {
-			_modifiersField.setInt(field, modifiers - Modifier.FINAL);
-		}
-
-		return field;
 	}
 
 	protected static Class<?> getLiferayModelImplClass(
@@ -459,6 +459,8 @@ public class ModelUtilImpl
 
 	private static final int _STATIC_FINAL = Modifier.STATIC + Modifier.FINAL;
 
+	private static Logger _log = LogManager.getLogger(ModelUtilImpl.class);
+
 	private static final Method _cloneMethod;
 	private static final Field _modifiersField;
 
@@ -476,7 +478,5 @@ public class ModelUtilImpl
 			throw new ExceptionInInitializerError(exception);
 		}
 	}
-
-	private static Logger _log = LogManager.getLogger(ModelUtilImpl.class);
 
 }
