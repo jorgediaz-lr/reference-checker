@@ -53,29 +53,32 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
 
-		if (updatedTablesLowerCase.contains(_RELEASE_TABLE_LOWERCASE)) {
-			referencesChecker = null;
-		}
+		try {
+			if (updatedTablesLowerCase.contains(_RELEASE_TABLE_LOWERCASE)) {
+				forceInitReferencesChecker(connection);
+			}
 
-		if (referencesChecker == null) {
-			try {
+			if (referencesChecker == null) {
 				initReferencesChecker(connection);
 			}
-			catch (Exception e) {
-				_log.error(
-					"Error creating ReferencesChecker instance: " +
-						e.getMessage(),
-					e);
-			}
 		}
+		catch (Exception e) {
+			_log.error(
+				"Error creating ReferencesChecker instance: " + e.getMessage(),
+				e);
+
+			return;
+		}
+
+		ReferencesChecker referencesChecker = this.referencesChecker;
 
 		if (referencesChecker == null) {
 			return;
 		}
 
 		refreshReferencesChecker(
-			connection, _modifiedTables.get(), _droppedTables.get(),
-			_regenerateModelUtil.get());
+			connection, referencesChecker, _modifiedTables.get(),
+			_droppedTables.get(), _regenerateModelUtil.get());
 
 		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get();
 		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
@@ -100,8 +103,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		checkMissingReferences(
-			connection, insertedTablesLowerCase, updatedTablesLowerCase,
-			_updatedTablesColumns.get(), deletedTablesLowerCase);
+			connection, referencesChecker, insertedTablesLowerCase,
+			updatedTablesLowerCase, _updatedTablesColumns.get(),
+			deletedTablesLowerCase);
 	}
 
 	@Override
@@ -260,8 +264,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected void checkMissingReferences(
-		Connection connection, Set<String> insertedTablesLowerCase,
-		Set<String> updatedTablesLowerCase,
+		Connection connection, ReferencesChecker referencesChecker,
+		Set<String> insertedTablesLowerCase, Set<String> updatedTablesLowerCase,
 		Map<String, Set<String>> updatedTablesColumns,
 		Set<String> deletedTablesLowerCase) {
 
@@ -271,9 +275,6 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		Collection<Reference> referencesToCheck = new HashSet<>();
 
 		for (Reference reference : references) {
-			com.liferay.referenceschecker.dao.Query originQuery =
-				reference.getOriginQuery();
-
 			com.liferay.referenceschecker.dao.Query destinationQuery =
 				reference.getDestinationQuery();
 
@@ -281,7 +282,11 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 				continue;
 			}
 
+			com.liferay.referenceschecker.dao.Query originQuery =
+				reference.getOriginQuery();
+
 			Table originTable = originQuery.getTable();
+
 			Table destinationTable = destinationQuery.getTable();
 
 			String originTableName = originTable.getTableNameLowerCase();
@@ -330,12 +335,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 	}
 
-	protected synchronized void initReferencesChecker(Connection connection)
+	protected synchronized void forceInitReferencesChecker(
+			Connection connection)
 		throws SQLException {
-
-		if (referencesChecker != null) {
-			return;
-		}
 
 		ReferencesChecker referencesCheckerAux = new ReferencesChecker(
 			connection);
@@ -350,9 +352,20 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		referencesChecker = referencesCheckerAux;
 	}
 
+	protected synchronized void initReferencesChecker(Connection connection)
+		throws SQLException {
+
+		if (referencesChecker != null) {
+			return;
+		}
+
+		forceInitReferencesChecker(connection);
+	}
+
 	protected void refreshReferencesChecker(
-		Connection connection, Set<String> updatedTables,
-		Set<String> deletedTables, boolean regenerateModelUtil) {
+		Connection connection, ReferencesChecker referencesChecker,
+		Set<String> updatedTables, Set<String> deletedTables,
+		boolean regenerateModelUtil) {
 
 		try {
 			referencesChecker.addTables(connection, updatedTables);
