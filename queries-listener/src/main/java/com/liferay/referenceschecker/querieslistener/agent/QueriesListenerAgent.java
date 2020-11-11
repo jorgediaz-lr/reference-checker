@@ -236,12 +236,14 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
 		Connection connection = connectionInformation.getConnection();
 
-		Query query = new Query(sql);
+		for (String singleSql : sql.split(";\\n")) {
+			Query query = new Query(singleSql);
 
-		for (EventListener eventListener :
-				_eventListenerRegistry.getEventListeners()) {
+			for (EventListener eventListener :
+					_eventListenerRegistry.getEventListeners()) {
 
-			eventListener.afterQuery(connectionId, connection, query, sqle);
+				eventListener.afterQuery(connectionId, connection, query, sqle);
+			}
 		}
 
 		try {
