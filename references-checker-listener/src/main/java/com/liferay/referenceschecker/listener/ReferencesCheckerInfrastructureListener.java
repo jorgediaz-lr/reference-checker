@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.commons.lang3.StringUtils;
@@ -51,10 +52,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
-		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
-
 		try {
-			if (updatedTablesLowerCase.contains(_RELEASE_TABLE_LOWERCASE)) {
+			if (_regenerateReferencesChecker.get()) {
 				forceInitReferencesChecker(connection);
 			}
 
@@ -81,6 +80,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			_droppedTables.get(), _regenerateModelUtil.get());
 
 		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get();
+		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
 		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
 
 		if (insertedTablesLowerCase.isEmpty() &&
@@ -190,6 +190,12 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 		}
 
+		if (!_regenerateReferencesChecker.get() &&
+			hasUpdatedReleaseBuildNumber(query)) {
+
+			_regenerateReferencesChecker.set(Boolean.TRUE);
+		}
+
 		if (!_regenerateModelUtil.get()) {
 			for (String table : query.getModifiedTables()) {
 				if (StringUtils.equalsIgnoreCase("ClassName_", table)) {
@@ -240,6 +246,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	@Override
 	public void resetThreadLocals() {
+		_regenerateReferencesChecker.set(Boolean.FALSE);
 		_regenerateModelUtil.set(Boolean.FALSE);
 		_modifiedTables.set(new TreeSet<String>());
 		_droppedTables.set(new TreeSet<String>());
@@ -352,6 +359,55 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		referencesChecker = referencesCheckerAux;
 	}
 
+	protected boolean hasUpdatedReleaseBuildNumber(Query query) {
+		if ((query.getQueryType() != Query.QueryType.INSERT) &&
+			(query.getQueryType() != Query.QueryType.UPDATE)) {
+
+			return false;
+		}
+
+		boolean releaseTableChanged = false;
+
+		for (String table : query.getModifiedTables()) {
+			if (StringUtils.equalsIgnoreCase("Release_", table)) {
+				releaseTableChanged = true;
+
+				break;
+			}
+		}
+
+		if (!releaseTableChanged) {
+			return false;
+		}
+
+		Map<String, Object> valuesMap = new TreeMap<>(
+			String.CASE_INSENSITIVE_ORDER);
+
+		valuesMap.putAll(query.getModifiedValues());
+
+		if (query.getQueryType() == Query.QueryType.INSERT) {
+			Object servletContextName = valuesMap.get("servletContextName");
+
+			if (!StringUtils.equalsIgnoreCase(
+					"'portal'", (String)servletContextName)) {
+
+				return false;
+			}
+		}
+
+		Object buildNumber = valuesMap.get("buildNumber");
+
+		if (buildNumber instanceof Number) {
+			Number number = (Number)buildNumber;
+
+			if (number.longValue() > 6000L) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	protected synchronized void initReferencesChecker(Connection connection)
 		throws SQLException {
 
@@ -415,9 +471,6 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return false;
 	}
 
-	private static final String _RELEASE_TABLE_LOWERCASE =
-		"Release_".toLowerCase();
-
 	private static Logger _log = LogManager.getLogger(
 		ReferencesCheckerInfrastructureListener.class);
 
@@ -462,6 +515,16 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		};
 
 	private ThreadLocal<Boolean> _regenerateModelUtil =
+		new ThreadLocal<Boolean>() {
+
+			@Override
+			protected Boolean initialValue() {
+				return Boolean.FALSE;
+			}
+
+		};
+
+	private ThreadLocal<Boolean> _regenerateReferencesChecker =
 		new ThreadLocal<Boolean>() {
 
 			@Override
