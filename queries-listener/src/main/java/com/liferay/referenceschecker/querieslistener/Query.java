@@ -16,11 +16,21 @@ package com.liferay.referenceschecker.querieslistener;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.Parenthesis;
+import net.sf.jsqlparser.expression.TimeValue;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.ItemsList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -180,6 +190,25 @@ public class Query implements Comparable<Query> {
 		return list;
 	}
 
+	public Map<String, Object> getModifiedValues() {
+		List<String> modifiedColumns = getModifiedColumns();
+		List<Expression> modifiedValues = getModifiedValuesObject();
+
+		if (modifiedColumns.size() != modifiedValues.size()) {
+			return Collections.emptyMap();
+		}
+
+		Map<String, Object> valuesMap = new HashMap<>();
+
+		for (int i = 0; i < modifiedColumns.size(); i++) {
+			Object value = convertExpressionToObject(modifiedValues.get(i));
+
+			valuesMap.put(modifiedColumns.get(i), value);
+		}
+
+		return valuesMap;
+	}
+
 	public QueryType getQueryType() {
 		if (_queryType == null) {
 			_queryType = getQueryTypeStartsWith();
@@ -268,6 +297,46 @@ public class Query implements Comparable<Query> {
 
 	}
 
+	protected Object convertExpressionToObject(Expression expression) {
+		if (expression instanceof DateValue) {
+			DateValue value = (DateValue)expression;
+
+			return value.getValue();
+		}
+
+		if (expression instanceof TimeValue) {
+			TimeValue value = (TimeValue)expression;
+
+			return value.getValue();
+		}
+
+		if (expression instanceof DoubleValue) {
+			DoubleValue value = (DoubleValue)expression;
+
+			return value.getValue();
+		}
+
+		if (expression instanceof LongValue) {
+			LongValue value = (LongValue)expression;
+
+			return value.getValue();
+		}
+
+		if (expression instanceof Parenthesis) {
+			Parenthesis parenthesis = (Parenthesis)expression;
+
+			if (!parenthesis.isNot()) {
+				convertExpressionToObject(parenthesis.getExpression());
+			}
+		}
+
+		if (expression instanceof NullValue) {
+			return null;
+		}
+
+		return expression.toString();
+	}
+
 	protected List<Column> getModifiedColumnsObject() {
 		if (isReadOnly()) {
 			return Collections.emptyList();
@@ -339,6 +408,38 @@ public class Query implements Comparable<Query> {
 			Update update = (Update)statement;
 
 			return update.getTables();
+		}
+
+		return Collections.emptyList();
+	}
+
+	protected List<Expression> getModifiedValuesObject() {
+		if (isReadOnly()) {
+			return Collections.emptyList();
+		}
+
+		Statement statement = getStatement();
+
+		if (statement == null) {
+			return Collections.emptyList();
+		}
+
+		if (statement instanceof Insert) {
+			Insert insert = (Insert)statement;
+
+			ItemsList itemList = insert.getItemsList();
+
+			if (itemList instanceof ExpressionList) {
+				ExpressionList expressionList = (ExpressionList)itemList;
+
+				return expressionList.getExpressions();
+			}
+		}
+
+		if (statement instanceof Update) {
+			Update update = (Update)statement;
+
+			return update.getExpressions();
 		}
 
 		return Collections.emptyList();
