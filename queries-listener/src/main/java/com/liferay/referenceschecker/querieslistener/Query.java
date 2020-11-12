@@ -38,6 +38,7 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.create.index.CreateIndex;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
+import net.sf.jsqlparser.statement.create.view.CreateView;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.insert.Insert;
@@ -71,6 +72,10 @@ public class Query implements Comparable<Query> {
 
 		if (statement instanceof CreateTable) {
 			return QueryType.CREATE_TABLE;
+		}
+
+		if (statement instanceof CreateView) {
+			return QueryType.CREATE_OTHER;
 		}
 
 		if (statement instanceof Delete) {
@@ -275,6 +280,32 @@ public class Query implements Comparable<Query> {
 		return _hashCode;
 	}
 
+	public boolean isChangingData() {
+		QueryType queryType = getQueryType();
+
+		if ((queryType == QueryType.INSERT) ||
+			(queryType == QueryType.UPDATE) ||
+			(queryType == QueryType.DELETE)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isChangingTableDefinition() {
+		QueryType queryType = getQueryType();
+
+		if ((queryType == QueryType.CREATE_TABLE) ||
+			(queryType == QueryType.ALTER) ||
+			(queryType == QueryType.DROP_TABLE)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	public boolean isReadOnly() {
 		QueryType queryType = getQueryType();
 
@@ -292,8 +323,8 @@ public class Query implements Comparable<Query> {
 
 	public enum QueryType {
 
-		ALTER, CREATE_INDEX, CREATE_TABLE, DELETE, DROP_INDEX, DROP_OTHER,
-		DROP_TABLE, INSERT, SELECT, UPDATE
+		ALTER, CREATE_INDEX, CREATE_OTHER, CREATE_TABLE, DELETE, DROP_INDEX,
+		DROP_OTHER, DROP_TABLE, INSERT, SELECT, UPDATE
 
 	}
 
@@ -364,7 +395,7 @@ public class Query implements Comparable<Query> {
 	}
 
 	protected List<Table> getModifiedTablesObject() {
-		if (isReadOnly()) {
+		if (!isChangingData() && !isChangingTableDefinition()) {
 			return Collections.emptyList();
 		}
 
@@ -455,13 +486,26 @@ public class Query implements Comparable<Query> {
 		}
 
 		if (StringUtils.startsWithIgnoreCase(_sql, "CREATE INDEX") ||
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE OR REPLACE INDEX") ||
 			StringUtils.startsWithIgnoreCase(_sql, "CREATE UNIQUE INDEX")) {
 
 			return QueryType.CREATE_INDEX;
 		}
 
-		if (StringUtils.startsWithIgnoreCase(_sql, "CREATE TABLE")) {
+		if (StringUtils.startsWithIgnoreCase(_sql, "CREATE TABLE") ||
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE OR REPLACE TABLE")) {
+
 			return QueryType.CREATE_TABLE;
+		}
+
+		if (StringUtils.startsWithIgnoreCase(_sql, "CREATE VIEW") ||
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE OR REPLACE VIEW") ||
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE ROLE") ||
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE OR REPLACE ROLE") ||
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE RULE") ||
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE OR REPLACE RULE")) {
+
+			return QueryType.CREATE_OTHER;
 		}
 
 		if (StringUtils.startsWithIgnoreCase(_sql, "DELETE")) {
