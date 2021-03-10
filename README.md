@@ -1,4 +1,4 @@
-# References Checker Tool
+# Reference Checker Tool
 This tool checks the reference integrity of Liferay database and display the existing inconsistencies.
 It also allows viewing the table relations of Liferay data model. 
 
@@ -6,7 +6,7 @@ It also allows viewing the table relations of Liferay data model.
 
 ## Download
 
-Download it from https://github.com/jorgediaz-lr/references-checker/releases page
+Download it from https://github.com/jorgediaz-lr/reference-checker/releases page
 
 There are two versions available: command line and portlet version
   - Command line tool: `references-checker-cmd-n.n.n.zip`
