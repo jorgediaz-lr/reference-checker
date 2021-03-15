@@ -61,9 +61,12 @@ public class TableUtil {
 		ResultSet rs = null;
 		long count = 0;
 
+		String dbType = null;
 		String sql = null;
 
 		try {
+			dbType = SQLUtil.getDBType(connection);
+
 			String key = "*";
 
 			if (!table.hasCompoundPrimKey()) {
@@ -80,7 +83,7 @@ public class TableUtil {
 				_log.debug("SQL: " + sql);
 			}
 
-			sql = SQLUtil.transform(SQLUtil.getDBType(connection), sql);
+			sql = SQLUtil.transform(dbType, sql);
 
 			ps = connection.prepareStatement(sql);
 
@@ -93,6 +96,12 @@ public class TableUtil {
 			}
 		}
 		catch (SQLException sqle) {
+			if ((dbType == SQLUtil.TYPE_MYSQL) &&
+				(sqle.getErrorCode() == 1412)) {
+
+				return -2;
+			}
+
 			_log.error(
 				"Error executing sql: " + sql + " EXCEPTION: " + sqle, sqle);
 
