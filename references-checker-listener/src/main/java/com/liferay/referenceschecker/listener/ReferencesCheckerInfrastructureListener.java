@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -270,11 +271,32 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return referencesCheckerInfrastructureListener.referencesChecker;
 	}
 
+	protected boolean abortCheckMissingReferences() {
+		Thread currentThread = Thread.currentThread();
+
+		for (StackTraceElement stackTraceElement :
+				currentThread.getStackTrace()) {
+
+			if (_ignoreMethod(
+					stackTraceElement.getClassName(),
+					stackTraceElement.getMethodName())) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	protected void checkMissingReferences(
 		Connection connection, ReferencesChecker referencesChecker,
 		Set<String> insertedTablesLowerCase, Set<String> updatedTablesLowerCase,
 		Map<String, Set<String>> updatedTablesColumns,
 		Set<String> deletedTablesLowerCase) {
+
+		if (abortCheckMissingReferences()) {
+			return;
+		}
 
 		Collection<Reference> references = referencesChecker.getReferences(
 			connection, true);
@@ -447,6 +469,40 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected ReferencesChecker referencesChecker;
+
+	private boolean _ignoreMethod(String className, String methodName) {
+		if (className.endsWith("DeleteAfterTestRunMethodTestRule") ||
+			className.endsWith("UpgradeProcess")) {
+
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					"Aborting checkMissingReferences because className is" +
+						className);
+			}
+
+			return true;
+		}
+
+		if (!Objects.equals(methodName, "setUp") &&
+			!Objects.equals(methodName, "tearDown")) {
+
+			return false;
+		}
+
+		if (className.endsWith("Test") || className.endsWith("TestCase") ||
+			className.endsWith("TestUtil") || className.endsWith("Fixture")) {
+
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					"Aborting checkMissingReferences because we are in the " +
+						className + "." + methodName + " method");
+			}
+
+			return true;
+		}
+
+		return false;
+	}
 
 	private boolean _queryHasAnyUpdatedColumn(
 		com.liferay.referenceschecker.dao.Query query, Set<String> columns) {
