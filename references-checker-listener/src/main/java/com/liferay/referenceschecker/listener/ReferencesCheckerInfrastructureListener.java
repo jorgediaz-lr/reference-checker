@@ -471,7 +471,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	protected ReferencesChecker referencesChecker;
 
 	private boolean _ignoreMethod(String className, String methodName) {
-		if (className.endsWith("DeleteAfterTestRunMethodTestRule") ||
+		if (className.endsWith("DataGuardTestRule") ||
+			className.endsWith("DeleteAfterTestRunMethodTestRule") ||
 			className.endsWith("UpgradeProcess")) {
 
 			if (_log.isInfoEnabled()) {
