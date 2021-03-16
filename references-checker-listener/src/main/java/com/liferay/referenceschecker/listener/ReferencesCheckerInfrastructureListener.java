@@ -16,6 +16,7 @@ package com.liferay.referenceschecker.listener;
 
 import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
+import com.liferay.referenceschecker.config.Configuration;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.querieslistener.EventListener;
 import com.liferay.referenceschecker.querieslistener.EventListenerRegistry;
@@ -31,7 +32,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -471,35 +471,38 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	protected ReferencesChecker referencesChecker;
 
 	private boolean _ignoreMethod(String className, String methodName) {
-		if (className.endsWith("DataGuardTestRule") ||
-			className.endsWith("DeleteAfterTestRunMethodTestRule") ||
-			className.endsWith("UpgradeProcess")) {
+		Configuration configuration = referencesChecker.getConfiguration();
 
-			if (_log.isInfoEnabled()) {
-				_log.info(
-					"Aborting checkMissingReferences because className is" +
-						className);
-			}
+		Configuration.Listener listenerConfiguration =
+			configuration.getListener();
 
-			return true;
-		}
-
-		if (!Objects.equals(methodName, "setUp") &&
-			!Objects.equals(methodName, "tearDown")) {
-
+		if (listenerConfiguration == null) {
 			return false;
 		}
 
-		if (className.endsWith("Test") || className.endsWith("TestCase") ||
-			className.endsWith("TestUtil") || className.endsWith("Fixture")) {
+		for (String ignoredClass : listenerConfiguration.getIgnoredClasses()) {
+			if (className.endsWith(ignoredClass)) {
+				if (_log.isInfoEnabled()) {
+					_log.info(className + " is in the ignored classes list");
+				}
 
-			if (_log.isInfoEnabled()) {
-				_log.info(
-					"Aborting checkMissingReferences because we are in the " +
-						className + "." + methodName + " method");
+				return true;
 			}
+		}
 
-			return true;
+		String fullMethodName = className + "." + methodName;
+
+		for (String ignoredMethods :
+				listenerConfiguration.getIgnoredMethods()) {
+
+			if (fullMethodName.endsWith(ignoredMethods)) {
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						fullMethodName + " is in the ignored methods list");
+				}
+
+				return true;
+			}
 		}
 
 		return false;

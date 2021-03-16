@@ -33,6 +33,10 @@ public class Configuration {
 		return ignoreTables;
 	}
 
+	public Listener getListener() {
+		return listener;
+	}
+
 	public List<Reference> getReferences() {
 		return references;
 	}
@@ -51,6 +55,10 @@ public class Configuration {
 
 	public void setIgnoreTables(List<String> ignoreTables) {
 		this.ignoreTables = ignoreTables;
+	}
+
+	public void setListener(Listener listener) {
+		this.listener = listener;
 	}
 
 	public void setReferences(List<Reference> references) {
@@ -77,6 +85,29 @@ public class Configuration {
 			this.tableToClassNameMapping.put(
 				StringUtils.lowerCase(entry.getKey()), entry.getValue());
 		}
+	}
+
+	public static class Listener {
+
+		public List<String> getIgnoredClasses() {
+			return ignoredClasses;
+		}
+
+		public List<String> getIgnoredMethods() {
+			return ignoredMethods;
+		}
+
+		public void setIgnoredClasses(List<String> ignoredClasses) {
+			this.ignoredClasses = ignoredClasses;
+		}
+
+		public void setIgnoredMethods(List<String> ignoredMethods) {
+			this.ignoredMethods = ignoredMethods;
+		}
+
+		protected List<String> ignoredClasses;
+		protected List<String> ignoredMethods;
+
 	}
 
 	public static class Query {
@@ -206,6 +237,7 @@ public class Configuration {
 
 	protected List<String> ignoreColumns;
 	protected List<String> ignoreTables;
+	protected Listener listener;
 	protected List<Reference> references;
 	protected Map<String, Number> tableRank;
 	protected Map<String, String> tableToClassNameMapping;
