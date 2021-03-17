@@ -362,6 +362,13 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		for (String output : outputList) {
 			_log.warn(output);
 		}
+
+		Configuration.Listener listenerConfiguration = getListenerConfiguration(
+			referencesChecker);
+
+		if (listenerConfiguration.getPrintThreadDump()) {
+			_log.warn("stacktrace", new Exception());
+		}
 	}
 
 	protected synchronized void forceInitReferencesChecker(
@@ -379,6 +386,14 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		referencesCheckerAux.initTableUtil(connection);
 
 		referencesChecker = referencesCheckerAux;
+	}
+
+	protected Configuration.Listener getListenerConfiguration(
+		ReferencesChecker referencesChecker) {
+
+		Configuration configuration = referencesChecker.getConfiguration();
+
+		return configuration.getListener();
 	}
 
 	protected boolean hasUpdatedReleaseBuildNumber(Query query) {
@@ -471,14 +486,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	protected ReferencesChecker referencesChecker;
 
 	private boolean _ignoreMethod(String className, String methodName) {
-		Configuration configuration = referencesChecker.getConfiguration();
-
-		Configuration.Listener listenerConfiguration =
-			configuration.getListener();
-
-		if (listenerConfiguration == null) {
-			return false;
-		}
+		Configuration.Listener listenerConfiguration = getListenerConfiguration(
+			referencesChecker);
 
 		for (String ignoredClass : listenerConfiguration.getIgnoredClasses()) {
 			if (className.endsWith(ignoredClass)) {

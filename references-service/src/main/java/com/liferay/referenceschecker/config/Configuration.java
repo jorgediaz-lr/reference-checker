@@ -14,6 +14,7 @@
 
 package com.liferay.referenceschecker.config;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,10 @@ public class Configuration {
 	}
 
 	public Listener getListener() {
+		if (listener == null) {
+			listener = new Listener();
+		}
+
 		return listener;
 	}
 
@@ -90,11 +95,31 @@ public class Configuration {
 	public static class Listener {
 
 		public List<String> getIgnoredClasses() {
+			if (ignoredClasses == null) {
+				return Collections.emptyList();
+			}
+
 			return ignoredClasses;
 		}
 
 		public List<String> getIgnoredMethods() {
+			if (ignoredMethods == null) {
+				return Collections.emptyList();
+			}
+
 			return ignoredMethods;
+		}
+
+		public Boolean getPrintThreadDump() {
+			if (printThreadDump == null) {
+				return false;
+			}
+
+			return printThreadDump;
+		}
+
+		public Boolean isPrintThreadDump() {
+			return getPrintThreadDump();
 		}
 
 		public void setIgnoredClasses(List<String> ignoredClasses) {
@@ -105,8 +130,13 @@ public class Configuration {
 			this.ignoredMethods = ignoredMethods;
 		}
 
+		public void setPrintThreadDump(Boolean printThreadDump) {
+			this.printThreadDump = printThreadDump;
+		}
+
 		protected List<String> ignoredClasses;
 		protected List<String> ignoredMethods;
+		protected Boolean printThreadDump;
 
 	}
 
