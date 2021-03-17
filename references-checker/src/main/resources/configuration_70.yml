@@ -1,5 +1,12 @@
+#
 ignoreColumns: [actionId]
 ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, systemEvent]
+#
+listener : {
+  ignoredClasses: ["DataGuardTestRule", "DeleteAfterTestRunMethodTestRule", "UpgradeProcess"],
+  ignoredMethods: ["Test.setUp", "TestCase.setUp", "TestUtil.setUp", "Fixture.setUp", "Test.tearDown", "TestCase.tearDown", "TestUtil.tearDown", "Fixture.tearDown", "MissingRequirementsConflictTest.testMissingParentFolder"]
+}
+#
 references: [
     #generic references
   {origin: {table: ".*", columns: [".*${destTable.PrimaryKey}"]},                                     dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
@@ -357,7 +364,7 @@ tableToClassNameMapping : {
     "WikiPageResource" : "com.liferay.wiki.model.WikiPageResource",
     "WorkflowDefinitionLink" : "com.liferay.portal.kernel.model.WorkflowDefinitionLink",
     "WorkflowInstanceLink" : "com.liferay.portal.kernel.model.WorkflowInstanceLink",
-#tables without className
+    #tables without className
     "AssetEntries_AssetCategories" : "",
     "AssetEntries_AssetTags" : "",
     "CT_Campaigns_UserSegment" : "",
@@ -390,27 +397,27 @@ tableToClassNameMapping : {
     "Users_Teams" : "",
     "Users_UserGroups" : ""
 }
+#
 #tableRank is used to calculate fixAction:
 # 1. table rank is not set => default value=0
 # 2. (originRank < destinationRank) => "delete"
 # 3. (originRank == 0) => "???" (unless its table className is "" => "delete"
 # 4. ((destinationRank == 0)||(originRank == destinationRank)) => "???"
 # 5. (originRank > destinationRank) => "update"
-#
 tableRank : {
-#Root tables
+    #Root tables
     "ClassName_" : 100,
     "Company" : 99,
     "Group_" : 98,
     "LayoutSet" : 80,
-#Main entities, don't delete
+    #Main entities, don't delete
     "BlogsEntry" : 50,
     "DLFileEntry" : 50,
     "DLFileVersion" : 50,
     "JournalArticle" : 50,
     "JournalArticleResource" : 50,
     "Layout" : 50,
-#Other entities
+    #Other entities
     "DDMStructureLink" : -20,
     "DDMTemplate" : -10,
     "DDMTemplateLink" : -20,
@@ -424,7 +431,7 @@ tableRank : {
     "JournalContentSearch" : 20,
     "JournalFeed" : 20,
     "JournalFolder" : 20,
-#Auxiliary tables, safe to delete
+    #Auxiliary tables, safe to delete
     "AssetEntry" : -10,
     "AssetLink" : -20,
     "AssetTagStats" : -10,
