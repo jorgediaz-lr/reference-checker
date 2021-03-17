@@ -18,6 +18,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
+import com.liferay.referencechecker.main.util.BaseChecker;
 import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.ref.Reference;
@@ -41,7 +42,7 @@ public class DatabaseInfo {
 	public static final String PROGRAM_NAME = "database-info";
 
 	public static void main(String[] args) throws Exception {
-		BaseChecker.banner(PROGRAM_NAME);
+		BaseChecker.printCmdBanner(PROGRAM_NAME);
 
 		CommandArguments commandArguments = getCommandArguments(args);
 

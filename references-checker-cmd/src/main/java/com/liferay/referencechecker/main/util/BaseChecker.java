@@ -12,14 +12,12 @@
  * details.
  */
 
-package com.liferay.referencechecker.main;
+package com.liferay.referencechecker.main.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
-import com.liferay.referenceschecker.main.util.InitDatabase;
-import com.liferay.referenceschecker.main.util.TeePrintStream;
 import com.liferay.referenceschecker.util.JDBCUtil;
 
 import java.io.File;
@@ -57,19 +55,6 @@ import org.apache.commons.lang3.StringUtils;
  * @author Jorge Díaz
  */
 public class BaseChecker {
-
-	public static void banner(String programName) {
-		System.out.println("========");
-		System.out.println(
-			"WARNING: This tool is not officially supported by Liferay Inc. " +
-				"or its affiliates. Use it under your responsibility: false " +
-					"positives can be returned. If you have any question, " +
-						"contact Jorge Diaz");
-		System.out.println("========");
-		System.out.println("");
-		System.out.println(programName + " version " + _getJarVersion());
-		System.out.println("");
-	}
 
 	public static BaseChecker createBaseChecker(
 			String programName, String databaseCfg, String filenamePrefix,
@@ -129,12 +114,74 @@ public class BaseChecker {
 		}
 	}
 
+	public static void printCmdBanner(String programName) {
+		System.out.println("========");
+		System.out.println(
+			"WARNING: This tool is not officially supported by Liferay Inc. " +
+				"or its affiliates. Use it under your responsibility: false " +
+					"positives can be returned. If you have any question, " +
+						"contact Jorge Diaz");
+		System.out.println("========");
+		System.out.println("");
+		System.out.println(programName + " version " + _getJarVersion());
+		System.out.println("");
+	}
+
 	public Connection getConnection() throws SQLException {
 		return dataSource.getConnection();
 	}
 
 	public ReferencesChecker getReferenceChecker() {
 		return referenceChecker;
+	}
+
+	public void writeOutput(String name, String format, List<String> outputList)
+		throws IOException {
+
+		writeOutput(name, format, null, outputList);
+	}
+
+	public void writeOutput(
+			String name, String format, Long startTime, List<String> outputList)
+		throws IOException {
+
+		File outputFile = _getOutputFile(name, format);
+
+		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
+
+		for (String line : outputList) {
+			writer.println(line);
+		}
+
+		writer.close();
+
+		String outputFileName = outputFile.getName();
+
+		if (Objects.equals(format, "csv")) {
+			File htmlFile = _getOutputFile(name, "html");
+
+			try {
+				File csvFile = outputFile;
+
+				String footer = "Version " + _getJarVersion();
+
+				writeOutputHtml(csvFile, htmlFile, footer);
+
+				outputFileName = outputFileName + " and " + htmlFile.getName();
+			}
+			catch (IOException ioe) {
+				ioe.printStackTrace(System.out);
+			}
+		}
+
+		System.out.println("");
+		System.out.println("Output was written to file: " + outputFileName);
+
+		if (startTime != null) {
+			long endTime = System.currentTimeMillis();
+
+			System.out.println("Total time: " + (endTime - startTime) + " ms");
+		}
 	}
 
 	public void writeOutputHtml(
@@ -222,56 +269,6 @@ public class BaseChecker {
 		InputStream inputStream = classLoader.getResourceAsStream(resourceName);
 
 		return IOUtils.toString(inputStream, "UTF-8");
-	}
-
-	protected void writeOutput(
-			String name, String format, List<String> outputList)
-		throws IOException {
-
-		writeOutput(name, format, null, outputList);
-	}
-
-	protected void writeOutput(
-			String name, String format, Long startTime, List<String> outputList)
-		throws IOException {
-
-		File outputFile = _getOutputFile(name, format);
-
-		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
-
-		for (String line : outputList) {
-			writer.println(line);
-		}
-
-		writer.close();
-
-		String outputFileName = outputFile.getName();
-
-		if (Objects.equals(format, "csv")) {
-			File htmlFile = _getOutputFile(name, "html");
-
-			try {
-				File csvFile = outputFile;
-
-				String footer = "Version " + _getJarVersion();
-
-				writeOutputHtml(csvFile, htmlFile, footer);
-
-				outputFileName = outputFileName + " and " + htmlFile.getName();
-			}
-			catch (IOException ioe) {
-				ioe.printStackTrace(System.out);
-			}
-		}
-
-		System.out.println("");
-		System.out.println("Output was written to file: " + outputFileName);
-
-		if (startTime != null) {
-			long endTime = System.currentTimeMillis();
-
-			System.out.println("Total time: " + (endTime - startTime) + " ms");
-		}
 	}
 
 	protected DataSource dataSource;

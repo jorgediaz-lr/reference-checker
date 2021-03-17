@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.main.util;
+package com.liferay.referencechecker.main.util;
 
 /**
  * @author David Truong
