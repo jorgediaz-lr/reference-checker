@@ -12,19 +12,14 @@
  * details.
  */
 
-package com.liferay.referenceschecker.main;
-
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
+package com.liferay.referencechecker.main;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import com.liferay.referenceschecker.OutputUtil;
-import com.liferay.referenceschecker.main.util.CommandArguments;
+import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.main.util.InitDatabase;
 import com.liferay.referenceschecker.main.util.TeePrintStream;
-import com.liferay.referenceschecker.ref.MissingReferences;
-import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.JDBCUtil;
 
 import java.io.File;
@@ -47,8 +42,6 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -63,9 +56,9 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * @author Jorge Díaz
  */
-public class ReferencesChecker {
+public class BaseChecker {
 
-	public static void main(String[] args) throws Exception {
+	public static void banner(String programName) {
 		System.out.println("========");
 		System.out.println(
 			"WARNING: This tool is not officially supported by Liferay Inc. " +
@@ -74,27 +67,14 @@ public class ReferencesChecker {
 						"contact Jorge Diaz");
 		System.out.println("========");
 		System.out.println("");
-		System.out.println("Reference checker version " + _getJarVersion());
+		System.out.println(programName + " version " + _getJarVersion());
 		System.out.println("");
+	}
 
-		CommandArguments commandArguments = getCommandArguments(args);
-
-		if (commandArguments == null) {
-			System.exit(-1);
-
-			return;
-		}
-
-		String databaseCfg = commandArguments.getDatabaseConfiguration();
-		String filenamePrefix = commandArguments.getOutputFilesPrefix();
-		String filenameSuffix = commandArguments.getOutputFilesSuffix();
-
-		int missingReferencesLimit =
-			commandArguments.getMissingReferencesLimit();
-
-		if (missingReferencesLimit == -1) {
-			missingReferencesLimit = 50;
-		}
+	public static BaseChecker createBaseChecker(
+			String programName, String databaseCfg, String filenamePrefix,
+			String filenameSuffix, boolean checkUndefinedTables)
+		throws Exception, FileNotFoundException {
 
 		if (databaseCfg == null) {
 			String configFolder = getConfigFolder();
@@ -114,12 +94,10 @@ public class ReferencesChecker {
 		}
 
 		File logFile = new File(
-			filenamePrefix + "references-checker" + filenameSuffix + ".log");
+			filenamePrefix + programName + filenameSuffix + ".log");
 
 		System.setOut(
 			new TeePrintStream(new FileOutputStream(logFile), System.out));
-
-		ReferencesChecker referencesChecker;
 
 		try {
 			System.out.println("");
@@ -132,78 +110,31 @@ public class ReferencesChecker {
 
 			DataSource dataSource = initDB.connectToDatabase(databaseCfg);
 
-			boolean checkUndefinedTables =
-				commandArguments.checkUndefinedTables();
-
-			referencesChecker = new ReferencesChecker(
+			BaseChecker baseChecker = new BaseChecker(
 				dataSource, filenamePrefix, filenameSuffix,
-				missingReferencesLimit, checkUndefinedTables);
+				checkUndefinedTables);
 
 			long endTime = System.currentTimeMillis();
 			System.out.println("");
 			System.out.println("Total time: " + (endTime - startTime) + " ms");
+
+			return baseChecker;
 		}
 		catch (Throwable t) {
 			t.printStackTrace(System.out);
 
 			System.exit(-1);
 
-			return;
-		}
-
-		if (commandArguments.showInformation()) {
-			referencesChecker.dumpDatabaseInfo();
-		}
-
-		if (commandArguments.showRelations()) {
-			referencesChecker.calculateReferences();
-		}
-
-		if (commandArguments.countTables()) {
-			referencesChecker.calculateTableCount();
-		}
-
-		if (commandArguments.showMissingReferences()) {
-			List<MissingReferences> missingReferenceList =
-				referencesChecker.execute();
-
-			boolean dumpCleanupScript = commandArguments.dumpCleanupScript();
-
-			if (dumpCleanupScript) {
-				referencesChecker.dumpCleanup(missingReferenceList);
-			}
+			return null;
 		}
 	}
 
-	public ReferencesChecker(
-			DataSource dataSource, String filenamePrefix, String filenameSuffix,
-			int missingReferencesLimit, boolean checkUndefinedTables)
-		throws Exception {
+	public Connection getConnection() throws SQLException {
+		return dataSource.getConnection();
+	}
 
-		this.dataSource = dataSource;
-		this.filenamePrefix = filenamePrefix;
-		this.filenameSuffix = filenameSuffix;
-		this.missingReferencesLimit = missingReferencesLimit;
-
-		Connection connection = null;
-
-		try {
-			connection = dataSource.getConnection();
-
-			referencesChecker =
-				new com.liferay.referenceschecker.ReferencesChecker(connection);
-
-			if (referencesChecker.getConfiguration() == null) {
-				throw new RuntimeException("Error loading configuration");
-			}
-
-			referencesChecker.setCheckUndefinedTables(checkUndefinedTables);
-			referencesChecker.initModelUtil(connection);
-			referencesChecker.initTableUtil(connection);
-		}
-		finally {
-			JDBCUtil.cleanUp(connection);
-		}
+	public ReferencesChecker getReferenceChecker() {
+		return referenceChecker;
 	}
 
 	public void writeOutputHtml(
@@ -236,51 +167,6 @@ public class ReferencesChecker {
 		writer.close();
 	}
 
-	protected static CommandArguments getCommandArguments(String[] args)
-		throws Exception {
-
-		CommandArguments commandArguments = new CommandArguments();
-
-		JCommander jCommander = new JCommander(commandArguments);
-
-		jCommander.setProgramName("referenceschecker");
-
-		try {
-			jCommander.parse(args);
-
-			if (commandArguments.isHelp()) {
-				_printHelp(jCommander);
-
-				return null;
-			}
-
-			if (!commandArguments.showInformation() &&
-				!commandArguments.showRelations() &&
-				!commandArguments.countTables() &&
-				!commandArguments.showMissingReferences()) {
-
-				System.out.println(
-					"!! Please specify parameter -i, -m or -r !!");
-				System.out.println();
-				System.out.println(
-					"For more information execute: referenceschecker -h");
-
-				return null;
-			}
-		}
-		catch (ParameterException pe) {
-			if (!commandArguments.isHelp()) {
-				System.err.println(pe.getMessage());
-			}
-
-			_printHelp(jCommander);
-
-			return null;
-		}
-
-		return commandArguments;
-	}
-
 	protected static String getConfigFolder() throws Exception {
 		File jarFile = _getJarFile();
 
@@ -299,125 +185,33 @@ public class ReferencesChecker {
 		return libFolder.getParent() + "/config/";
 	}
 
-	protected void calculateReferences() throws IOException, SQLException {
-		System.out.println("");
-		System.out.println("Executing calculate references...");
+	protected BaseChecker(
+			DataSource dataSource, String filenamePrefix, String filenameSuffix,
+			boolean checkUndefinedTables)
+		throws Exception {
 
-		long startTime = System.currentTimeMillis();
-
-		Connection connection = null;
-
-		Collection<Reference> references;
-
-		try {
-			connection = dataSource.getConnection();
-
-			references = referencesChecker.calculateReferences(
-				connection, false);
-		}
-		finally {
-			JDBCUtil.cleanUp(connection);
-		}
-
-		List<String> outputList = OutputUtil.generateCSVOutputMappingList(
-			references);
-
-		writeOutput("references", "csv", startTime, outputList);
-	}
-
-	protected void calculateTableCount() throws IOException, SQLException {
-		System.out.println("");
-		System.out.println("Executing count tables...");
-
-		long startTime = System.currentTimeMillis();
-
-		Connection connection = null;
-
-		Map<String, Long> mapTableCount;
-
-		try {
-			connection = dataSource.getConnection();
-
-			mapTableCount = referencesChecker.calculateTableCount(connection);
-		}
-		finally {
-			JDBCUtil.cleanUp(connection);
-		}
-
-		String[] headers = {"table", "count"};
-
-		List<String> outputList = OutputUtil.generateCSVOutputMap(
-			Arrays.asList(headers), mapTableCount);
-
-		writeOutput("tablesCount", "csv", startTime, outputList);
-	}
-
-	protected void dumpCleanup(List<MissingReferences> missingReferenceList)
-		throws IOException, SQLException {
-
-		System.out.println("");
-		System.out.println("Executing dump cleanup script...");
-
-		List<String> cleanup = referencesChecker.generateCleanupSentences(
-			missingReferenceList);
-
-		writeOutput("missing-references_cleanup", "sql", cleanup);
-	}
-
-	protected void dumpDatabaseInfo() throws IOException, SQLException {
-		System.out.println("");
-		System.out.println("Executing dump Liferay database information...");
-
-		long startTime = System.currentTimeMillis();
-
-		Connection connection = null;
-
-		List<String> outputList;
-
-		try {
-			connection = dataSource.getConnection();
-
-			outputList = referencesChecker.dumpDatabaseInfo(connection);
-		}
-		finally {
-			JDBCUtil.cleanUp(connection);
-		}
-
-		writeOutput("information", "txt", startTime, outputList);
-	}
-
-	protected List<MissingReferences> execute()
-		throws IOException, SQLException {
-
-		System.out.println("");
-		System.out.println("Executing dump missing references...");
-
-		long startTime = System.currentTimeMillis();
-
-		List<MissingReferences> missingReferenceList = null;
+		this.dataSource = dataSource;
+		this.filenamePrefix = filenamePrefix;
+		this.filenameSuffix = filenameSuffix;
 
 		Connection connection = null;
 
 		try {
 			connection = dataSource.getConnection();
 
-			missingReferenceList = referencesChecker.execute(connection);
+			referenceChecker = new ReferencesChecker(connection);
+
+			if (referenceChecker.getConfiguration() == null) {
+				throw new RuntimeException("Error loading configuration");
+			}
+
+			referenceChecker.setCheckUndefinedTables(checkUndefinedTables);
+			referenceChecker.initModelUtil(connection);
+			referenceChecker.initTableUtil(connection);
 		}
 		finally {
 			JDBCUtil.cleanUp(connection);
 		}
-
-		List<String> selectSentences =
-			referencesChecker.generateSelectSentences(missingReferenceList);
-
-		writeOutput("missing-references", "sql", selectSentences);
-
-		List<String> outputList = OutputUtil.generateCSVOutputCheckReferences(
-			missingReferenceList, missingReferencesLimit);
-
-		writeOutput("missing-references", "csv", startTime, outputList);
-
-		return missingReferenceList;
 	}
 
 	protected String getResource(String resourceName)
@@ -483,8 +277,7 @@ public class ReferencesChecker {
 	protected DataSource dataSource;
 	protected String filenamePrefix;
 	protected String filenameSuffix;
-	protected int missingReferencesLimit;
-	protected com.liferay.referenceschecker.ReferencesChecker referencesChecker;
+	protected ReferencesChecker referenceChecker;
 
 	private static String _getDatabaseURL(DataSource dataSource) {
 		String databaseUrl = null;
@@ -514,7 +307,7 @@ public class ReferencesChecker {
 
 	private static File _getJarFile() throws Exception {
 		ProtectionDomain protectionDomain =
-			ReferencesChecker.class.getProtectionDomain();
+			BaseChecker.class.getProtectionDomain();
 
 		CodeSource codeSource = protectionDomain.getCodeSource();
 
@@ -524,20 +317,9 @@ public class ReferencesChecker {
 	}
 
 	private static String _getJarVersion() {
-		Package p = ReferencesChecker.class.getPackage();
+		Package p = BaseChecker.class.getPackage();
 
 		return p.getImplementationVersion();
-	}
-
-	private static void _printHelp(JCommander jCommander) {
-		String commandName = jCommander.getParsedCommand();
-
-		if (commandName == null) {
-			jCommander.usage();
-		}
-		else {
-			jCommander.usage(commandName);
-		}
 	}
 
 	private File _getOutputFile(String name, String extension) {
