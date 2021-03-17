@@ -18,6 +18,7 @@ import com.liferay.referencechecker.main.util.BaseChecker;
 import com.liferay.referencechecker.main.util.CommandArguments;
 import com.liferay.referenceschecker.OutputUtil;
 import com.liferay.referenceschecker.ReferencesChecker;
+import com.liferay.referenceschecker.ref.Reference;
 import com.liferay.referenceschecker.util.JDBCUtil;
 
 import java.io.IOException;
@@ -25,16 +26,15 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Jorge Díaz
  */
-public class DatabaseInfo {
+public class DumpReferences {
 
-	public static final String PROGRAM_NAME = "database-info";
+	public static final String PROGRAM_NAME = "dump-references";
 
 	public static void main(String[] args) throws Exception {
 		BaseChecker.printCmdBanner(PROGRAM_NAME);
@@ -58,16 +58,14 @@ public class DatabaseInfo {
 			PROGRAM_NAME, databaseCfg, filenamePrefix, filenameSuffix,
 			checkUndefinedTables);
 
-		dumpDatabaseInfo(baseChecker);
-
-		calculateTableCount(baseChecker);
+		calculateReferences(baseChecker);
 	}
 
-	protected static void calculateTableCount(BaseChecker baseChecker)
+	protected static void calculateReferences(BaseChecker baseChecker)
 		throws IOException, SQLException {
 
 		System.out.println("");
-		System.out.println("Executing count tables...");
+		System.out.println("Executing calculate references...");
 
 		long startTime = System.currentTimeMillis();
 
@@ -75,49 +73,22 @@ public class DatabaseInfo {
 
 		ReferencesChecker referenceChecker = baseChecker.getReferenceChecker();
 
-		Map<String, Long> mapTableCount;
+		Collection<Reference> references;
 
 		try {
 			connection = baseChecker.getConnection();
 
-			mapTableCount = referenceChecker.calculateTableCount(connection);
+			references = referenceChecker.calculateReferences(
+				connection, false);
 		}
 		finally {
 			JDBCUtil.cleanUp(connection);
 		}
 
-		String[] headers = {"table", "count"};
+		List<String> outputList = OutputUtil.generateCSVOutputMappingList(
+			references);
 
-		List<String> outputList = OutputUtil.generateCSVOutputMap(
-			Arrays.asList(headers), mapTableCount);
-
-		baseChecker.writeOutput("tablesCount", "csv", startTime, outputList);
-	}
-
-	protected static void dumpDatabaseInfo(BaseChecker baseChecker)
-		throws IOException, SQLException {
-
-		System.out.println("");
-		System.out.println("Executing dump Liferay database information...");
-
-		long startTime = System.currentTimeMillis();
-
-		Connection connection = null;
-
-		ReferencesChecker referenceChecker = baseChecker.getReferenceChecker();
-
-		List<String> outputList;
-
-		try {
-			connection = baseChecker.getConnection();
-
-			outputList = referenceChecker.dumpDatabaseInfo(connection);
-		}
-		finally {
-			JDBCUtil.cleanUp(connection);
-		}
-
-		baseChecker.writeOutput("information", "txt", startTime, outputList);
+		baseChecker.writeOutput("references", "csv", startTime, outputList);
 	}
 
 }

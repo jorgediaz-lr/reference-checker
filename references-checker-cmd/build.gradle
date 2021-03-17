@@ -6,7 +6,7 @@ apply plugin: 'application'
 
 applicationDefaultJvmArgs = ["-Xms512m", "-Xmx2048m"]
 
-mainClassName = "com.liferay.referenceschecker.main.ReferencesChecker"
+mainClassName = "com.liferay.referencechecker.main.CheckDatabase"
 
 executableDir = ""
 
@@ -39,7 +39,7 @@ distributions {
 }
 
 startScripts {
-	applicationName = 'references-checker'
+	applicationName = 'check-database'
 	executableDir = '.'
 	doLast {
 		// By default, scripts are included in bin, changing it to root folder
@@ -50,4 +50,58 @@ startScripts {
 		windowsScript.text = windowsScript.text.replace('set CLASSPATH=%APP_HOME%\\', 'set CLASSPATH=%APP_HOME%\\config;%APP_HOME%\\')
 
 	}
+}
+
+task databaseInfoExtraRunApp(type: CreateStartScripts)
+task dumpReferencesExtraRunApp(type: CreateStartScripts)
+
+databaseInfoExtraRunApp {
+	defaultJvmOpts = ["-Xms512m", "-Xmx2048m"]
+
+	mainClassName = "com.liferay.referencechecker.main.DatabaseInfo"
+	applicationName = 'database-info'
+
+	classpath = startScripts.classpath
+	outputDir = startScripts.outputDir
+
+	databaseInfoExtraRunApp {
+		doLast {
+			// By default, scripts are included in bin, changing it to root folder
+			unixScript.text = unixScript.text.replace('\\\"\$PRG\\\"`/..', '\\\"\$PRG\\\"`')
+			windowsScript.text = windowsScript.text.replace('APP_HOME=%DIRNAME%..', 'APP_HOME=%DIRNAME%')
+			// Add config folder to classpath
+			unixScript.text = unixScript.text.replace('CLASSPATH=\$APP_HOME/', 'CLASSPATH=\$APP_HOME/config:\$APP_HOME/')
+			windowsScript.text = windowsScript.text.replace('set CLASSPATH=%APP_HOME%\\', 'set CLASSPATH=%APP_HOME%\\config;%APP_HOME%\\')
+
+		}
+	}
+}
+
+dumpReferencesExtraRunApp {
+	defaultJvmOpts = ["-Xms512m", "-Xmx2048m"]
+
+	mainClassName = "com.liferay.referencechecker.main.DumpReferences"
+	applicationName = 'dump-references'
+
+	classpath = startScripts.classpath
+	outputDir = startScripts.outputDir
+
+	dumpReferencesExtraRunApp {
+		doLast {
+			// By default, scripts are included in bin, changing it to root folder
+			unixScript.text = unixScript.text.replace('\\\"\$PRG\\\"`/..', '\\\"\$PRG\\\"`')
+			windowsScript.text = windowsScript.text.replace('APP_HOME=%DIRNAME%..', 'APP_HOME=%DIRNAME%')
+			// Add config folder to classpath
+			unixScript.text = unixScript.text.replace('CLASSPATH=\$APP_HOME/', 'CLASSPATH=\$APP_HOME/config:\$APP_HOME/')
+			windowsScript.text = windowsScript.text.replace('set CLASSPATH=%APP_HOME%\\', 'set CLASSPATH=%APP_HOME%\\config;%APP_HOME%\\')
+
+		}
+	}
+}
+
+applicationDistribution.into('.') {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	from(databaseInfoExtraRunApp)
+	from(dumpReferencesExtraRunApp)
+	fileMode = 0755
 }
