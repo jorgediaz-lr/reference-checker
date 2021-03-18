@@ -1,5 +1,5 @@
 #
-ignoreColumns: [actionId]
+ignoreColumns: [actionId, userId]
 ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, systemEvent]
 #
 listener : {
@@ -17,12 +17,16 @@ references: [
   {origin: {table: ".*", columns: ["folderId", "treePath"], condition: "folderId<>0"},                dest: {table: ".*Folder", columns: ["folderId", "treePath"]}},
   {origin: {table: ".*", columns: [".*storageId"]},                                                   dest: {table: "DDMField", columns: ["storageId"]}},
   {origin: {table: ".*", columns: [".*FileEntryId"]},                                                 dest: {table: "DLFileEntry", columns: ["fileEntryId"]}},
-  {origin: {table: ".*", columns: ["logoId"]},                                                        dest: {table: "Image", columns: ["imageId"]}},
-  {origin: {table: ".*", columns: ["portraitId"]},                                                    dest: {table: "Image", columns: ["imageId"]}},
   {origin: {table: ".*", columns: ["layoutId"]},                                                      dest: {table: "Layout", columns: ["layoutId"]}},
   {origin: {table: ".*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}, fixAction: "update" },
   {origin: {table: ".*", columns: [".*layoutPrototypeUuid"]},                                         dest: {table: "LayoutPrototype", columns: ["uuid_"]}, fixAction: "update" },
   {origin: {table: ".*", columns: [".*layoutSetPrototypeUuid"]},                                      dest: {table: "LayoutSetPrototype", columns: ["uuid_"]}, fixAction: "update" },
+    #imageId
+  {origin: {table: ".*", columns: ["logoId"]},                                                        dest: {table: "Image", columns: ["imageId"]}},
+  {origin: {table: ".*", columns: ["portraitId"]},                                                    dest: {table: "Image", columns: ["imageId"]}},
+  {origin: {table: ".*", columns: ["smallImageId"], condition: "smallImage=[$TRUE$]", conditionColumns: ["smallImage"]}, dest: {table: "Image", columns: ["imageId"]}},
+  {origin: {table: ".*", columns: ["smallImageId"]}}, #ignore
+  {origin: {table: "DLFileEntry", columns: [".*imageId"]}}, #ignore
     #userId
   {origin: {table: "^(?!Contact_\\b).*$", columns: ["^(userId|completionUserId|creatorUserId|lastPostByUserId|lockUserId|receiverUserId|replierUserId|rootMessageUserId|statusByUserId|versionUserId)$"]}, dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
   {origin: {table: ".*", columns: ["userId.+"]}, dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
