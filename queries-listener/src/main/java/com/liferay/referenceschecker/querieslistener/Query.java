@@ -574,7 +574,8 @@ public class Query implements Comparable<Query> {
 
 		/* alter table @table@ change column @old-column@ @new-column@ @type@;
 		alter table @table@ rename column @old-column@ to @new-column@;
-		alter table @table@ rename @old-column@ to @new-column@;*/
+		alter table @table@ rename @old-column@ to @new-column@;
+		alter table @table@ drop primary key;*/
 		if (StringUtils.startsWithIgnoreCase(sql, "ALTER TABLE")) {
 			String[] sqlArr = sql.split(" ");
 
@@ -582,6 +583,12 @@ public class Query implements Comparable<Query> {
 				StringUtils.startsWithIgnoreCase(sqlArr[3], "RENAME")) {
 
 				sql = "ALTER TABLE " + sqlArr[2] + " ADD dummy INTEGER";
+			}
+			else if (StringUtils.equalsIgnoreCase(sqlArr[3], "DROP") &&
+					 StringUtils.equalsIgnoreCase(sqlArr[4], "PRIMARY") &&
+					 StringUtils.equalsIgnoreCase(sqlArr[5], "KEY")) {
+
+				sql = "ALTER TABLE " + sqlArr[2] + " DROP CONSTRAINT dummy";
 			}
 		}
 
