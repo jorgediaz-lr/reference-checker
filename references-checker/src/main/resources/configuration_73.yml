@@ -1,6 +1,6 @@
 #
 ignoreColumns: [actionId, userId]
-ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, systemEvent]
+ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, syncDLFileVersionDiff, syncDLObject, syncDevice, systemEvent]
 #
 listener : {
   ignoredClasses: ["DataGuardTestRule", "DeleteAfterTestRunMethodTestRule", "UpgradeProcess"],
@@ -64,9 +64,6 @@ references: [
   {origin: {table: "Repository",     columns: ["dlFolderId"]},                                       dest: {table: "DLFolder",        columns: ["folderId"]}},
   {origin: {table: "SocialActivity", columns: ["parentClassPk"], condition: "parentclassNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: ".*",  columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "WikiPage",       columns: ["groupId","resourcePrimKey"]},                        dest: {table: "WikiPageResource", columns: ["groupId","resourcePrimKey"]}},
-  {origin: {table: "SyncDL.*",       columns: [".*${destTable.PrimaryKey}"]},                        dest: {table: "DL.*",             columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "SyncDLObject",   columns: ["repositoryId"]}}, #ignore
-  {origin: {table: "SyncDLObject",   columns: ["versionId"]},                                        dest: {table: "DLFileVersion", columns: ["fileVersionId"]}},
     #relations with ListType columns
   {origin: {table: "Address",  columns: ["typeId"]},         dest: {table: "ListType", columns: ["listTypeId"], condition: "type_ like '%.address'"}},
   {origin: {table: "EmailAddress",  columns: ["typeId"]},    dest: {table: "ListType", columns: ["listTypeId"], condition: "type_ like '%.emailAddress'"}},
@@ -133,13 +130,7 @@ references: [
     #  {origin: {table: "DLFileVersion",  columns: ["${origTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]},          dest: {table: "TrashVersion", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}')"}},
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk IS NOT NULL"}, dest: {table: ".*", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileVersion.className}') and classPk IS NOT NULL"}}, #ignore
-  {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL"}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
-    #liferay sync
-  {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "parentFolderId"], condition: "type_ = 'folder' and event not in ('delete', 'trash')"}, dest: {table: "DLFolder",     columns: ["companyId", "groupId", "folderId", parentFolderId"],    condition: "groupId=repositoryId and status<>8"}},
-  {origin: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "parentFolderId"], condition: "type_ = 'file' and event not in ('delete', 'trash')"},   dest: {table: "DLFileEntry",  columns: ["companyId", "groupId", "fileEntryId", "folderId"],   condition: "groupId=repositoryId and fileEntryId not in (select fileEntryId from DLFileVersion where status=8)"}},
-  {origin: {table: "DLFolder",     columns: ["companyId", "groupId", "folderId", "parentFolderId"],    condition: "groupId=repositoryId and status<>8"},                    dest: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "parentFolderId"], condition: "type_ = 'folder' and event not in ('delete', 'trash')"}},
-  {origin: {table: "DLFileEntry",  columns: ["companyId", "groupId", "fileEntryId", "folderId"],   condition: "groupId=repositoryId and fileEntryId not in (select fileEntryId from DLFileVersion where status=8)"}, dest: {table: "SyncDLObject", columns: ["companyId", "repositoryId", "typePk", "parentFolderId"], condition: "type_ = 'file' and event not in ('delete', 'trash')"}},
-  {origin: {table: "SyncDLObject", columns: ["repositoryId", "companyId"], condition: "repositoryId<>0"},     dest: {table: "Group_", columns: ["groupId", "companyId"]}}
+  {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL"}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true}
     ]
 tableToClassNameMapping : {
     "AMImageEntry" : "com.liferay.adaptive.media.image.model.AMImageEntry",
