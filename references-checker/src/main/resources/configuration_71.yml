@@ -4,7 +4,8 @@ ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, systemEvent]
 #
 listener : {
   ignoredClasses: ["DataGuardTestRule", "DeleteAfterTestRunMethodTestRule", "UpgradeProcess"],
-  ignoredMethods: ["Test.setUp", "TestCase.setUp", "TestUtil.setUp", "Fixture.setUp", "Test.tearDown", "TestCase.tearDown", "TestUtil.tearDown", "Fixture.tearDown", "MissingRequirementsConflictTest.testMissingParentFolder"]
+  ignoredMethods: ["Test.setUp", "TestCase.setUp", "TestUtil.setUp", "Fixture.setUp", "Test.tearDown", "TestCase.tearDown", "TestUtil.tearDown", "Fixture.tearDown", "MissingRequirementsConflictTest.testMissingParentFolder"],
+  printThreadDump: true
 }
 #
 references: [
