@@ -104,7 +104,7 @@ public class OutputUtil {
 	}
 
 	public static List<String> generateCSVOutputCheckReferences(
-		List<MissingReferences> listMissingReferences,
+		Collection<MissingReferences> listMissingReferences,
 		int missingReferencesLimit) {
 
 		List<String> out = new ArrayList<>();
