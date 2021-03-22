@@ -392,29 +392,46 @@ public class ReferencesChecker {
 		return listMissingReferences;
 	}
 
+	public Collection<MissingReferences> executeCleanUp(
+		Connection connection,
+		Collection<MissingReferences> missingReferencesList) {
+
+		List<MissingReferences> notProcessed = new ArrayList<>();
+
+		for (MissingReferences missingReferences : missingReferencesList) {
+			List<String> cleanupSqls = generateCleanupSentences(
+				missingReferences);
+
+			if (cleanupSqls == null) {
+				notProcessed.add(missingReferences);
+
+				continue;
+			}
+
+			MissingReferences missingReferencesError = _executeCleanUp(
+				connection, cleanupSqls, missingReferences);
+
+			if (missingReferencesError != null) {
+				notProcessed.add(missingReferencesError);
+			}
+		}
+
+		return notProcessed;
+	}
+
 	public List<String> generateCleanupSentences(
 		Collection<MissingReferences> missingReferencesList) {
 
 		List<String> cleanUpSentences = new ArrayList<>();
 
 		for (MissingReferences missingReferences : missingReferencesList) {
-			Reference reference = missingReferences.getReference();
+			List<String> sqls = generateCleanupSentences(missingReferences);
 
-			Collection<Object[]> values = missingReferences.getValues();
-
-			List<String> sqls;
-
-			String fixAction = reference.getFixAction();
-
-			if (Objects.equals(fixAction, "delete")) {
-				sqls = generateDeleteSentences(reference, values, 2000);
-			}
-			else if (Objects.equals(fixAction, "update")) {
-				sqls = generateUpdateSentences(reference, values, 2000);
-			}
-			else {
+			if (sqls == null) {
 				continue;
 			}
+
+			Reference reference = missingReferences.getReference();
 
 			cleanUpSentences.add("/* " + reference.toString() + " */");
 
@@ -603,6 +620,26 @@ public class ReferencesChecker {
 
 	public void setIgnoreNullValues(boolean ignoreNullValues) {
 		this.ignoreNullValues = ignoreNullValues;
+	}
+
+	protected List<String> generateCleanupSentences(
+		MissingReferences missingReferences) {
+
+		Reference reference = missingReferences.getReference();
+
+		Collection<Object[]> values = missingReferences.getValues();
+
+		String fixAction = reference.getFixAction();
+
+		if (Objects.equals(fixAction, "delete")) {
+			return generateDeleteSentences(reference, values, 2000);
+		}
+
+		if (Objects.equals(fixAction, "update")) {
+			return generateUpdateSentences(reference, values, 2000);
+		}
+
+		return null;
 	}
 
 	protected String generateDeleteSentence(
@@ -944,6 +981,45 @@ public class ReferencesChecker {
 
 			first = false;
 		}
+	}
+
+	private MissingReferences _executeCleanUp(
+		Connection connection, List<String> cleanupSqls,
+		MissingReferences missingReferences) {
+
+		for (String cleanupSql : cleanupSqls) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Cleanup sql: " + cleanupSql);
+			}
+
+			PreparedStatement ps = null;
+
+			try {
+				ps = connection.prepareStatement(cleanupSql);
+
+				ps.setQueryTimeout(SQLUtil.HEAVY_QUERY_TIMEOUT);
+
+				int rows = ps.executeUpdate();
+
+				if (_log.isDebugEnabled()) {
+					_log.debug("Procesed " + rows + " rows");
+				}
+			}
+			catch (Throwable t) {
+				_log.error(
+					"SQL: " + cleanupSql + " - EXCEPTION: " + t.getClass() +
+						" - " + t.getMessage(),
+					t);
+
+				return new MissingReferences(
+					missingReferences.getReference(), t);
+			}
+			finally {
+				JDBCUtil.cleanUp(ps);
+			}
+		}
+
+		return null;
 	}
 
 	private String _getSQL(
