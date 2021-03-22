@@ -271,30 +271,40 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return referencesCheckerInfrastructureListener.referencesChecker;
 	}
 
-	protected boolean abortCheckMissingReferences() {
-		Thread currentThread = Thread.currentThread();
-
-		for (StackTraceElement stackTraceElement :
-				currentThread.getStackTrace()) {
-
-			if (_ignoreMethod(
-					stackTraceElement.getClassName(),
-					stackTraceElement.getMethodName())) {
-
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	protected void checkMissingReferences(
 		Connection connection, ReferencesChecker referencesChecker,
 		Set<String> insertedTablesLowerCase, Set<String> updatedTablesLowerCase,
 		Map<String, Set<String>> updatedTablesColumns,
 		Set<String> deletedTablesLowerCase) {
 
-		if (abortCheckMissingReferences()) {
+		boolean abortCheck = false;
+		boolean cleanUp = false;
+
+		Thread currentThread = Thread.currentThread();
+
+		for (StackTraceElement stackTraceElement :
+				currentThread.getStackTrace()) {
+
+			if (_cleanUpMethod(
+					stackTraceElement.getClassName(),
+					stackTraceElement.getMethodName())) {
+
+				cleanUp = true;
+			}
+
+			if (_ignoreMethod(
+					stackTraceElement.getClassName(),
+					stackTraceElement.getMethodName())) {
+
+				abortCheck = true;
+			}
+
+			if (cleanUp && abortCheck) {
+				break;
+			}
+		}
+
+		if (abortCheck && !cleanUp) {
 			return;
 		}
 
@@ -349,10 +359,19 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 		}
 
-		List<MissingReferences> missingReferences = referencesChecker.execute(
-			connection, referencesToCheck);
+		Collection<MissingReferences> missingReferences =
+			referencesChecker.execute(connection, referencesToCheck);
 
 		if (missingReferences.isEmpty()) {
+			return;
+		}
+
+		if (cleanUp) {
+			missingReferences = referencesChecker.executeCleanUp(
+				connection, missingReferences);
+		}
+
+		if (abortCheck) {
 			return;
 		}
 
@@ -484,6 +503,38 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected ReferencesChecker referencesChecker;
+
+	private boolean _cleanUpMethod(String className, String methodName) {
+		Configuration.Listener listenerConfiguration = getListenerConfiguration(
+			referencesChecker);
+
+		for (String cleanUpClass : listenerConfiguration.getCleanUpClasses()) {
+			if (className.endsWith(cleanUpClass)) {
+				if (_log.isInfoEnabled()) {
+					_log.info(className + " is in the cleanUp classes list");
+				}
+
+				return true;
+			}
+		}
+
+		String fullMethodName = className + "." + methodName;
+
+		for (String cleanUpMethods :
+				listenerConfiguration.getCleanUpMethods()) {
+
+			if (fullMethodName.endsWith(cleanUpMethods)) {
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						fullMethodName + " is in the cleanUp methods list");
+				}
+
+				return true;
+			}
+		}
+
+		return false;
+	}
 
 	private boolean _ignoreMethod(String className, String methodName) {
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(

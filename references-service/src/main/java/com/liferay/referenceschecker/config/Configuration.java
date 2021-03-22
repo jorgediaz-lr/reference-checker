@@ -94,6 +94,22 @@ public class Configuration {
 
 	public static class Listener {
 
+		public List<String> getCleanUpClasses() {
+			if (cleanUpClasses == null) {
+				return Collections.emptyList();
+			}
+
+			return cleanUpClasses;
+		}
+
+		public List<String> getCleanUpMethods() {
+			if (cleanUpMethods == null) {
+				return Collections.emptyList();
+			}
+
+			return cleanUpMethods;
+		}
+
 		public List<String> getIgnoredClasses() {
 			if (ignoredClasses == null) {
 				return Collections.emptyList();
@@ -122,6 +138,14 @@ public class Configuration {
 			return getPrintThreadDump();
 		}
 
+		public void setCleanUpClasses(List<String> cleanUpClasses) {
+			this.cleanUpClasses = cleanUpClasses;
+		}
+
+		public void setCleanUpMethods(List<String> cleanUpMethods) {
+			this.cleanUpMethods = cleanUpMethods;
+		}
+
 		public void setIgnoredClasses(List<String> ignoredClasses) {
 			this.ignoredClasses = ignoredClasses;
 		}
@@ -134,6 +158,8 @@ public class Configuration {
 			this.printThreadDump = printThreadDump;
 		}
 
+		protected List<String> cleanUpClasses;
+		protected List<String> cleanUpMethods;
 		protected List<String> ignoredClasses;
 		protected List<String> ignoredMethods;
 		protected Boolean printThreadDump;
