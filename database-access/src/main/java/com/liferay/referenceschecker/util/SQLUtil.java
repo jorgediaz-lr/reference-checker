@@ -254,6 +254,8 @@ public class SQLUtil {
 
 		String newSQL = sql;
 
+		newSQL = _fixDelete(dbType, newSQL);
+
 		newSQL = _replaceBoolean(dbType, newSQL);
 		newSQL = _replaceCastText(dbType, newSQL);
 		newSQL = _replaceInstr(dbType, newSQL);
@@ -265,6 +267,29 @@ public class SQLUtil {
 		}
 
 		return newSQL;
+	}
+
+	private static String _fixDelete(String dbType, String sql) {
+		if (!sql.startsWith("DELETE")) {
+			return sql;
+		}
+
+		if (!dbType.equals(TYPE_MYSQL) && !dbType.equals(TYPE_SQLSERVER)) {
+			return sql;
+		}
+
+		Matcher matcher = _deleteFromPattern.matcher(sql);
+
+		if (!matcher.matches()) {
+			return sql;
+		}
+
+		String table = matcher.group(1);
+		String alias = matcher.group(3);
+		String where = matcher.group(4);
+
+		return "DELETE " + alias + " FROM " + table + " AS " + alias + " " +
+			"WHERE " + where;
 	}
 
 	private static String _replaceBoolean(String dbType, String sql) {
@@ -369,6 +394,9 @@ public class SQLUtil {
 
 	private static Pattern _castTextPattern = Pattern.compile(
 		"CAST_TEXT\\((.+?)\\)", Pattern.CASE_INSENSITIVE);
+	private static Pattern _deleteFromPattern = Pattern.compile(
+		"DELETE\\s+FROM\\s+(.+?)\\s+(AS)?\\s*(.+?)\\s+WHERE(.*)?",
+		Pattern.CASE_INSENSITIVE);
 	private static Pattern _instrPattern = Pattern.compile(
 		"INSTR\\(\\s*(.+?)\\s*,\\s*(.+?)\\s*\\)", Pattern.CASE_INSENSITIVE);
 	private static Pattern _substrPattern = Pattern.compile(
