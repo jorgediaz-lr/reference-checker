@@ -37,6 +37,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -598,6 +600,10 @@ public class TableUtil {
 	public void removeTable(String tableName) {
 		Table table = getTable(tableName);
 
+		if (table == null) {
+			return;
+		}
+
 		tableNames.remove(table.getTableName());
 		tableMap.remove(table.getTableNameLowerCase());
 	}
@@ -971,8 +977,8 @@ public class TableUtil {
 	protected List<Pattern> ignoreTables;
 	protected ModelUtil modelUtil;
 	protected Map<String, Pattern> patternCache = new ConcurrentHashMap<>();
-	protected Map<String, Table> tableMap = new TreeMap<>();
-	protected Set<String> tableNames = new TreeSet<>();
+	protected Map<String, Table> tableMap = new ConcurrentSkipListMap<>();
+	protected Set<String> tableNames = new ConcurrentSkipListSet<>();
 
 	private Collection<String> _getTableNames(Collection<Table> tables) {
 		List<String> list = new ArrayList<>();
