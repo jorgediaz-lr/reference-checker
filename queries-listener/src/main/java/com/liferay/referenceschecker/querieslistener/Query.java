@@ -309,7 +309,9 @@ public class Query implements Comparable<Query> {
 	public boolean isReadOnly() {
 		QueryType queryType = getQueryType();
 
-		if ((queryType == null) || (queryType == QueryType.SELECT)) {
+		if ((queryType == null) || (queryType == QueryType.SELECT) ||
+			(queryType == QueryType.SHOW)) {
+
 			return true;
 		}
 
@@ -324,7 +326,7 @@ public class Query implements Comparable<Query> {
 	public enum QueryType {
 
 		ALTER, CREATE_INDEX, CREATE_OTHER, CREATE_TABLE, DELETE, DROP_INDEX,
-		DROP_OTHER, DROP_TABLE, INSERT, SELECT, UPDATE
+		DROP_OTHER, DROP_TABLE, INSERT, SELECT, SHOW, UPDATE
 
 	}
 
@@ -481,6 +483,10 @@ public class Query implements Comparable<Query> {
 			return QueryType.SELECT;
 		}
 
+		if (startsWithShow()) {
+			return QueryType.SHOW;
+		}
+
 		if (StringUtils.startsWithIgnoreCase(_sql, "ALTER")) {
 			return QueryType.ALTER;
 		}
@@ -614,6 +620,22 @@ public class Query implements Comparable<Query> {
 		}
 
 		if (StringUtils.startsWithIgnoreCase(sqlAux, "SELECT")) {
+			return true;
+		}
+
+		return false;
+	}
+
+	protected boolean startsWithShow() {
+		String sqlAux = _sql;
+
+		while (sqlAux.charAt(0) == '(') {
+			sqlAux = sqlAux.substring(1);
+
+			sqlAux = sqlAux.trim();
+		}
+
+		if (StringUtils.startsWithIgnoreCase(sqlAux, "SHOW")) {
 			return true;
 		}
 
