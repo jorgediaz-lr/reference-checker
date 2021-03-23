@@ -236,7 +236,13 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
 		Connection connection = connectionInformation.getConnection();
 
-		for (String singleSql : sql.split(";\\n")) {
+		sql = sql.replace("\\'", "ESCAPED_QUOTE");
+
+		for (String singleSql :
+				sql.split(";\\n(?=(?:[^\\']*\\'[^\\']*\\')*[^\\']*$)")) {
+
+			singleSql = singleSql.replace("ESCAPED_QUOTE", "\\'");
+
 			Query query = new Query(singleSql);
 
 			for (EventListener eventListener :
