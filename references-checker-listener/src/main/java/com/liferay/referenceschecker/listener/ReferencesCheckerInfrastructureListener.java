@@ -362,16 +362,12 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		Collection<MissingReferences> missingReferences =
 			referencesChecker.execute(connection, referencesToCheck);
 
-		if (missingReferences.isEmpty()) {
-			return;
-		}
-
 		if (cleanUp) {
 			missingReferences = referencesChecker.executeCleanUp(
 				connection, missingReferences);
 		}
 
-		if (abortCheck) {
+		if (abortCheck || missingReferences.isEmpty()) {
 			return;
 		}
 
