@@ -400,6 +400,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 		}
 
+		referencesChecker.setIgnoreGreaterValues(
+			ReferencesChecker.getLiferayMaxCounter(connection));
+
 		Collection<MissingReferences> missingReferences =
 			referencesChecker.execute(connection, referencesToCheck);
 
