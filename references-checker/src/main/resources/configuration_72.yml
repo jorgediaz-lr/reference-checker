@@ -71,7 +71,9 @@ references: [
   {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
   {origin: {table: "DLFileEntry",    columns: ["fileEntryId","version"]},                            dest: {table: "DLFileVersion",   columns: ["fileEntryId","version"]}},
   {origin: {table: "KBArticle",      columns: [".*resourcePrimKey"]}}, #ignore
-  {origin: {table: "KBArticle",      columns: [".+resourcePrimKey"], condition: "status<> 8", conditionColumns: ["status"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}},
+  {origin: {table: "KBArticle",      columns: ["rootResourcePrimKey"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}},
+  {origin: {table: "KBArticle",      columns: ["parentResourcePrimKey"], condition: "parentResourceClassNameId in (select classNameId from ClassName_ where value='${destTable.className}')", conditionColumns: ["parentResourceClassNameId"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}, fixAction: "update" },
+  {origin: {table: "KBArticle",      columns: ["parentResourcePrimKey", "KBFolderId"], condition: "parentResourcePrimKey <> 0 and parentResourceClassNameId in (select classNameId from ClassName_ where value='${destTable.className}')", conditionColumns: ["parentResourceClassNameId"]}, dest: {table: "KBFolder", columns: ["KBFolderId", "KBFolderId"]}, fixAction: "update" },
   {origin: {table: "Layout",         columns: ["parentLayoutId"], condition: "parentLayoutId<>0"},   dest: {table: "Layout",          columns: ["layoutId"]}},
   {origin: {table: "Marketplace_App",columns: ["remoteAppId"]}}, #ignore
   {origin: {table: "MB.*",           columns: [".*categoryId"]}}, #ignore
