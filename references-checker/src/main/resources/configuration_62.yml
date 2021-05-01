@@ -22,13 +22,15 @@ references: [
   {origin: {table: ".*", columns: [".*folderId"], conditionColumns: ["groupId"]}}, #ignore
   {origin: {table: "KBArticle", columns: ["groupId", "kbFolderId"], condition: "kbFolderId<>0 and status<> 8", conditionColumns: ["status"]}, dest: {table: "KBFolder", columns: ["groupId","kbFolderId"]}, fixAction: "update" },
   {origin: {table: "KBFolder", columns: ["groupId", "parentKbFolderId"], condition: "parentKbFolderId<>0"}, dest: {table: "KBFolder", columns: ["groupId","kbFolderId"]}, fixAction: "update" },
-  {origin: {table: "^(?!.*Folder\\b).*$", columns: ["groupId", "folderId"], condition: "folderId<>0"}, dest: {table: ".*Folder", columns: ["groupId","folderId"]}, fixAction: "update" },
+  {origin: {table: "^(?!.*Folder\\b|DLFileEntry).*$", columns: ["groupId", "folderId"], condition: "folderId<>0"}, dest: {table: ".*Folder", columns: ["groupId","folderId"]}, fixAction: "update" },
+  {origin: {table: "DLFileEntry", columns: ["fileEntryId", "groupId", "folderId"], condition: "folderId<>0"},      dest: {table: "DLFileVersion", columns: ["fileEntryId", "groupId","folderId"]}},
   {origin: {table: "^(?!.*Folder\\b).*$", columns: ["groupId", "folderId"], condition: "folderId<>0", conditionColumns: ["status"]}}, #ignore
   {origin: {table: "^(?!.*Folder\\b).*$", columns: ["groupId", "folderId"], condition: "folderId<>0 and status<> 8", conditionColumns: ["status"]}, dest: {table: ".*Folder", columns: ["groupId","folderId"]}, fixAction: "update" },
   {origin: {table: ".*", columns: ["groupId", "parentFolderId"], condition: "parentFolderId<>0"},                 dest: {table: ".*Folder", columns: ["groupId","folderId"]}, fixAction: "update" },
   {origin: {table: ".*", columns: ["groupId", "parentFolderId"], condition: "parentFolderId<>0", conditionColumns: ["status"]}}, #ignore
   {origin: {table: ".*", columns: ["groupId", "parentFolderId"], condition: "parentFolderId<>0 and status<> 8", conditionColumns: ["status"]}, dest: {table: ".*Folder", columns: ["groupId","folderId"]}, fixAction: "update" },
-  {origin: {table: "^(?!.*Folder\\b).*$", columns: ["folderId", "treePath"], condition: "folderId<>0"},                dest: {table: ".*Folder", columns: ["folderId", "treePath"]}},
+  {origin: {table: "^(?!.*Folder\\b|DLFileEntry).*$", columns: ["folderId", "treePath"], condition: "folderId<>0"},                dest: {table: ".*Folder", columns: ["folderId", "treePath"]}},
+  {origin: {table: "DLFileEntry", columns: ["fileEntryId", "folderId", "treePath"], condition: "folderId<>0"},                     dest: {table: "DLFileVersion", columns: ["fileEntryId", "folderId", "treePath"]}},
   {origin: {table: "^(?!.*Folder\\b).*$", columns: ["folderId", "treePath"], condition: "folderId<>0", conditionColumns: ["status"]}}, #ignore
   {origin: {table: "^(?!.*Folder\\b).*$", columns: ["folderId", "treePath"], condition: "folderId<>0 and status<> 8", conditionColumns: ["status"]}, dest: {table: ".*Folder", columns: ["folderId", "treePath"]}},
     #imageId
