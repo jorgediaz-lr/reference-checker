@@ -84,25 +84,39 @@
 					continue;
 				}
 
-				String modelTableName;
+				String modelTableName =
+					getTableName(classLiferayModelImpl);
 
-				try {
-					Field field = getDeclaredField(
-						classLiferayModelImpl, "TABLE_NAME");
-
-					modelTableName = (String)field.get(null);
-				}
-				catch (Exception e) {
-					out.println(
-						"Error accessing to " + classLiferayModelImpl.getName() +
-							"#TABLE_NAME",
-						e);
-
+				if (modelTableName == null) {
 					continue;
 				}
 
 				classNamesMap.put(className,modelTableName);
 				tablesMap.put(modelTableName, className);
+
+				/* Version model */
+				Class<?> classLiferayVersionModelImpl =
+					getLiferayVersionModelImpl(classLiferayModelImpl);
+
+				if (classLiferayVersionModelImpl == null) {
+					continue;
+				}
+
+				String modelVersionTableName =
+					getTableName(classLiferayVersionModelImpl);
+
+				if (modelVersionTableName == null) {
+					continue;
+				}
+
+				String classNameVersion = className + "Version";
+
+				if (!classNamesList.contains(classNameVersion)) {
+					continue;
+				}
+
+				classNamesMap.put(classNameVersion,modelVersionTableName);
+				tablesMap.put(modelVersionTableName, classNameVersion);
 			}
 
 			out.println(formatMapOutput(classNamesMap));
@@ -239,6 +253,23 @@
 			return getLiferayModelImplClass(classLoader, liferayModelImpl);
 		}
 
+		protected Class<?> getLiferayVersionModelImpl(
+				Class<?> classLiferayModelImpl) {
+
+			String versionClassName = classLiferayModelImpl.getName();
+
+			versionClassName = versionClassName.replace("ModelImpl", "VersionModelImpl");
+
+			ClassLoader classLoader = classLiferayModelImpl.getClassLoader();
+
+			try {
+				return classLoader.loadClass(versionClassName);
+			}
+			catch (ClassNotFoundException cnfe) {
+				return null;
+			}
+		}
+
 		protected Object getPersistedModelLocalServiceRegistry() {
 			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
 
@@ -283,6 +314,24 @@
 
 			return null;
 		}
+
+		protected String getTableName(Class<?> modelClassImpl) {
+			try {
+				Field field = getDeclaredField(
+					modelClassImpl, "TABLE_NAME");
+
+				return (String)field.get(null);
+			}
+			catch (Exception e) {
+				out.println(
+					"Error accessing to " + modelClassImpl.getName() +
+						"#TABLE_NAME",
+					e);
+
+				return null;
+			}
+		}
+
 
 		protected DynamicQuery newDynamicQueryFromPortal(String className) {
 			try {
