@@ -63,10 +63,12 @@ references: [
   {origin: {table: "AssetCategory",  columns: ["leftCategoryid"]}}, #ignore
   {origin: {table: "AssetCategory",  columns: ["rightCategoryid"]}}, #ignore
   {origin: {table: "AssetLink",      columns: ["entryId.*"]},                                         dest: {table: "AssetEntry",  columns: ["entryId"]}},
+  {origin: {table: "CalendarBooking",  columns: ["recurringCalendarBookingId"]}}, #ignore, it seems it links several CalendarBooking entries, but you can safely delete the first CalendarBooking entry from where the calendarBookingId value was used in the first place
   {origin: {table: "DL.*",           columns: ["repositoryId"]}}, #ignore
   {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
   {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
   {origin: {table: "DLFileEntry",    columns: ["fileEntryId","version"]},                            dest: {table: "DLFileVersion",   columns: ["fileEntryId","version"]}},
+  {origin: {table: "DLFileEntryType", columns: ["dataDefinitionId"]},                                dest: {table: "DDMStructure",   columns: ["structureId"]}},
   {origin: {table: "KBArticle",      columns: [".*resourcePrimKey"]}}, #ignore
   {origin: {table: "KBArticle",      columns: ["rootResourcePrimKey"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}},
   {origin: {table: "KBArticle",      columns: ["parentResourcePrimKey"], condition: "parentResourceClassNameId in (select classNameId from ClassName_ where value='${destTable.className}')", conditionColumns: ["parentResourceClassNameId"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}, fixAction: "update" },
