@@ -46,6 +46,8 @@ public interface EventListener {
 
 	public void beforeRollback(int connectionId, Connection connection);
 
-	public void resetThreadLocals();
+	public void deleteConnectionData(int connectionId);
+
+	public void resetConnectionData(int connectionId);
 
 }

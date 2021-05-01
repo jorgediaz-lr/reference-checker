@@ -17,8 +17,10 @@ package com.liferay.referenceschecker.querieslistener;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -78,13 +80,16 @@ public class DebugListener implements EventListener {
 		}
 
 		logQueries(
-			connectionId, _insertQueriesThreadLocal.get(), "Insert queries");
+			connectionId, _insertQueriesMap.get(connectionId),
+			"Insert queries");
 		logQueries(
-			connectionId, _updateQueriesThreadLocal.get(), "Update queries");
+			connectionId, _updateQueriesMap.get(connectionId),
+			"Update queries");
 		logQueries(
-			connectionId, _deleteQueriesThreadLocal.get(), "Delete queries");
+			connectionId, _deleteQueriesMap.get(connectionId),
+			"Delete queries");
 		logQueries(
-			connectionId, _otherQueriesThreadLocal.get(), "Other queries");
+			connectionId, _otherQueriesMap.get(connectionId), "Other queries");
 	}
 
 	@Override
@@ -104,21 +109,30 @@ public class DebugListener implements EventListener {
 	}
 
 	@Override
-	public void resetThreadLocals() {
-		_insertQueriesThreadLocal.set(new TreeSet<Query>());
-		_updateQueriesThreadLocal.set(new TreeSet<Query>());
-		_deleteQueriesThreadLocal.set(new TreeSet<Query>());
-		_otherQueriesThreadLocal.set(new TreeSet<Query>());
+	public void deleteConnectionData(int connectionId) {
+		_insertQueriesMap.remove(connectionId);
+		_updateQueriesMap.remove(connectionId);
+		_deleteQueriesMap.remove(connectionId);
+		_otherQueriesMap.remove(connectionId);
 	}
 
-	protected void addQueryToThreadLocal(
-		ThreadLocal<Set<Query>> queriesThreadLocal, Query query) {
+	@Override
+	public void resetConnectionData(int connectionId) {
+		_insertQueriesMap.put(connectionId, new TreeSet<Query>());
+		_updateQueriesMap.put(connectionId, new TreeSet<Query>());
+		_deleteQueriesMap.put(connectionId, new TreeSet<Query>());
+		_otherQueriesMap.put(connectionId, new TreeSet<Query>());
+	}
 
-		if (queriesThreadLocal.get() == null) {
-			queriesThreadLocal.set(new TreeSet<Query>());
+	protected void addQueryToConnectionMap(
+		Integer connectionId, Map<Integer, Set<Query>> queriesMap,
+		Query query) {
+
+		if (queriesMap.get(connectionId) == null) {
+			queriesMap.put(connectionId, new TreeSet<Query>());
 		}
 
-		Set<Query> queries = queriesThreadLocal.get();
+		Set<Query> queries = queriesMap.get(connectionId);
 
 		queries.add(query);
 	}
@@ -164,28 +178,28 @@ public class DebugListener implements EventListener {
 		}
 
 		if (query.getQueryType() == Query.QueryType.INSERT) {
-			addQueryToThreadLocal(_insertQueriesThreadLocal, query);
+			addQueryToConnectionMap(connectionId, _insertQueriesMap, query);
 		}
 		else if (query.getQueryType() == Query.QueryType.UPDATE) {
-			addQueryToThreadLocal(_updateQueriesThreadLocal, query);
+			addQueryToConnectionMap(connectionId, _updateQueriesMap, query);
 		}
 		else if (query.getQueryType() == Query.QueryType.DELETE) {
-			addQueryToThreadLocal(_deleteQueriesThreadLocal, query);
+			addQueryToConnectionMap(connectionId, _deleteQueriesMap, query);
 		}
 		else {
-			addQueryToThreadLocal(_otherQueriesThreadLocal, query);
+			addQueryToConnectionMap(connectionId, _otherQueriesMap, query);
 		}
 	}
 
 	private static Logger _log = LogManager.getLogger(DebugListener.class);
 
-	private ThreadLocal<Set<Query>> _deleteQueriesThreadLocal =
-		new ThreadLocal<>();
-	private ThreadLocal<Set<Query>> _insertQueriesThreadLocal =
-		new ThreadLocal<>();
-	private ThreadLocal<Set<Query>> _otherQueriesThreadLocal =
-		new ThreadLocal<>();
-	private ThreadLocal<Set<Query>> _updateQueriesThreadLocal =
-		new ThreadLocal<>();
+	private Map<Integer, Set<Query>> _deleteQueriesMap =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Set<Query>> _insertQueriesMap =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Set<Query>> _otherQueriesMap =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Set<Query>> _updateQueriesMap =
+		new ConcurrentHashMap<>();
 
 }

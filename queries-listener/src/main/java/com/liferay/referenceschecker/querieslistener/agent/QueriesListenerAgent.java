@@ -77,7 +77,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 				_log.error(e, e);
 			}
 			finally {
-				eventListener.resetThreadLocals();
+				eventListener.resetConnectionData(connectionId);
 			}
 		}
 	}
@@ -101,7 +101,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 				_log.error(e, e);
 			}
 			finally {
-				eventListener.resetThreadLocals();
+				eventListener.deleteConnectionData(connectionId);
 			}
 		}
 	}
@@ -135,7 +135,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 				_log.error(e, e);
 			}
 			finally {
-				eventListener.resetThreadLocals();
+				eventListener.resetConnectionData(connectionId);
 			}
 		}
 	}
@@ -159,7 +159,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 				_log.error(e, e);
 			}
 			finally {
-				eventListener.resetThreadLocals();
+				eventListener.resetConnectionData(connectionId);
 			}
 		}
 	}
