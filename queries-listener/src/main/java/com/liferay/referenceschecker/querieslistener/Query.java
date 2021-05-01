@@ -245,6 +245,12 @@ public class Query implements Comparable<Query> {
 
 		String sqlAux = normalizeSql(_sql);
 
+		if (sqlAux == null) {
+			_cannot_parse_sql = true;
+
+			return null;
+		}
+
 		try {
 			_statement = CCJSqlParserUtil.parse(sqlAux);
 		}
@@ -360,9 +366,7 @@ public class Query implements Comparable<Query> {
 		if (expression instanceof Parenthesis) {
 			Parenthesis parenthesis = (Parenthesis)expression;
 
-			if (!parenthesis.isNot()) {
-				convertExpressionToObject(parenthesis.getExpression());
-			}
+			convertExpressionToObject(parenthesis.getExpression());
 		}
 
 		if (expression instanceof NullValue) {
@@ -442,7 +446,7 @@ public class Query implements Comparable<Query> {
 		if (statement instanceof Update) {
 			Update update = (Update)statement;
 
-			return update.getTables();
+			return Collections.singletonList(update.getTable());
 		}
 
 		return Collections.emptyList();
@@ -501,7 +505,9 @@ public class Query implements Comparable<Query> {
 		}
 
 		if (StringUtils.startsWithIgnoreCase(_sql, "CREATE TABLE") ||
-			StringUtils.startsWithIgnoreCase(_sql, "CREATE OR REPLACE TABLE")) {
+			StringUtils.startsWithIgnoreCase(_sql, "CREATE OR REPLACE TABLE") ||
+			StringUtils.startsWithIgnoreCase(
+				_sql, "CREATE TABLE IF NOT EXISTS")) {
 
 			return QueryType.CREATE_TABLE;
 		}
