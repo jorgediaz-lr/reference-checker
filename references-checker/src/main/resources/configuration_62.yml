@@ -36,7 +36,7 @@ references: [
     #imageId
   {origin: {table: ".*", columns: ["logoId"]},                                                        dest: {table: "Image", columns: ["imageId"]}},
   {origin: {table: ".*", columns: ["portraitId"]},                                                    dest: {table: "Image", columns: ["imageId"]}},
-  {origin: {table: ".*", columns: ["smallImageId"], condition: "smallImage=[$TRUE$]", conditionColumns: ["smallImage"]}, dest: {table: "Image", columns: ["imageId"]}},
+  {origin: {table: ".*", columns: ["smallImageId"], condition: "smallImage=[$TRUE$] and smallImageURL IS NULL", conditionColumns: ["smallImage","smallImageURL"]}, dest: {table: "Image", columns: ["imageId"]}},
   {origin: {table: ".*", columns: ["smallImageId"]}}, #ignore
   {origin: {table: "DLFileEntry", columns: [".*imageId"]}}, #ignore
     #userId
