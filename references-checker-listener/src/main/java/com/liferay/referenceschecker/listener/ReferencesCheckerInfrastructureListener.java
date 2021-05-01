@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
@@ -55,7 +56,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		try {
-			if (_regenerateReferencesChecker.get()) {
+			if (_regenerateReferencesChecker.get(connectionId)) {
 				forceInitReferencesChecker(connection);
 			}
 
@@ -78,12 +79,16 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		refreshReferencesChecker(
-			connection, referencesChecker, _modifiedTables.get(),
-			_droppedTables.get(), _regenerateModelUtil.get());
+			connection, referencesChecker, _modifiedTables.get(connectionId),
+			_droppedTables.get(connectionId),
+			_regenerateModelUtil.get(connectionId));
 
-		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get();
-		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get();
-		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get();
+		Set<String> insertedTablesLowerCase = _insertedTablesLowerCase.get(
+			connectionId);
+		Set<String> updatedTablesLowerCase = _updatedTablesLowerCase.get(
+			connectionId);
+		Set<String> deletedTablesLowerCase = _deletedTablesLowerCase.get(
+			connectionId);
 
 		if (insertedTablesLowerCase.isEmpty() &&
 			updatedTablesLowerCase.isEmpty() &&
@@ -106,7 +111,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		checkMissingReferences(
 			connection, referencesChecker, insertedTablesLowerCase,
-			updatedTablesLowerCase, _updatedTablesColumns.get(),
+			updatedTablesLowerCase, _updatedTablesColumns.get(connectionId),
 			deletedTablesLowerCase);
 	}
 
@@ -148,34 +153,37 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		if ((query.getQueryType() == Query.QueryType.CREATE_TABLE) ||
 			(query.getQueryType() == Query.QueryType.ALTER)) {
 
-			Set<String> updatedTables = _modifiedTables.get();
+			Set<String> updatedTables = _modifiedTables.get(connectionId);
 
 			updatedTables.addAll(query.getModifiedTables());
 
-			_regenerateModelUtil.set(Boolean.TRUE);
+			_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 		}
 		else if (query.getQueryType() == Query.QueryType.DROP_TABLE) {
-			Set<String> deletedTables = _droppedTables.get();
+			Set<String> deletedTables = _droppedTables.get(connectionId);
 
 			deletedTables.addAll(query.getModifiedTables());
 
-			_regenerateModelUtil.set(Boolean.TRUE);
+			_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 		}
 		else if (query.getQueryType() == Query.QueryType.INSERT) {
-			Set<String> insertedTables = _insertedTablesLowerCase.get();
+			Set<String> insertedTables = _insertedTablesLowerCase.get(
+				connectionId);
 
 			insertedTables.addAll(query.getModifiedTablesLowerCase());
 		}
 		else if (query.getQueryType() == Query.QueryType.DELETE) {
-			Set<String> deletedTables = _deletedTablesLowerCase.get();
+			Set<String> deletedTables = _deletedTablesLowerCase.get(
+				connectionId);
 
 			deletedTables.addAll(query.getModifiedTablesLowerCase());
 		}
 		else if (query.getQueryType() == Query.QueryType.UPDATE) {
-			Set<String> updatedTables = _updatedTablesLowerCase.get();
+			Set<String> updatedTables = _updatedTablesLowerCase.get(
+				connectionId);
 
 			Map<String, Set<String>> updatedTablesColumns =
-				_updatedTablesColumns.get();
+				_updatedTablesColumns.get(connectionId);
 
 			for (String modifiedTable : query.getModifiedTablesLowerCase()) {
 				updatedTables.add(modifiedTable);
@@ -192,16 +200,16 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 		}
 
-		if (!_regenerateReferencesChecker.get() &&
+		if (!_regenerateReferencesChecker.get(connectionId) &&
 			hasUpdatedReleaseBuildNumber(query)) {
 
-			_regenerateReferencesChecker.set(Boolean.TRUE);
+			_regenerateReferencesChecker.put(connectionId, Boolean.TRUE);
 		}
 
-		if (!_regenerateModelUtil.get()) {
+		if (!_regenerateModelUtil.get(connectionId)) {
 			for (String table : query.getModifiedTables()) {
 				if (StringUtils.equalsIgnoreCase("ClassName_", table)) {
-					_regenerateModelUtil.set(Boolean.TRUE);
+					_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 
 					break;
 				}
@@ -220,15 +228,17 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
-		for (String insertedTable : _insertedTablesLowerCase.get()) {
+		for (String insertedTable :
+				_insertedTablesLowerCase.get(connectionId)) {
+
 			referencesChecker.cleanEmptyTableCacheOnInsert(insertedTable);
 		}
 
-		for (String updatedTable : _updatedTablesLowerCase.get()) {
+		for (String updatedTable : _updatedTablesLowerCase.get(connectionId)) {
 			referencesChecker.cleanEmptyTableCacheOnUpdate(updatedTable);
 		}
 
-		for (String deletedTable : _deletedTablesLowerCase.get()) {
+		for (String deletedTable : _deletedTablesLowerCase.get(connectionId)) {
 			referencesChecker.cleanEmptyTableCacheOnDelete(deletedTable);
 		}
 	}
@@ -247,15 +257,28 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	@Override
-	public void resetThreadLocals() {
-		_regenerateReferencesChecker.set(Boolean.FALSE);
-		_regenerateModelUtil.set(Boolean.FALSE);
-		_modifiedTables.set(new TreeSet<String>());
-		_droppedTables.set(new TreeSet<String>());
-		_insertedTablesLowerCase.set(new TreeSet<String>());
-		_deletedTablesLowerCase.set(new TreeSet<String>());
-		_updatedTablesLowerCase.set(new TreeSet<String>());
-		_updatedTablesColumns.set(new HashMap<String, Set<String>>());
+	public void deleteConnectionData(int connectionId) {
+		_regenerateReferencesChecker.remove(connectionId);
+		_regenerateModelUtil.remove(connectionId);
+		_modifiedTables.remove(connectionId);
+		_droppedTables.remove(connectionId);
+		_insertedTablesLowerCase.remove(connectionId);
+		_deletedTablesLowerCase.remove(connectionId);
+		_updatedTablesLowerCase.remove(connectionId);
+		_updatedTablesColumns.remove(connectionId);
+	}
+
+	@Override
+	public void resetConnectionData(int connectionId) {
+		_regenerateReferencesChecker.put(connectionId, Boolean.FALSE);
+		_regenerateModelUtil.put(connectionId, Boolean.FALSE);
+		_modifiedTables.put(connectionId, new TreeSet<String>());
+		_droppedTables.put(connectionId, new TreeSet<String>());
+		_insertedTablesLowerCase.put(connectionId, new TreeSet<String>());
+		_deletedTablesLowerCase.put(connectionId, new TreeSet<String>());
+		_updatedTablesLowerCase.put(connectionId, new TreeSet<String>());
+		_updatedTablesColumns.put(
+			connectionId, new HashMap<String, Set<String>>());
 	}
 
 	protected static ReferencesChecker getReferencesChecker() {
@@ -692,84 +715,21 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private static Logger _log = LogManager.getLogger(
 		ReferencesCheckerInfrastructureListener.class);
 
-	private ThreadLocal<Set<String>> _deletedTablesLowerCase =
-		new ThreadLocal<Set<String>>() {
-
-			@Override
-			protected Set<String> initialValue() {
-				return new TreeSet<String>();
-			}
-
-		};
-
-	private ThreadLocal<Set<String>> _droppedTables =
-		new ThreadLocal<Set<String>>() {
-
-			@Override
-			protected Set<String> initialValue() {
-				return new TreeSet<String>();
-			}
-
-		};
-
-	private ThreadLocal<Set<String>> _insertedTablesLowerCase =
-		new ThreadLocal<Set<String>>() {
-
-			@Override
-			protected Set<String> initialValue() {
-				return new TreeSet<String>();
-			}
-
-		};
-
-	private ThreadLocal<Set<String>> _modifiedTables =
-		new ThreadLocal<Set<String>>() {
-
-			@Override
-			protected Set<String> initialValue() {
-				return new TreeSet<String>();
-			}
-
-		};
-
-	private ThreadLocal<Boolean> _regenerateModelUtil =
-		new ThreadLocal<Boolean>() {
-
-			@Override
-			protected Boolean initialValue() {
-				return Boolean.FALSE;
-			}
-
-		};
-
-	private ThreadLocal<Boolean> _regenerateReferencesChecker =
-		new ThreadLocal<Boolean>() {
-
-			@Override
-			protected Boolean initialValue() {
-				return Boolean.FALSE;
-			}
-
-		};
-
-	private ThreadLocal<Map<String, Set<String>>> _updatedTablesColumns =
-		new ThreadLocal<Map<String, Set<String>>>() {
-
-			@Override
-			protected Map<String, Set<String>> initialValue() {
-				return new HashMap<String, Set<String>>();
-			}
-
-		};
-
-	private ThreadLocal<Set<String>> _updatedTablesLowerCase =
-		new ThreadLocal<Set<String>>() {
-
-			@Override
-			protected Set<String> initialValue() {
-				return new TreeSet<String>();
-			}
-
-		};
+	private Map<Integer, Set<String>> _deletedTablesLowerCase =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Set<String>> _droppedTables =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Set<String>> _insertedTablesLowerCase =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Set<String>> _modifiedTables =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Boolean> _regenerateModelUtil =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Boolean> _regenerateReferencesChecker =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Map<String, Set<String>>> _updatedTablesColumns =
+		new ConcurrentHashMap<>();
+	private Map<Integer, Set<String>> _updatedTablesLowerCase =
+		new ConcurrentHashMap<>();
 
 }
