@@ -3,6 +3,7 @@ ignoreColumns: [actionId, userId]
 ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, dlSync, systemEvent]
 #
 listener : {
+  cleanUpCache: "com.liferay.portal.kernel.cache.CacheRegistryUtil.clear",
   cleanUpClasses: [],
   cleanUpMethods: ["DataGuardTestRule.afterClass", "DataGuardTestRule.afterMethod", "DeleteAfterTestRunMethodTestRule.afterMethod", "BaseStagedModelDataHandlerTestCase.deleteStagedModel", "GroupLocalServiceUtil.deleteGroup", "GroupTestUtil.deleteGroup", "deleteCompany", "StagingLocalServiceUtil.disableStaging", "CTClosureFactoryImplTest.tearDown", "MainServlet.init", "TransactionalTestRule$1.evaluate"],
   ignoredClasses: ["UpgradeProcess", "DBUpgrader"],
