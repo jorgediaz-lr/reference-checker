@@ -374,22 +374,36 @@ tableToClassNameMapping : {
 #tableRank is used to calculate fixAction:
 # 1. table rank is not set => default value=0
 # 2. (originRank < destinationRank) => "delete"
-# 3. (originRank == 0) => "???" (unless its table className is "" => "delete"
+# 3a. (originRank == 0) && auxiliary table (ends in Link, Localization, Mapping, Rel, Version) => "delete"
+# 3b. (originRank == 0) && its table className is "" => "delete"
+# 3c. (originRank == 0) other cases => "???"
 # 4. ((destinationRank == 0)||(originRank == destinationRank)) => "???"
-# 5. (originRank > destinationRank) => "update"
+# 5. (originRank > destinationRank) => "update" (except for PK columns!)
 tableRank : {
     #Root tables
     "ClassName_" : 100,
     "Company" : 99,
-    "Group_" : 98,
+    "Group_" : 90,
     "LayoutSet" : 80,
     #Main entities, don't delete
+    "AssetVocabulary" : 50,
+    "AssetCategory" : 40,
+    "AssetTag" : 40,
     "BlogsEntry" : 50,
     "DLFileEntry" : 50,
     "DLFileVersion" : 50,
     "JournalArticle" : 50,
     "JournalArticleResource" : 50,
     "Layout" : 50,
+    "MBThread" : 50,
+    "WikiNode" : 60,
+    "WikiPage" : 50,
+    "WikiPageResource" : 50,
+    #Expando tables
+    "ExpandoTable" : -10,
+    "ExpandoColumn" : -20,
+    "ExpandoRow" : -20,
+    "ExpandoValue" : -30,
     #Other entities
     "DDMTemplate" : -10,
     "DLFileEntryMetadata" : 20,
@@ -402,15 +416,15 @@ tableRank : {
     "JournalContentSearch" : 20,
     "JournalFeed" : 20,
     "JournalFolder" : 20,
+    "MBMessage" : 20,
     #Auxiliary tables, safe to delete
     "AssetEntry" : -10,
-    "AssetLink" : -20,
     "AssetTagStats" : -10,
     "MBDiscussion" : -10,
     "RatingsEntry" : -10,
     "RatingsStats" : -10,
-    "ResourceBlockPermission" : -10,
-    "ResourcePermission" : -10,
+    "ResourceBlockPermission" : -50,
+    "ResourcePermission" : -50,
     "SocialActivity" : -10,
     "Subscription" : -10
 }
