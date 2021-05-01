@@ -27,6 +27,7 @@ import com.liferay.referenceschecker.ref.Reference;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -308,6 +309,23 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
+		checkMissingReferences(
+			connection, referencesChecker, insertedTablesLowerCase,
+			updatedTablesLowerCase, updatedTablesColumns,
+			deletedTablesLowerCase, abortCheck, cleanUp, 0);
+	}
+
+	protected void checkMissingReferences(
+		Connection connection, ReferencesChecker referencesChecker,
+		Set<String> insertedTablesLowerCase, Set<String> updatedTablesLowerCase,
+		Map<String, Set<String>> updatedTablesColumns,
+		Set<String> deletedTablesLowerCase, boolean abortCheck, boolean cleanUp,
+		int depth) {
+
+		if (depth > _CHECK_MAX_DEPTH) {
+			_log.error("Reached check max depth, aborting...");
+		}
+
 		Collection<Reference> references = referencesChecker.getReferences(
 			connection, true);
 
@@ -363,8 +381,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			referencesChecker.execute(connection, referencesToCheck);
 
 		if (cleanUp) {
-			missingReferences = referencesChecker.executeCleanUp(
-				connection, missingReferences);
+			missingReferences = cleanUp(
+				connection, referencesChecker, missingReferences, abortCheck,
+				depth);
 		}
 
 		if (abortCheck || missingReferences.isEmpty()) {
@@ -384,6 +403,77 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		if (listenerConfiguration.getPrintThreadDump()) {
 			_log.warn("stacktrace", new Exception());
 		}
+	}
+
+	protected Collection<MissingReferences> cleanUp(
+		Connection connection, ReferencesChecker referencesChecker,
+		Collection<MissingReferences> missingReferencesList, boolean abortCheck,
+		int depth) {
+
+		List<MissingReferences> notProcessed = new ArrayList<>();
+		Set<String> insertedTablesLowerCase = new TreeSet<>();
+		Set<String> deletedTablesLowerCase = new TreeSet<>();
+		Set<String> updatedTablesLowerCase = new TreeSet<>();
+		Map<String, Set<String>> updatedTablesColumns = new HashMap<>();
+
+		for (MissingReferences missingReferences : missingReferencesList) {
+			Reference reference = missingReferences.getReference();
+
+			String fixAction = reference.getFixAction();
+
+			com.liferay.referenceschecker.dao.Query query =
+				reference.getOriginQuery();
+
+			Table table = query.getTable();
+
+			if (fixAction.equals("delete")) {
+				deletedTablesLowerCase.add(table.getTableNameLowerCase());
+			}
+			else if (fixAction.equals("update")) {
+				String modifiedTable = table.getTableNameLowerCase();
+
+				updatedTablesLowerCase.add(modifiedTable);
+
+				Set<String> columnSet = updatedTablesColumns.get(modifiedTable);
+
+				if (columnSet == null) {
+					columnSet = new TreeSet<>();
+
+					updatedTablesColumns.put(modifiedTable, columnSet);
+				}
+
+				columnSet.addAll(query.getColumns());
+			}
+			else {
+				notProcessed.add(missingReferences);
+
+				continue;
+			}
+
+			try {
+				referencesChecker.executeCleanUp(connection, missingReferences);
+			}
+			catch (SQLException sqlException) {
+				MissingReferences missingReferencesError =
+					new MissingReferences(reference, sqlException);
+
+				notProcessed.add(missingReferencesError);
+			}
+		}
+
+		if (insertedTablesLowerCase.isEmpty() &&
+			updatedTablesLowerCase.isEmpty() &&
+			deletedTablesLowerCase.isEmpty()) {
+
+			return notProcessed;
+		}
+
+		checkMissingReferences(
+			connection, referencesChecker, insertedTablesLowerCase,
+			updatedTablesLowerCase, updatedTablesColumns,
+			deletedTablesLowerCase, abortCheck, true, depth + 1);
+
+		return notProcessed;
 	}
 
 	protected synchronized void forceInitReferencesChecker(
@@ -586,6 +676,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		return false;
 	}
+
+	private static final int _CHECK_MAX_DEPTH = 4;
 
 	private static Logger _log = LogManager.getLogger(
 		ReferencesCheckerInfrastructureListener.class);
