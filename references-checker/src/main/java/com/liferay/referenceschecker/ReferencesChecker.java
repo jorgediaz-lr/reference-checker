@@ -96,6 +96,39 @@ public class ReferencesChecker {
 		return buildNumber;
 	}
 
+	public static long getLiferayMaxCounter(Connection connection) {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		long maxCounter = Long.MAX_VALUE;
+
+		try {
+			String sql = "select max(currentId) from Counter";
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("SQL: " + sql);
+			}
+
+			ps = connection.prepareStatement(sql);
+
+			ps.setQueryTimeout(SQLUtil.QUERY_TIMEOUT);
+
+			rs = ps.executeQuery();
+
+			while (rs.next()) {
+				maxCounter = rs.getLong(1);
+			}
+		}
+		catch (SQLException sqle) {
+			_log.warn(sqle);
+		}
+		finally {
+			JDBCUtil.cleanUp(ps);
+			JDBCUtil.cleanUp(rs);
+		}
+
+		return maxCounter;
+	}
+
 	// Replaces Executors.newWorkStealingPool() that doesn't exist in Java 7
 
 	public static ExecutorService newWorkStealingPool() {
@@ -456,6 +489,10 @@ public class ReferencesChecker {
 		return configuration;
 	}
 
+	public long getIgnoreGreaterValues() {
+		return ignoreGreaterValues;
+	}
+
 	public Collection<Reference> getReferences(
 		Connection connection, boolean ignoreEmptyTables) {
 
@@ -598,6 +635,10 @@ public class ReferencesChecker {
 
 	public void setCheckUndefinedTables(boolean checkUndefinedTables) {
 		this.checkUndefinedTables = checkUndefinedTables;
+	}
+
+	public void setIgnoreGreaterValues(long ignoreGreaterValues) {
+		this.ignoreGreaterValues = ignoreGreaterValues;
 	}
 
 	public void setIgnoreNullValues(boolean ignoreNullValues) {
@@ -825,6 +866,7 @@ public class ReferencesChecker {
 	protected boolean checkUndefinedTables = false;
 	protected Configuration configuration;
 	protected String dbType;
+	protected long ignoreGreaterValues = Long.MAX_VALUE;
 	protected boolean ignoreNullValues = true;
 	protected ModelUtil modelUtil;
 	protected Collection<Reference> referencesCache = null;
@@ -1122,7 +1164,9 @@ public class ReferencesChecker {
 			if (o instanceof Number) {
 				Number n = (Number)o;
 
-				if (n.longValue() == 0) {
+				if ((n.longValue() == 0) ||
+					(n.longValue() > ignoreGreaterValues)) {
+
 					continue;
 				}
 			}
