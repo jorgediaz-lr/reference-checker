@@ -94,6 +94,10 @@ public class Configuration {
 
 	public static class Listener {
 
+		public String getCleanUpCache() {
+			return cleanUpCache;
+		}
+
 		public List<String> getCleanUpClasses() {
 			if (cleanUpClasses == null) {
 				return Collections.emptyList();
@@ -138,6 +142,10 @@ public class Configuration {
 			return getPrintThreadDump();
 		}
 
+		public void setCleanUpCache(String cleanUpCache) {
+			this.cleanUpCache = cleanUpCache;
+		}
+
 		public void setCleanUpClasses(List<String> cleanUpClasses) {
 			this.cleanUpClasses = cleanUpClasses;
 		}
@@ -158,6 +166,7 @@ public class Configuration {
 			this.printThreadDump = printThreadDump;
 		}
 
+		protected String cleanUpCache;
 		protected List<String> cleanUpClasses;
 		protected List<String> cleanUpMethods;
 		protected List<String> ignoredClasses;
