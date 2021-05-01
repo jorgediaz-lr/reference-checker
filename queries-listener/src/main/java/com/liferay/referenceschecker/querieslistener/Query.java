@@ -592,6 +592,13 @@ public class Query implements Comparable<Query> {
 			sql = StringUtils.replaceIgnoreCase(sql, "JSON=", " JSON_=");
 		}
 
+		if (StringUtils.startsWithIgnoreCase(
+				sql, "CREATE SCHEMA IF NOT EXISTS ")) {
+
+			sql = StringUtils.replaceIgnoreCase(
+				sql, "CREATE SCHEMA IF NOT EXISTS ", "CREATE SCHEMA ");
+		}
+
 		/* alter table @table@ change column @old-column@ @new-column@ @type@;
 		alter table @table@ rename column @old-column@ to @new-column@;
 		alter table @table@ rename @old-column@ to @new-column@;
