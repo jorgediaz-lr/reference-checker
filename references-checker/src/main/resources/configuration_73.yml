@@ -19,6 +19,8 @@ references: [
   {origin: {table: ".*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}, fixAction: "update" },
   {origin: {table: ".*", columns: [".*layoutPrototypeUuid"]},                                         dest: {table: "LayoutPrototype", columns: ["uuid_"]}, fixAction: "update" },
   {origin: {table: ".*", columns: [".*layoutSetPrototypeUuid"]},                                      dest: {table: "LayoutSetPrototype", columns: ["uuid_"]}, fixAction: "update" },
+    #groupId
+  {origin: {table: "Group_", columns: [".*${destTable.PrimaryKey}"]},                                 dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}, fixAction: "update" },
     #folderId
   {origin: {table: ".*", columns: [".*folderId"], conditionColumns: ["groupId"]}}, #ignore
   {origin: {table: "KBArticle", columns: ["groupId", "kbFolderId"], condition: "kbFolderId<>0 and status<> 8", conditionColumns: ["status"]}, dest: {table: "KBFolder", columns: ["groupId","kbFolderId"]}, fixAction: "update_no_groupId" },
