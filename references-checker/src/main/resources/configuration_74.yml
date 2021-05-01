@@ -78,7 +78,7 @@ references: [
   {origin: {table: "JournalArticle", columns: ["groupId","resourcePrimKey","articleId"]},            dest: {table: "JournalArticleResource", columns: ["groupId","resourcePrimKey","articleId"]}},
   {origin: {table: "JournalArticleResource", columns: ["groupId","resourcePrimKey","articleId"]},    dest: {table: "JournalArticle",  columns: ["groupId","resourcePrimKey","articleId"]}},
   {origin: {table: "Journal.*",      columns: ["articleId"]},                                        dest: {table: "JournalArticleResource",  columns: ["articleId"]}},
-  {origin: {table: "Journal.*",      columns: ["ddmStructureKey"]},                                  dest: {table: "DDMStructure",    columns: ["structureKey"], condition: "classNameId in (select classNameId from ClassName_ where value='${origTable.className}')"}},
+  {origin: {table: "Journal.*",      columns: ["ddmStructureKey"]},                                  dest: {table: "DDMStructure",    columns: ["structureKey"], condition: "classNameId in (select classNameId from ClassName_ where value='${JournalArticle.className}')"}},
   {origin: {table: "Journal.*",      columns: ["ddmTemplateKey"]},                                   dest: {table: "DDMTemplate",     columns: ["templateKey"]}},
   {origin: {table: "Repository",     columns: ["dlFolderId"]},                                       dest: {table: "DLFolder",        columns: ["folderId"]}},
   {origin: {table: "SocialActivity", columns: ["parentClassPk"], condition: "parentclassNameId in (select classNameId from ClassName_ where value='${destTable.className}')"}, dest: {table: ".*",  columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
