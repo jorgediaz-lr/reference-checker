@@ -392,31 +392,13 @@ public class ReferencesChecker {
 		return listMissingReferences;
 	}
 
-	public Collection<MissingReferences> executeCleanUp(
-		Connection connection,
-		Collection<MissingReferences> missingReferencesList) {
+	public void executeCleanUp(
+			Connection connection, MissingReferences missingReferences)
+		throws SQLException {
 
-		List<MissingReferences> notProcessed = new ArrayList<>();
+		List<String> cleanupSqls = generateCleanupSentences(missingReferences);
 
-		for (MissingReferences missingReferences : missingReferencesList) {
-			List<String> cleanupSqls = generateCleanupSentences(
-				missingReferences);
-
-			if (cleanupSqls == null) {
-				notProcessed.add(missingReferences);
-
-				continue;
-			}
-
-			MissingReferences missingReferencesError = _executeCleanUp(
-				connection, cleanupSqls, missingReferences);
-
-			if (missingReferencesError != null) {
-				notProcessed.add(missingReferencesError);
-			}
-		}
-
-		return notProcessed;
+		_executeCleanUp(connection, cleanupSqls);
 	}
 
 	public List<String> generateCleanupSentences(
@@ -427,7 +409,7 @@ public class ReferencesChecker {
 		for (MissingReferences missingReferences : missingReferencesList) {
 			List<String> sqls = generateCleanupSentences(missingReferences);
 
-			if (sqls == null) {
+			if (sqls.isEmpty()) {
 				continue;
 			}
 
@@ -639,7 +621,7 @@ public class ReferencesChecker {
 			return generateUpdateSentences(reference, values, 2000);
 		}
 
-		return null;
+		return Collections.emptyList();
 	}
 
 	protected String generateDeleteSentence(
@@ -983,9 +965,9 @@ public class ReferencesChecker {
 		}
 	}
 
-	private MissingReferences _executeCleanUp(
-		Connection connection, List<String> cleanupSqls,
-		MissingReferences missingReferences) {
+	private void _executeCleanUp(
+			Connection connection, List<String> cleanupSqls)
+		throws SQLException {
 
 		for (String cleanupSql : cleanupSqls) {
 			if (_log.isDebugEnabled()) {
@@ -1005,21 +987,18 @@ public class ReferencesChecker {
 					_log.debug("Procesed " + rows + " rows");
 				}
 			}
-			catch (Throwable t) {
+			catch (SQLException sqlException) {
 				_log.error(
-					"SQL: " + cleanupSql + " - EXCEPTION: " + t.getClass() +
-						" - " + t.getMessage(),
-					t);
+					"SQL: " + cleanupSql + " - EXCEPTION: " +
+						sqlException.getMessage(),
+					sqlException);
 
-				return new MissingReferences(
-					missingReferences.getReference(), t);
+				throw sqlException;
 			}
 			finally {
 				JDBCUtil.cleanUp(ps);
 			}
 		}
-
-		return null;
 	}
 
 	private String _getSQL(
