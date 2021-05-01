@@ -394,14 +394,24 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			missingReferences, -1);
 
 		for (String output : outputList) {
-			_log.warn(output);
+			if (cleanUp) {
+				_log.info(output);
+			}
+			else {
+				_log.warn(output);
+			}
 		}
 
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
 			referencesChecker);
 
 		if (listenerConfiguration.getPrintThreadDump()) {
-			_log.warn("stacktrace", new Exception());
+			if (cleanUp) {
+				_log.info("stacktrace", new Exception());
+			}
+			else {
+				_log.warn("stacktrace", new Exception());
+			}
 		}
 	}
 
@@ -596,8 +606,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		for (String cleanUpClass : listenerConfiguration.getCleanUpClasses()) {
 			if (className.endsWith(cleanUpClass)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(className + " is in the cleanUp classes list");
+				if (_log.isDebugEnabled()) {
+					_log.debug(className + " is in the cleanUp classes list");
 				}
 
 				return true;
@@ -610,8 +620,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 				listenerConfiguration.getCleanUpMethods()) {
 
 			if (fullMethodName.endsWith(cleanUpMethods)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(
+				if (_log.isDebugEnabled()) {
+					_log.debug(
 						fullMethodName + " is in the cleanUp methods list");
 				}
 
@@ -628,8 +638,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		for (String ignoredClass : listenerConfiguration.getIgnoredClasses()) {
 			if (className.endsWith(ignoredClass)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(className + " is in the ignored classes list");
+				if (_log.isDebugEnabled()) {
+					_log.debug(className + " is in the ignored classes list");
 				}
 
 				return true;
@@ -642,8 +652,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 				listenerConfiguration.getIgnoredMethods()) {
 
 			if (fullMethodName.endsWith(ignoredMethods)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(
+				if (_log.isDebugEnabled()) {
+					_log.debug(
 						fullMethodName + " is in the ignored methods list");
 				}
 
