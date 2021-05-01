@@ -252,6 +252,14 @@ public class ReferenceUtil {
 		}
 
 		if (originRank == 0) {
+			if (isAuxiliaryTable(originTable)) {
+				return "delete";
+			}
+
+			if (isChildTable(originTable, destinationTable)) {
+				return "delete";
+			}
+
 			String originClassName = modelUtil.getClassName(
 				originTable.getTableName());
 
@@ -741,6 +749,39 @@ public class ReferenceUtil {
 		return true;
 	}
 
+	protected boolean isAuxiliaryTable(Table table) {
+		String tableName = table.getTableName();
+
+		for (String ending : _AUXILIARY_TABLE_ENDINGS) {
+			if (StringUtils.endsWithIgnoreCase(tableName, ending)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	protected boolean isChildTable(Table childTable, Table parentTable) {
+		String childTableName = childTable.getTableName();
+		String parentTableName = parentTable.getTableName();
+
+		if (!StringUtils.startsWithIgnoreCase(
+				childTableName, parentTableName)) {
+
+			return false;
+		}
+
+		for (String ending : _CHILD_TABLE_ENDINGS) {
+			if (StringUtils.equalsIgnoreCase(
+					parentTableName + ending, childTableName)) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	protected String replaceVars(String text) {
 		int pos = text.indexOf("${");
 
@@ -867,6 +908,14 @@ public class ReferenceUtil {
 
 		return a.substring(0, minLength);
 	}
+
+	private static final String[] _AUXILIARY_TABLE_ENDINGS = {
+		"Link", "Localization", "Mapping", "Rel", "Version"
+	};
+
+	private static final String[] _CHILD_TABLE_ENDINGS = {
+		"Attribute", "Instance", "InstanceToken", "Record", "Report", "Token"
+	};
 
 	private static final String _STAR = "*";
 
