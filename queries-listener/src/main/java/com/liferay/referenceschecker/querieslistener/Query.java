@@ -586,6 +586,12 @@ public class Query implements Comparable<Query> {
 			sql = StringUtils.replaceIgnoreCase(sql, "DELETE IGNORE", "DELETE");
 		}
 
+		if (StringUtils.containsIgnoreCase(sql, "JSON")) {
+			sql = StringUtils.replaceIgnoreCase(sql, "JSON ", " JSON_ ");
+			sql = StringUtils.replaceIgnoreCase(sql, "JSON,", " JSON_,");
+			sql = StringUtils.replaceIgnoreCase(sql, "JSON=", " JSON_=");
+		}
+
 		/* alter table @table@ change column @old-column@ @new-column@ @type@;
 		alter table @table@ rename column @old-column@ to @new-column@;
 		alter table @table@ rename @old-column@ to @new-column@;
