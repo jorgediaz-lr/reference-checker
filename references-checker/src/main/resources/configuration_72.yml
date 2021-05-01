@@ -65,8 +65,8 @@ references: [
   {origin: {table: "DDMStorageLink", columns: ["structureVersionId"], condition: "classNameId in (select classNameId from ClassName_ where value<>'${JournalArticle.className}')"}, dest: {table: "DDMStructureVersion", columns: ["structureVersionId"]}},
   {origin: {table: "DDMStorageLink", columns: ["structureVersionId"], condition: "classNameId in (select classNameId from ClassName_ where value='${JournalArticle.className}')"}, dest: {table: "DDMStructureVersion", columns: ["structureId"]}},
   {origin: {table: "DL.*",           columns: ["repositoryId"]}}, #ignore
-  {origin: {table: "DL.*",           columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
-  {origin: {table: "DL.*",           columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
+  {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
+  {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
   {origin: {table: "DLFileEntry",    columns: ["fileEntryId","version"]},                            dest: {table: "DLFileVersion",   columns: ["fileEntryId","version"]}},
   {origin: {table: "KBArticle",      columns: [".*resourcePrimKey"]}}, #ignore
   {origin: {table: "KBArticle",      columns: [".+resourcePrimKey"], condition: "status<> 8", conditionColumns: ["status"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}},

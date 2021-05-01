@@ -60,8 +60,8 @@ references: [
   {origin: {table: "AssetCategory",  columns: ["rightCategoryid"]}}, #ignore
   {origin: {table: "AssetLink",      columns: ["entryId.*"]},                                         dest: {table: "AssetEntry",  columns: ["entryId"]}},
   {origin: {table: "DL.*",           columns: ["repositoryId"]}}, #ignore
-  {origin: {table: "DL.*",           columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
-  {origin: {table: "DL.*",           columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
+  {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
+  {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
   {origin: {table: "DLFileEntry",    columns: ["fileEntryId","version"]},                            dest: {table: "DLFileVersion",   columns: ["fileEntryId","version"]}},
   {origin: {table: "KBArticle",      columns: [".*resourcePrimKey"]}}, #ignore
   {origin: {table: "KBArticle",      columns: [".+resourcePrimKey"], condition: "status<> 8", conditionColumns: ["status"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}},
