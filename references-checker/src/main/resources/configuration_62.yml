@@ -67,7 +67,9 @@ references: [
   {origin: {table: "KBArticle",      columns: [".+resourcePrimKey"], condition: "status<> 8", conditionColumns: ["status"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}},
   {origin: {table: "Layout",         columns: ["parentLayoutId"], condition: "parentLayoutId<>0"},   dest: {table: "Layout",          columns: ["layoutId"]}},
   {origin: {table: "Marketplace_App",columns: ["remoteAppId"]}}, #ignore
-  {origin: {table: "MB.*",           columns: ["categoryId"]}}, #ignore
+  {origin: {table: "MB.*",           columns: [".*categoryId"]}}, #ignore
+  {origin: {table: "^(?!MBCategory\\b).*$", columns: ["categoryId"], condition: "categoryId<>-1 and categoryId<>0 and status<> 8", conditionColumns: ["status"]}, dest: {table: "MBCategory", columns: ["categoryId"]}, fixAction: "update" },
+  {origin: {table: "MB.*",           columns: [".+categoryId"], condition: "categoryId<>-1 and categoryId<>0 and status<> 8", conditionColumns: ["status"]}, dest: {table: "MBCategory", columns: ["categoryId"]}, fixAction: "update" },
   {origin: {table: "MB.*",           columns: ["categoryId"], condition: "categoryId<>-1 and categoryId<>0 and status<> 8", conditionColumns: ["status"]}, dest: {table: "MBCategory", columns: ["categoryId"]}, fixAction: "update" },
   {origin: {table: "JournalArticle", columns: ["groupId","resourcePrimKey","articleId"]},            dest: {table: "JournalArticleResource", columns: ["groupId","resourcePrimKey","articleId"]}},
   {origin: {table: "JournalArticleResource", columns: ["groupId","resourcePrimKey","articleId"]},    dest: {table: "JournalArticle",  columns: ["groupId","resourcePrimKey","articleId"]}},
