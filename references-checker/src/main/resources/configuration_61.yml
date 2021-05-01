@@ -120,6 +120,7 @@ references: [
   {origin: {table: "ResourcePermission", columns: ["primKey"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: ".*", columns: ["resourcePrimKey"]}, displayRaw: true, hidden: true},
   {origin: {table: "ResourcePermission", columns: ["primKey"], castings: ["SUBSTR(primkey, 1, INSTR(primkey, '_LAYOUT_')-1 )"], condition: "scope = 4 and primkey like '%_LAYOUT_%'"}, dest: {table: "Layout", columns: ["plid"]}}
     ]
+#
 tableToClassNameMapping : {
     "Account_" : "com.liferay.portal.model.Account",
     "Address" : "com.liferay.portal.model.Address",

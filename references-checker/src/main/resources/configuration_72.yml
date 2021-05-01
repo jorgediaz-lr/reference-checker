@@ -135,6 +135,7 @@ references: [
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileVersion.className}') and classPk IS NOT NULL"}}, #ignore
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL"}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true}
     ]
+#
 tableToClassNameMapping : {
     "AMImageEntry" : "com.liferay.adaptive.media.image.model.AMImageEntry",
     "Account_" : "com.liferay.portal.kernel.model.Account",
