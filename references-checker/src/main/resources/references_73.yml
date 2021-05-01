@@ -133,7 +133,7 @@ references: [
   {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 2"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: ".*", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "ResourcePermission", columns: ["primKeyId"], condition: "scope = 4 and name='${destTable.className}'"}, dest: {table: ".*", columns: ["resourcePrimKey"]}, displayRaw: true, hidden: true},
-  {origin: {table: "ResourcePermission", columns: ["primKey"], castings: ["SUBSTR(primKey, 1, INSTR(primKey, '_LAYOUT_')-1 )"], condition: "scope = 4 and primKeyId = 0 and primKey like '%_LAYOUT_%'"}, dest: {table: "Layout", columns: ["plid"]}},
+  {origin: {table: "ResourcePermission", columns: ["primKey"], castings: ["SUBSTR(primKey, 1, INSTR(primKey, '_LAYOUT_')-1 )"], condition: "scope = 4 and primKeyId = 0 and primKey like '%\_LAYOUT\_%'"}, dest: {table: "Layout", columns: ["plid"]}},
     #trash entry
   {origin: {table: ".*",              columns: ["${origTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]},          dest: {table: "TrashEntry", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${origTable.className}')"}},
   {origin: {table: ".*",              columns: ["${origTable.primaryKey}"], condition: "status=8", conditionColumns: ["status","resourcePrimKey"]}}, #ignore
