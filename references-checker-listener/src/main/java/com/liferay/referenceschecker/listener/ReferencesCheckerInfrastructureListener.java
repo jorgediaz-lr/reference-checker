@@ -24,11 +24,14 @@ import com.liferay.referenceschecker.querieslistener.Query;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.ref.Reference;
 
+import java.lang.reflect.Method;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +60,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 		try {
 			if (_regenerateReferencesChecker.get(connectionId)) {
-				forceInitReferencesChecker(connection);
+				forceInitReferencesChecker(connection, false);
 			}
 
 			if (referencesChecker == null) {
@@ -446,6 +449,10 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		Collection<MissingReferences> missingReferencesList, boolean abortCheck,
 		int depth) {
 
+		if (missingReferencesList.isEmpty()) {
+			return Collections.emptyList();
+		}
+
 		List<MissingReferences> notProcessed = new ArrayList<>();
 		Set<String> insertedTablesLowerCase = new TreeSet<>();
 		Set<String> deletedTablesLowerCase = new TreeSet<>();
@@ -509,11 +516,13 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			updatedTablesLowerCase, updatedTablesColumns,
 			deletedTablesLowerCase, abortCheck, true, depth + 1);
 
+		_cleanUpCache();
+
 		return notProcessed;
 	}
 
 	protected synchronized void forceInitReferencesChecker(
-			Connection connection)
+			Connection connection, boolean cleanUp)
 		throws SQLException {
 
 		ReferencesChecker referencesCheckerAux = new ReferencesChecker(
@@ -527,6 +536,46 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		referencesCheckerAux.initTableUtil(connection);
 
 		referencesChecker = referencesCheckerAux;
+
+		if (!cleanUp) {
+			return;
+		}
+
+		Collection<Reference> references = referencesChecker.getReferences(
+			connection, true);
+
+		Set<String> allTablesLowerCase = getAllTablesLowerCase(references);
+
+		checkMissingReferences(
+			connection, referencesChecker, allTablesLowerCase,
+			new HashSet<String>(), null, allTablesLowerCase, false, true, 0);
+	}
+
+	protected Set<String> getAllTablesLowerCase(
+		Collection<Reference> references) {
+
+		Set<String> tablesLowerCase = new HashSet<>();
+
+		for (Reference reference : references) {
+			com.liferay.referenceschecker.dao.Query destinationQuery =
+				reference.getDestinationQuery();
+
+			if (destinationQuery == null) {
+				continue;
+			}
+
+			com.liferay.referenceschecker.dao.Query originQuery =
+				reference.getOriginQuery();
+
+			Table originTable = originQuery.getTable();
+
+			Table destinationTable = destinationQuery.getTable();
+
+			tablesLowerCase.add(originTable.getTableNameLowerCase());
+			tablesLowerCase.add(destinationTable.getTableNameLowerCase());
+		}
+
+		return tablesLowerCase;
 	}
 
 	protected Configuration.Listener getListenerConfiguration(
@@ -593,7 +642,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
-		forceInitReferencesChecker(connection);
+		forceInitReferencesChecker(connection, true);
 	}
 
 	protected void refreshReferencesChecker(
@@ -625,6 +674,30 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected ReferencesChecker referencesChecker;
+
+	private void _cleanUpCache() {
+		Configuration.Listener listenerConfiguration = getListenerConfiguration(
+			referencesChecker);
+
+		String cleanUpCache = listenerConfiguration.getCleanUpCache();
+
+		String className = cleanUpCache.substring(
+			0, cleanUpCache.lastIndexOf("."));
+
+		String methodName = cleanUpCache.substring(
+			cleanUpCache.lastIndexOf(".") + 1);
+
+		try {
+			Class<?> clazz = Class.forName(className);
+
+			Method method = clazz.getMethod(methodName);
+
+			method.invoke(null);
+		}
+		catch (Throwable throwable) {
+			throw new RuntimeException(throwable);
+		}
+	}
 
 	private boolean _cleanUpMethod(String className, String methodName) {
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
