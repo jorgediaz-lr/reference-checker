@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.DateValue;
@@ -598,6 +600,19 @@ public class Query implements Comparable<Query> {
 			}
 		}
 
+		/* update @table@ inner join @join-clause@ set @set-clause@ where @where@ */
+		if (StringUtils.startsWithIgnoreCase(sql, "UPDATE") &&
+			StringUtils.containsIgnoreCase(sql, "INNER")) {
+
+			Matcher matcher = updateInnerJoinPattern.matcher(sql);
+
+			if (matcher.matches()) {
+				sql =
+					"UPDATE " + matcher.group(1) + " SET" + matcher.group(2) +
+						"WHERE dummy = 1";
+			}
+		}
+
 		/*exec sp_rename '@table@.@old-column@', '@new-column@', 'column';*/
 		if (StringUtils.startsWithIgnoreCase(sql, "exec sp_rename")) {
 			String tableName = StringUtils.substringBefore(sql, ".");
@@ -641,6 +656,10 @@ public class Query implements Comparable<Query> {
 
 		return false;
 	}
+
+	protected Pattern updateInnerJoinPattern = Pattern.compile(
+		"update\\W+(\\w+)\\W+inner\\W+join.*set(.*?)where.*",
+		Pattern.CASE_INSENSITIVE);
 
 	private static Logger _log = LogManager.getLogger(Query.class);
 
