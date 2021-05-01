@@ -4,7 +4,7 @@ ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, syncDLFileVer
 #
 listener : {
   cleanUpClasses: [],
-  cleanUpMethods: ["DataGuardTestRule.afterClass", "DataGuardTestRule.afterMethod", "DeleteAfterTestRunMethodTestRule.afterMethod", "BaseStagedModelDataHandlerTestCase.deleteStagedModel", "GroupTestUtil.deleteGroup", "deleteCompany", "CTClosureFactoryImplTest.tearDown", "MainServlet.init"],
+  cleanUpMethods: ["DataGuardTestRule.afterClass", "DataGuardTestRule.afterMethod", "DeleteAfterTestRunMethodTestRule.afterMethod", "BaseStagedModelDataHandlerTestCase.deleteStagedModel", "GroupLocalServiceUtil.deleteGroup", "GroupTestUtil.deleteGroup", "deleteCompany", "StagingLocalServiceUtil.disableStaging", "CTClosureFactoryImplTest.tearDown", "MainServlet.init"],
   ignoredClasses: ["UpgradeProcess", "DBUpgrader"],
   ignoredMethods: [
         "Test.setUp", "TestCase.setUp", "TestUtil.setUp", "Test.setUpClass", "Fixture.setUp", "Test.tearDown", "TestCase.tearDown", "TestUtil.tearDown", "Test.tearDownClass", "DataGuardTestRule.afterClass", "Fixture.tearDown",
