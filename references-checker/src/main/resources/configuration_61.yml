@@ -3,8 +3,21 @@ ignoreColumns: [actionId, userId]
 ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, dlSync, systemEvent]
 #
 listener : {
-  ignoredClasses: ["DataGuardTestRule", "DeleteAfterTestRunMethodTestRule", "UpgradeProcess"],
-  ignoredMethods: ["Test.setUp", "TestCase.setUp", "TestUtil.setUp", "Fixture.setUp", "Test.tearDown", "TestCase.tearDown", "TestUtil.tearDown", "Fixture.tearDown", "MissingRequirementsConflictTest.testMissingParentFolder"],
+  cleanUpClasses: [],
+  cleanUpMethods: ["DataGuardTestRule.afterClass", "DataGuardTestRule.afterMethod", "DeleteAfterTestRunMethodTestRule.afterMethod","BaseStagedModelDataHandlerTestCase.deleteStagedModel","GroupTestUtil.deleteGroup","deleteCompany"],
+  ignoredClasses: ["UpgradeProcess"],
+  ignoredMethods: [
+        "Test.setUp", "TestCase.setUp", "TestUtil.setUp", "Test.setUpClass", "Fixture.setUp", "Test.tearDown", "TestCase.tearDown", "TestUtil.tearDown", "Test.tearDownClass", "DataGuardTestRule.afterClass", "Fixture.tearDown",
+        "CompanyTestUtil.addCompany", "GroupTestUtil.addGroup", "BaseTableReferenceDefinitionTestCase.testDiscardCTEntry",
+        "MissingRequirementsConflictTest.testMissingParentFolder", "UpgradeAssetDisplayPageEntryTest.addJournalArticle", "WorkflowTaskManagerImplTest.testDeleteUserWithWorkflowTaskAssigned",
+        "DLFileEntryMetadataLocalServiceTest.testGetNoStructuresFileEntryMetadatas", "DLFileEntryMetadataLocalServiceTest.testGetMismatchedCompanyIdFileEntryMetadatas",
+        "DLServiceVerifyProcessTest.testDeleteNoStructuresDLFileEntryMetadatas", "DLServiceVerifyProcessTest.testDeleteMismatchCompanyIdDLFileEntryMetadatas", "DLServiceVerifyProcessTest.testDLFileShortcutTreePathWithDLFileShortcutInTrash",
+        "GroupModelListenerTest.testDeletingGroupDeletesFragmentCollections","GroupModelListenerTest.testDeletingGroupDeletesFragmentEntryLinks","GroupModelListenerTest.testDeletingGroupDeletesLayoutPageTemplateCollections","GroupModelListenerTest.testDeletingGroupDeletesLayoutPageTemplateEntries",
+        "BookmarksEntryLocalServiceTreeTest.testRebuildTree", "DLFileEntryLocalServiceTreeTest.testRebuildTree", "DLFileVersionLocalServiceTreeTest.testRebuildTree", "DLFileShortcutLocalServiceTreeTest.testRebuildTree", "JournalArticleLocalServiceTreeTest.testRebuildTree",
+        "BookmarksFolderLocalServiceTest.testGetNoAssetFolders", "JournalFolderLocalServiceTest.testGetNoAssetFolders", "JournalArticleLocalServiceTest.testGetNoAssetArticles",
+        "InlineSQLHelperImplTest.testInvalidCompany", "DDMFormInstanceTestUtil.deleteDDMFormInstance", "CopyLayoutPageTemplateEntryMVCActionCommandTest.testCopyLayoutPageTemplateEntryRollbackMVCActionCommand",
+        "BaseStagedModelDataHandlerTestCase.testCleanStagedModelDataHandler", "OrganizationStagedModelDataHandlerTest.addStagedModel"
+  ],
   printThreadDump: true
 }
 #
