@@ -574,6 +574,7 @@ tableRank : {
     "AssetEntry" : -10,
     "AssetTagStats" : -10,
     "MBDiscussion" : -10,
+    "OrgLabor" : -10,
     "RatingsEntry" : -10,
     "RatingsStats" : -10,
     "ResourceBlockPermission" : -50,
