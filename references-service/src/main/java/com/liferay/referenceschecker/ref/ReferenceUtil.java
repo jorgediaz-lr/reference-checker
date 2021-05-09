@@ -914,7 +914,8 @@ public class ReferenceUtil {
 	};
 
 	private static final String[] _CHILD_TABLE_ENDINGS = {
-		"Attribute", "Instance", "InstanceToken", "Record", "Report", "Token"
+		"Attribute", "Instance", "InstanceToken", "Record", "Report", "Token",
+		"Usage"
 	};
 
 	private static final String _STAR = "*";
