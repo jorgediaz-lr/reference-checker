@@ -493,6 +493,10 @@ public class ReferencesChecker {
 		return ignoreGreaterValues;
 	}
 
+	public long getIgnoreLowerValues() {
+		return ignoreLowerValues;
+	}
+
 	public Collection<Reference> getReferences(
 		Connection connection, boolean ignoreEmptyTables) {
 
@@ -531,6 +535,14 @@ public class ReferencesChecker {
 		}
 
 		return referencesList;
+	}
+
+	public boolean ignoreColumn(String tableName, String columnName) {
+		return tableUtil.ignoreColumn(tableName, columnName);
+	}
+
+	public boolean ignoreTable(String tableName) {
+		return tableUtil.ignoreTable(tableName);
 	}
 
 	public void initModelUtil(Connection connection) throws SQLException {
@@ -639,6 +651,10 @@ public class ReferencesChecker {
 
 	public void setIgnoreGreaterValues(long ignoreGreaterValues) {
 		this.ignoreGreaterValues = ignoreGreaterValues;
+	}
+
+	public void setIgnoreLowerValues(long ignoreLowerValues) {
+		this.ignoreLowerValues = ignoreLowerValues;
 	}
 
 	public void setIgnoreNullValues(boolean ignoreNullValues) {
@@ -867,6 +883,7 @@ public class ReferencesChecker {
 	protected Configuration configuration;
 	protected String dbType;
 	protected long ignoreGreaterValues = Long.MAX_VALUE;
+	protected long ignoreLowerValues = Long.MIN_VALUE;
 	protected boolean ignoreNullValues = true;
 	protected ModelUtil modelUtil;
 	protected Collection<Reference> referencesCache = null;
@@ -1165,7 +1182,8 @@ public class ReferencesChecker {
 				Number n = (Number)o;
 
 				if ((n.longValue() == 0) ||
-					(n.longValue() > ignoreGreaterValues)) {
+					(n.longValue() > ignoreGreaterValues) ||
+					(n.longValue() < ignoreLowerValues)) {
 
 					continue;
 				}
