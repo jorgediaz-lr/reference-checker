@@ -158,14 +158,16 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			Set<String> updatedTables = _modifiedTables.get(connectionId);
 
-			updatedTables.addAll(query.getModifiedTables());
+			updatedTables.addAll(
+				filterIgnoredTables(query.getModifiedTables()));
 
 			_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 		}
 		else if (query.getQueryType() == Query.QueryType.DROP_TABLE) {
 			Set<String> deletedTables = _droppedTables.get(connectionId);
 
-			deletedTables.addAll(query.getModifiedTables());
+			deletedTables.addAll(
+				filterIgnoredTables(query.getModifiedTables()));
 
 			_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 		}
@@ -173,13 +175,15 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			Set<String> insertedTables = _insertedTablesLowerCase.get(
 				connectionId);
 
-			insertedTables.addAll(query.getModifiedTablesLowerCase());
+			insertedTables.addAll(
+				filterIgnoredTables(query.getModifiedTablesLowerCase()));
 		}
 		else if (query.getQueryType() == Query.QueryType.DELETE) {
 			Set<String> deletedTables = _deletedTablesLowerCase.get(
 				connectionId);
 
-			deletedTables.addAll(query.getModifiedTablesLowerCase());
+			deletedTables.addAll(
+				filterIgnoredTables(query.getModifiedTablesLowerCase()));
 		}
 		else if (query.getQueryType() == Query.QueryType.UPDATE) {
 			Set<String> updatedTables = _updatedTablesLowerCase.get(
@@ -188,7 +192,16 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			Map<String, Set<String>> updatedTablesColumns =
 				_updatedTablesColumns.get(connectionId);
 
-			for (String modifiedTable : query.getModifiedTablesLowerCase()) {
+			for (String modifiedTable :
+					filterIgnoredTables(query.getModifiedTablesLowerCase())) {
+
+				List<String> modifiedColumns = filterIgnoredColumns(
+					modifiedTable, query.getModifiedColumns());
+
+				if (modifiedColumns.isEmpty()) {
+					continue;
+				}
+
 				updatedTables.add(modifiedTable);
 
 				Set<String> columnSet = updatedTablesColumns.get(modifiedTable);
@@ -199,7 +212,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 					updatedTablesColumns.put(modifiedTable, columnSet);
 				}
 
-				columnSet.addAll(query.getModifiedColumns());
+				columnSet.addAll(modifiedColumns);
 			}
 		}
 
@@ -403,6 +416,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 		}
 
+		referencesChecker.setIgnoreLowerValues(0);
+
 		referencesChecker.setIgnoreGreaterValues(
 			ReferencesChecker.getLiferayMaxCounter(connection));
 
@@ -519,6 +534,44 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		_cleanUpCache();
 
 		return notProcessed;
+	}
+
+	protected List<String> filterIgnoredColumns(
+		String table, List<String> columns) {
+
+		if ((columns == null) || columns.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		List<String> filteredColumns = new ArrayList<>(columns.size());
+
+		for (String column : columns) {
+			if (referencesChecker.ignoreColumn(table, column)) {
+				continue;
+			}
+
+			filteredColumns.add(column);
+		}
+
+		return filteredColumns;
+	}
+
+	protected List<String> filterIgnoredTables(List<String> tables) {
+		if ((tables == null) || tables.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		List<String> filteredTables = new ArrayList<>(tables.size());
+
+		for (String table : tables) {
+			if (referencesChecker.ignoreTable(table)) {
+				continue;
+			}
+
+			filteredTables.add(table);
+		}
+
+		return filteredTables;
 	}
 
 	protected synchronized void forceInitReferencesChecker(
