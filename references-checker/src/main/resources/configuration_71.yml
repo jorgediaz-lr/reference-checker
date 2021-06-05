@@ -15,7 +15,7 @@ listener : {
         "DLServiceVerifyProcessTest.testDeleteNoStructuresDLFileEntryMetadatas", "DLServiceVerifyProcessTest.testDeleteMismatchCompanyIdDLFileEntryMetadatas", "DLServiceVerifyProcessTest.testDLFileShortcutTreePathWithDLFileShortcutInTrash",
         "GroupModelListenerTest.testDeletingGroupDeletesFragmentCollections","GroupModelListenerTest.testDeletingGroupDeletesFragmentEntryLinks","GroupModelListenerTest.testDeletingGroupDeletesLayoutPageTemplateCollections","GroupModelListenerTest.testDeletingGroupDeletesLayoutPageTemplateEntries",
         "BookmarksEntryLocalServiceTreeTest.testRebuildTree", "DLFileEntryLocalServiceTreeTest.testRebuildTree", "DLFileVersionLocalServiceTreeTest.testRebuildTree", "DLFileShortcutLocalServiceTreeTest.testRebuildTree", "JournalArticleLocalServiceTreeTest.testRebuildTree",
-        "BookmarksFolderLocalServiceTest.testGetNoAssetFolders", "JournalFolderLocalServiceTest.testGetNoAssetFolders", "JournalArticleLocalServiceTest.testGetNoAssetArticles",
+        "BookmarksEntryLocalServiceTest.testGetNoAssetFolders", "BookmarksFolderLocalServiceTest.testGetNoAssetFolders", "JournalFolderLocalServiceTest.testGetNoAssetFolders", "JournalArticleLocalServiceTest.testGetNoAssetArticles",
         "InlineSQLHelperImplTest.testInvalidCompany", "DDMFormInstanceTestUtil.deleteDDMFormInstance", "CopyLayoutPageTemplateEntryMVCActionCommandTest.testCopyLayoutPageTemplateEntryRollbackMVCActionCommand",
         "BaseStagedModelDataHandlerTestCase.testCleanStagedModelDataHandler", "OrganizationStagedModelDataHandlerTest.addStagedModel"
   ],
@@ -146,6 +146,7 @@ references: [
   {origin: {table: "Workflow.*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 1 and ownerId <> 0"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 2 and ownerId <> 0"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
+  {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 3 and ownerId <> 0"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 4 and ownerId <> 0"}, dest: {table: "User", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 5 and ownerId <> 0"}, dest: {table: "PortletItem", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "PortletPreferences", columns: ["ownerId"], condition: "ownerType = 6 and ownerId <> 0"}, dest: {table: "Organization_", columns: ["${destTable.primaryKey}"]}},
@@ -519,6 +520,7 @@ tableRank : {
     "JournalFolder" : 20,
     "MBMessage" : 20,
     #Auxiliary tables, safe to delete
+    "AnnouncementsFlag" : -10,
     "AssetEntry" : -10,
     "AssetTagStats" : -10,
     "MBDiscussion" : -10,
