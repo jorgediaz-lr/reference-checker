@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
@@ -145,7 +146,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	public void afterQuery(
 		int connectionId, Connection connection, Query query, SQLException e) {
 
-		if (e != null) {
+		if ((referencesChecker == null) || (e != null)) {
 			return;
 		}
 
@@ -159,7 +160,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			Set<String> updatedTables = _modifiedTables.get(connectionId);
 
 			updatedTables.addAll(
-				filterIgnoredTables(query.getModifiedTables()));
+				filterIgnoredTables(
+					referencesChecker, query.getModifiedTables()));
 
 			_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 		}
@@ -167,7 +169,8 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			Set<String> deletedTables = _droppedTables.get(connectionId);
 
 			deletedTables.addAll(
-				filterIgnoredTables(query.getModifiedTables()));
+				filterIgnoredTables(
+					referencesChecker, query.getModifiedTables()));
 
 			_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 		}
@@ -176,14 +179,16 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 				connectionId);
 
 			insertedTables.addAll(
-				filterIgnoredTables(query.getModifiedTablesLowerCase()));
+				filterIgnoredTables(
+					referencesChecker, query.getModifiedTablesLowerCase()));
 		}
 		else if (query.getQueryType() == Query.QueryType.DELETE) {
 			Set<String> deletedTables = _deletedTablesLowerCase.get(
 				connectionId);
 
 			deletedTables.addAll(
-				filterIgnoredTables(query.getModifiedTablesLowerCase()));
+				filterIgnoredTables(
+					referencesChecker, query.getModifiedTablesLowerCase()));
 		}
 		else if (query.getQueryType() == Query.QueryType.UPDATE) {
 			Set<String> updatedTables = _updatedTablesLowerCase.get(
@@ -193,10 +198,13 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 				_updatedTablesColumns.get(connectionId);
 
 			for (String modifiedTable :
-					filterIgnoredTables(query.getModifiedTablesLowerCase())) {
+					filterIgnoredTables(
+						referencesChecker,
+						query.getModifiedTablesLowerCase())) {
 
 				List<String> modifiedColumns = filterIgnoredColumns(
-					modifiedTable, query.getModifiedColumns());
+					referencesChecker, modifiedTable,
+					query.getModifiedColumns());
 
 				if (modifiedColumns.isEmpty()) {
 					continue;
@@ -288,13 +296,62 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	public void resetConnectionData(int connectionId) {
 		_regenerateReferencesChecker.put(connectionId, Boolean.FALSE);
 		_regenerateModelUtil.put(connectionId, Boolean.FALSE);
-		_modifiedTables.put(connectionId, new TreeSet<String>());
-		_droppedTables.put(connectionId, new TreeSet<String>());
+		_modifiedTables.put(connectionId, new ConcurrentSkipListSet<String>());
+		_droppedTables.put(connectionId, new ConcurrentSkipListSet<String>());
 		_insertedTablesLowerCase.put(connectionId, new TreeSet<String>());
 		_deletedTablesLowerCase.put(connectionId, new TreeSet<String>());
 		_updatedTablesLowerCase.put(connectionId, new TreeSet<String>());
 		_updatedTablesColumns.put(
 			connectionId, new HashMap<String, Set<String>>());
+	}
+
+	protected static List<String> filterIgnoredColumns(
+		ReferencesChecker referencesChecker, String table,
+		List<String> columns) {
+
+		if ((columns == null) || columns.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		List<String> filteredColumns = new ArrayList<>(columns.size());
+
+		for (String column : columns) {
+			if (referencesChecker.ignoreColumn(table, column)) {
+				continue;
+			}
+
+			filteredColumns.add(column);
+		}
+
+		return filteredColumns;
+	}
+
+	protected static List<String> filterIgnoredTables(
+		ReferencesChecker referencesChecker, List<String> tables) {
+
+		if ((tables == null) || tables.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		List<String> filteredTables = new ArrayList<>(tables.size());
+
+		for (String table : tables) {
+			if (referencesChecker.ignoreTable(table)) {
+				continue;
+			}
+
+			filteredTables.add(table);
+		}
+
+		return filteredTables;
+	}
+
+	protected static Configuration.Listener getListenerConfiguration(
+		ReferencesChecker referencesChecker) {
+
+		Configuration configuration = referencesChecker.getConfiguration();
+
+		return configuration.getListener();
 	}
 
 	protected static ReferencesChecker getReferencesChecker() {
@@ -326,14 +383,14 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 				currentThread.getStackTrace()) {
 
 			if (_cleanUpMethod(
-					stackTraceElement.getClassName(),
+					referencesChecker, stackTraceElement.getClassName(),
 					stackTraceElement.getMethodName())) {
 
 				cleanUp = true;
 			}
 
 			if (_ignoreMethod(
-					stackTraceElement.getClassName(),
+					referencesChecker, stackTraceElement.getClassName(),
 					stackTraceElement.getMethodName())) {
 
 				abortCheck = true;
@@ -531,47 +588,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			updatedTablesLowerCase, updatedTablesColumns,
 			deletedTablesLowerCase, abortCheck, true, depth + 1);
 
-		_cleanUpCache();
+		_cleanUpCache(referencesChecker);
 
 		return notProcessed;
-	}
-
-	protected List<String> filterIgnoredColumns(
-		String table, List<String> columns) {
-
-		if ((columns == null) || columns.isEmpty()) {
-			return Collections.emptyList();
-		}
-
-		List<String> filteredColumns = new ArrayList<>(columns.size());
-
-		for (String column : columns) {
-			if (referencesChecker.ignoreColumn(table, column)) {
-				continue;
-			}
-
-			filteredColumns.add(column);
-		}
-
-		return filteredColumns;
-	}
-
-	protected List<String> filterIgnoredTables(List<String> tables) {
-		if ((tables == null) || tables.isEmpty()) {
-			return Collections.emptyList();
-		}
-
-		List<String> filteredTables = new ArrayList<>(tables.size());
-
-		for (String table : tables) {
-			if (referencesChecker.ignoreTable(table)) {
-				continue;
-			}
-
-			filteredTables.add(table);
-		}
-
-		return filteredTables;
 	}
 
 	protected synchronized void forceInitReferencesChecker(
@@ -629,14 +648,6 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		return tablesLowerCase;
-	}
-
-	protected Configuration.Listener getListenerConfiguration(
-		ReferencesChecker referencesChecker) {
-
-		Configuration configuration = referencesChecker.getConfiguration();
-
-		return configuration.getListener();
 	}
 
 	protected boolean hasUpdatedReleaseBuildNumber(Query query) {
@@ -728,7 +739,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	protected ReferencesChecker referencesChecker;
 
-	private void _cleanUpCache() {
+	private static void _cleanUpCache(ReferencesChecker referencesChecker) {
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
 			referencesChecker);
 
@@ -752,7 +763,10 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 	}
 
-	private boolean _cleanUpMethod(String className, String methodName) {
+	private static boolean _cleanUpMethod(
+		ReferencesChecker referencesChecker, String className,
+		String methodName) {
+
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
 			referencesChecker);
 
@@ -784,7 +798,10 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return false;
 	}
 
-	private boolean _ignoreMethod(String className, String methodName) {
+	private static boolean _ignoreMethod(
+		ReferencesChecker referencesChecker, String className,
+		String methodName) {
+
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
 			referencesChecker);
 
