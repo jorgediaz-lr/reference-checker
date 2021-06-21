@@ -1,4 +1,4 @@
-!!com.liferay.referenceschecker.config.Configuration$Listener {
+{
   cleanUpCache: "com.liferay.portal.kernel.cache.CacheRegistryUtil.clear",
   cleanUpClasses: [],
   cleanUpMethods: ["DataGuardTestRule.afterClass", "DataGuardTestRule.afterMethod", "DeleteAfterTestRunMethodTestRule.afterMethod", "BaseStagedModelDataHandlerTestCase.deleteStagedModel", "GroupLocalServiceUtil.deleteGroup", "GroupTestUtil.deleteGroup", "OrganizationLocalServiceUtil.deleteOrganization", "deleteCompany", "StagingLocalServiceUtil.disableStaging", "CTClosureFactoryImplTest.tearDown", "MainServlet.init", "TransactionalTestRule$1.evaluate"],
