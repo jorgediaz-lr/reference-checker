@@ -14,6 +14,7 @@
 
 package com.liferay.referencechecker.config;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +43,7 @@ public class Configuration {
 		return listener;
 	}
 
-	public List<Reference> getReferences() {
+	public References getReferences() {
 		return references;
 	}
 
@@ -66,7 +67,7 @@ public class Configuration {
 		this.listener = listener;
 	}
 
-	public void setReferences(List<Reference> references) {
+	public void setReferences(References references) {
 		this.references = references;
 	}
 
@@ -300,10 +301,13 @@ public class Configuration {
 
 	}
 
+	public static class References extends ArrayList<Reference> {
+	}
+
 	protected List<String> ignoreColumns;
 	protected List<String> ignoreTables;
 	protected Listener listener;
-	protected List<Reference> references;
+	protected References references;
 	protected Map<String, Number> tableRank;
 	protected Map<String, String> tableToClassNameMapping;
 

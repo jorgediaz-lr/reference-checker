@@ -46,14 +46,6 @@ public class ConfigurationUtil {
 		Constructor constructor = new CustomConstructor(
 			Configuration.class, classLoader);
 
-		TypeDescription configurationDescription = new TypeDescription(
-			Configuration.class);
-
-		configurationDescription.putListPropertyType(
-			"references", Configuration.Reference.class);
-
-		constructor.addTypeDescription(configurationDescription);
-
 		Yaml yaml = new Yaml(constructor);
 
 		return (Configuration)yaml.load(inputStream);
@@ -82,27 +74,24 @@ public class ConfigurationUtil {
 
 			super(theRoot);
 
-			Constructor nestedConstructor = this;
+			TypeDescription configurationDescription = new TypeDescription(
+				Configuration.class);
 
-			if (theRoot != Object.class) {
-				nestedConstructor = new CustomConstructor(
-					Object.class, classLoader);
-			}
+			configurationDescription.putListPropertyType(
+				"references", Configuration.Reference.class);
+
+			addTypeDescription(configurationDescription);
 
 			yamlConstructors.put(
-				new Tag("!include"),
-				new ImportConstruct(classLoader, nestedConstructor));
+				new Tag("!include"), new ImportConstruct(classLoader));
 		}
 
 	}
 
 	private static class ImportConstruct extends AbstractConstruct {
 
-		public ImportConstruct(
-			ClassLoader classLoader, Constructor constructor) {
-
+		public ImportConstruct(ClassLoader classLoader) {
 			_classLoader = classLoader;
-			_constructor = constructor;
 		}
 
 		@Override
@@ -117,13 +106,28 @@ public class ConfigurationUtil {
 			InputStream inputStream = _getInputStream(
 				_classLoader, scalarNode.getValue());
 
-			Yaml yaml = new Yaml(_constructor);
+			Class<? extends Object> clazz = node.getType();
 
-			return yaml.load(inputStream);
+			if (clazz != Configuration.References.class) {
+				Constructor constructor = new CustomConstructor(
+					clazz, _classLoader);
+
+				Yaml yaml = new Yaml(constructor);
+
+				return yaml.load(inputStream);
+			}
+
+			Constructor constructor = new CustomConstructor(
+				Configuration.class, _classLoader);
+
+			Yaml yaml = new Yaml(constructor);
+
+			Configuration configuration = (Configuration)yaml.load(inputStream);
+
+			return configuration.getReferences();
 		}
 
 		private ClassLoader _classLoader;
-		private Constructor _constructor;
 
 	}
 
