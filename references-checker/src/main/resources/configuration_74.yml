@@ -570,6 +570,7 @@ tableRank : {
     "JournalFolder" : 20,
     "MBMessage" : 20,
     #Auxiliary tables, safe to delete
+    "PortalPreferenceValue" : -5,
     "PortletPreferenceValue" : -5,
     "AnnouncementsFlag" : -10,
     "AssetEntry" : -10,
