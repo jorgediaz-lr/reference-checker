@@ -19,7 +19,11 @@ import java.io.InputStream;
 
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.AbstractConstruct;
 import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.ScalarNode;
+import org.yaml.snakeyaml.nodes.Tag;
 
 /**
  * @author Jorge Díaz
@@ -36,23 +40,17 @@ public class ConfigurationUtil {
 			ClassLoader classLoader, String configurationFile)
 		throws IOException {
 
-		InputStream inputStream = classLoader.getResourceAsStream(
-			configurationFile);
+		InputStream inputStream = _getInputStream(
+			classLoader, configurationFile);
 
-		if (inputStream == null) {
-			throw new RuntimeException(
-				"File " + configurationFile + " does not exists");
-		}
-
-		Constructor constructor = new Constructor(Configuration.class);
+		Constructor constructor = new CustomConstructor(
+			Configuration.class, classLoader);
 
 		TypeDescription configurationDescription = new TypeDescription(
 			Configuration.class);
 
 		configurationDescription.putListPropertyType(
 			"references", Configuration.Reference.class);
-		configurationDescription.putMapPropertyType(
-			"tableToClassNameMapping", String.class, String.class);
 
 		constructor.addTypeDescription(configurationDescription);
 
@@ -61,6 +59,72 @@ public class ConfigurationUtil {
 		return (Configuration)yaml.load(inputStream);
 	}
 
+	private static InputStream _getInputStream(
+		ClassLoader classLoader, String configurationFile) {
+
+		InputStream inputStream = classLoader.getResourceAsStream(
+			configurationFile);
+
+		if (inputStream == null) {
+			throw new RuntimeException(
+				"File " + configurationFile + " does not exists");
+		}
+
+		return inputStream;
+	}
+
 	private static final String _CONFIGURATION_FILE = "configuration_%s.yml";
+
+	private static class CustomConstructor extends Constructor {
+
+		public CustomConstructor(
+			Class<? extends Object> theRoot, ClassLoader classLoader) {
+
+			super(theRoot);
+
+			Constructor nestedConstructor = this;
+
+			if (theRoot != Object.class) {
+				nestedConstructor = new CustomConstructor(
+					Object.class, classLoader);
+			}
+
+			yamlConstructors.put(
+				new Tag("!include"),
+				new ImportConstruct(classLoader, nestedConstructor));
+		}
+
+	}
+
+	private static class ImportConstruct extends AbstractConstruct {
+
+		public ImportConstruct(
+			ClassLoader classLoader, Constructor constructor) {
+
+			_classLoader = classLoader;
+			_constructor = constructor;
+		}
+
+		@Override
+		public Object construct(Node node) {
+			if (!(node instanceof ScalarNode)) {
+				throw new IllegalArgumentException(
+					"Non-scalar !import: " + node.toString());
+			}
+
+			ScalarNode scalarNode = (ScalarNode)node;
+
+			InputStream inputStream = _getInputStream(
+				_classLoader, scalarNode.getValue());
+
+			Yaml yaml = new Yaml(_constructor);
+
+			return yaml.load(inputStream);
+		}
+
+		private ClassLoader _classLoader;
+		private Constructor _constructor;
+
+	}
 
 }
