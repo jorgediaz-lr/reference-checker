@@ -1,15 +1,10 @@
 #
-ignoreColumns: [actionId, userId]
-ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, syncDLFileVersionDiff, syncDLObject, syncDevice, systemEvent]
-#
-listener : !include listener.yml
-#
 references: [
     #generic references
   {origin: {table: ".*", columns: [".*${destTable.PrimaryKey}"]},                                     dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: ".*", columns: ["${destTable.primaryKey}"]},                                       dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: ".*", columns: ["groupId", "companyId"], condition: "groupId<>0 and companyId<>0"},dest: {table: "Group_", columns: ["groupId", "companyId"]}},
-  {origin: {table: ".*", columns: [".*storageId"]},                                                   dest: {table: "DDMField", columns: ["storageId"]}, fixAction: "delete" },
+  {origin: {table: ".*", columns: ["ddmStorageId"]},                                                  dest: {table: "DDMContent", columns: ["contentId"]}},
   {origin: {table: ".*", columns: [".*FileEntryId"]},                                                 dest: {table: "DLFileEntry", columns: ["fileEntryId"]}},
   {origin: {table: ".*", columns: ["layoutId"]},                                                      dest: {table: "Layout", columns: ["layoutId"]}},
   {origin: {table: ".*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}, fixAction: "update" },
@@ -153,8 +148,4 @@ references: [
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk IS NOT NULL"}, dest: {table: ".*", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileVersion.className}') and classPk IS NOT NULL"}}, #ignore
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL"}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true}
-    ]
-#
-tableToClassNameMapping : !include tableToClassNameMapping_74.yml
-#
-tableRank: !include tableRank.yml
+]

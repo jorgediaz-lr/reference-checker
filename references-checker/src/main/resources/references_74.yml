@@ -1,15 +1,10 @@
 #
-ignoreColumns: [actionId, userId]
-ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, syncDLFileVersionDiff, syncDLObject, syncDevice, systemEvent]
-#
-listener : !include listener.yml
-#
 references: [
     #generic references
   {origin: {table: ".*", columns: [".*${destTable.PrimaryKey}"]},                                     dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: ".*", columns: ["${destTable.primaryKey}"]},                                       dest: {table: ".*", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: ".*", columns: ["groupId", "companyId"], condition: "groupId<>0 and companyId<>0"},dest: {table: "Group_", columns: ["groupId", "companyId"]}},
-  {origin: {table: ".*", columns: ["ddmStorageId"]},                                                  dest: {table: "DDMContent", columns: ["contentId"]}},
+  {origin: {table: ".*", columns: [".*storageId"]},                                                   dest: {table: "DDMField", columns: ["storageId"]}, fixAction: "delete" },
   {origin: {table: ".*", columns: [".*FileEntryId"]},                                                 dest: {table: "DLFileEntry", columns: ["fileEntryId"]}},
   {origin: {table: ".*", columns: ["layoutId"]},                                                      dest: {table: "Layout", columns: ["layoutId"]}},
   {origin: {table: ".*", columns: ["layoutUuid"]},                                                    dest: {table: "Layout", columns: ["uuid_"]}, fixAction: "update" },
@@ -60,13 +55,11 @@ references: [
   {origin: {table: "AssetCategory",  columns: ["rightCategoryid"]}}, #ignore
   {origin: {table: "AssetLink",      columns: ["entryId.*"]},                                         dest: {table: "AssetEntry",  columns: ["entryId"]}},
   {origin: {table: "CalendarBooking",  columns: ["recurringCalendarBookingId"]}}, #ignore, it seems it links several CalendarBooking entries, but you can safely delete the first CalendarBooking entry from where the calendarBookingId value was used in the first place
-  {origin: {table: "DDMStorageLink", columns: ["structureVersionId"]}}, #ignore
-  {origin: {table: "DDMStorageLink", columns: ["structureVersionId"], condition: "classNameId in (select classNameId from ClassName_ where value<>'${JournalArticle.className}')"}, dest: {table: "DDMStructureVersion", columns: ["structureVersionId"]}},
-  {origin: {table: "DDMStorageLink", columns: ["structureVersionId"], condition: "classNameId in (select classNameId from ClassName_ where value='${JournalArticle.className}')"}, dest: {table: "DDMStructureVersion", columns: ["structureId"]}},
   {origin: {table: "DL.*",           columns: ["repositoryId"]}}, #ignore
   {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId<>groupId", conditionColumns: ["groupId"]}, dest: {table: "Repository",      columns: ["repositoryId"]}},
   {origin: {table: "^(?!DLContent\\b)DL.*$", columns: ["repositoryId"], condition: "repositoryId=groupId", conditionColumns: ["groupId"]},  dest: {table: "Group_",          columns: ["groupId"]}},
   {origin: {table: "DLFileEntry",    columns: ["fileEntryId","version"]},                            dest: {table: "DLFileVersion",   columns: ["fileEntryId","version"]}},
+  {origin: {table: "DLFileEntryType", columns: ["dataDefinitionId"]},                                dest: {table: "DDMStructure",   columns: ["structureId"]}},
   {origin: {table: "KBArticle",      columns: [".*resourcePrimKey"]}}, #ignore
   {origin: {table: "KBArticle",      columns: ["rootResourcePrimKey"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}},
   {origin: {table: "KBArticle",      columns: ["parentResourcePrimKey"], condition: "parentResourceClassNameId in (select classNameId from ClassName_ where value='${destTable.className}')", conditionColumns: ["parentResourceClassNameId"]}, dest: {table: "KBArticle", columns: ["resourcePrimKey"]}, fixAction: "update" },
@@ -155,8 +148,4 @@ references: [
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${destTable.className}') and classPk IS NOT NULL"}, dest: {table: ".*", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true},
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileVersion.className}') and classPk IS NOT NULL"}}, #ignore
   {origin: {table: "TrashVersion",   columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL"}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"], condition: "status=8", conditionColumns: ["status"]}, displayRaw: true, hidden: true}
-    ]
-#
-tableToClassNameMapping : !include tableToClassNameMapping_72.yml
-#
-tableRank: !include tableRank.yml
+]
