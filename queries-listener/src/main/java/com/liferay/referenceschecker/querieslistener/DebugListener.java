@@ -32,7 +32,7 @@ public class DebugListener implements EventListener {
 
 	@Override
 	public void afterCommit(
-		int connectionId, Connection connection, SQLException e) {
+		int connectionId, Connection connection, SQLException sqlException) {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("After commit. Connection-id=" + connectionId);
@@ -41,7 +41,7 @@ public class DebugListener implements EventListener {
 
 	@Override
 	public void afterConnectionClose(
-		int connectionId, Connection connection, SQLException e) {
+		int connectionId, Connection connection, SQLException sqlException) {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("After connection close. Connection-id=" + connectionId);
@@ -50,7 +50,7 @@ public class DebugListener implements EventListener {
 
 	@Override
 	public void afterGetConnection(
-		int connectionId, Connection connection, SQLException e) {
+		int connectionId, Connection connection, SQLException sqlException) {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("After get connection. Connection-id=" + connectionId);
@@ -59,14 +59,15 @@ public class DebugListener implements EventListener {
 
 	@Override
 	public void afterQuery(
-		int connectionId, Connection connection, Query query, SQLException e) {
+		int connectionId, Connection connection, Query query,
+		SQLException sqlException) {
 
-		processQuery(connectionId, query, e);
+		processQuery(connectionId, query, sqlException);
 	}
 
 	@Override
 	public void afterRollback(
-		int connectionId, Connection connection, SQLException e) {
+		int connectionId, Connection connection, SQLException sqlException) {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("After rollback. Connection-id=" + connectionId);
@@ -162,8 +163,10 @@ public class DebugListener implements EventListener {
 		}
 	}
 
-	protected void processQuery(int connectionId, Query query, SQLException e) {
-		if (e != null) {
+	protected void processQuery(
+		int connectionId, Query query, SQLException sqlException) {
+
+		if (sqlException != null) {
 			return;
 		}
 

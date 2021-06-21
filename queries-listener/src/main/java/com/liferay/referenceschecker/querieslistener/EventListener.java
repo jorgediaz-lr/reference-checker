@@ -23,19 +23,20 @@ import java.sql.SQLException;
 public interface EventListener {
 
 	public void afterCommit(
-		int connectionId, Connection connection, SQLException e);
+		int connectionId, Connection connection, SQLException sqlException);
 
 	public void afterConnectionClose(
-		int connectionId, Connection connection, SQLException e);
+		int connectionId, Connection connection, SQLException sqlException);
 
 	public void afterGetConnection(
-		int connectionId, Connection connection, SQLException e);
+		int connectionId, Connection connection, SQLException sqlException);
 
 	public void afterQuery(
-		int connectionId, Connection connection, Query query, SQLException e);
+		int connectionId, Connection connection, Query query,
+		SQLException sqlException);
 
 	public void afterRollback(
-		int connectionId, Connection connection, SQLException e);
+		int connectionId, Connection connection, SQLException sqlException);
 
 	public void beforeCommit(int connectionId, Connection connection);
 

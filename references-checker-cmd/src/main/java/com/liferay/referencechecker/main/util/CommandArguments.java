@@ -44,9 +44,9 @@ public class CommandArguments {
 				return null;
 			}
 		}
-		catch (ParameterException pe) {
+		catch (ParameterException parameterException) {
 			if (!commandArguments.isHelp()) {
-				System.err.println(pe.getMessage());
+				System.err.println(parameterException.getMessage());
 			}
 
 			_printHelp(jCommander);

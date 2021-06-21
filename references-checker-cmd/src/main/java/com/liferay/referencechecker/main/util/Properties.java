@@ -54,10 +54,8 @@ public class Properties {
 	}
 
 	public void store(File file) throws IOException {
-		PrintWriter printWriter = null;
-
-		try {
-			printWriter = new PrintWriter(file, StandardCharsets.UTF_8.name());
+		try (PrintWriter printWriter = new PrintWriter(
+				file, StandardCharsets.UTF_8.name())) {
 
 			for (String name : propertyNames()) {
 				String value = getProperty(name);
@@ -71,19 +69,11 @@ public class Properties {
 				printWriter.println(name + "=" + value);
 			}
 		}
-		finally {
-			if (printWriter != null) {
-				printWriter.close();
-			}
-		}
 	}
 
 	protected void load(InputStream inputStream) throws IOException {
-		BufferedReader bufferedReader = null;
-
-		try {
-			bufferedReader = new BufferedReader(
-				new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+		try (BufferedReader bufferedReader = new BufferedReader(
+				new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
 			String name = null;
 			String line = null;
@@ -108,11 +98,6 @@ public class Properties {
 				}
 
 				_properties.put(name, value);
-			}
-		}
-		finally {
-			if (bufferedReader != null) {
-				bufferedReader.close();
 			}
 		}
 	}

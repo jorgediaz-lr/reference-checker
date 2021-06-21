@@ -16,8 +16,8 @@ package com.liferay.referencechecker.main.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import com.liferay.referenceschecker.OutputUtil;
-import com.liferay.referenceschecker.ReferencesChecker;
+import com.liferay.referencechecker.OutputUtil;
+import com.liferay.referencechecker.ReferenceChecker;
 import com.liferay.referenceschecker.util.JDBCUtil;
 
 import java.io.File;
@@ -57,8 +57,8 @@ import org.apache.commons.lang3.StringUtils;
 public class BaseChecker {
 
 	public static BaseChecker createBaseChecker(
-			String programName, String databaseCfg, String filenamePrefix,
-			String filenameSuffix, boolean checkUndefinedTables)
+			String programName, String databaseCfg, String fileNamePrefix,
+			String fileNameSuffix, boolean checkUndefinedTables)
 		throws Exception, FileNotFoundException {
 
 		if (databaseCfg == null) {
@@ -67,19 +67,18 @@ public class BaseChecker {
 			databaseCfg = configFolder + "database.properties";
 		}
 
-		if (filenamePrefix == null) {
-			filenamePrefix = StringUtils.EMPTY;
+		if (fileNamePrefix == null) {
+			fileNamePrefix = StringUtils.EMPTY;
 		}
 
-		if (filenameSuffix == null) {
+		if (fileNameSuffix == null) {
 			DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-			Date date = new Date();
 
-			filenameSuffix = "_" + dateFormat.format(date);
+			fileNameSuffix = "_" + dateFormat.format(new Date());
 		}
 
 		File logFile = new File(
-			filenamePrefix + programName + filenameSuffix + ".log");
+			fileNamePrefix + programName + fileNameSuffix + ".log");
 
 		System.setOut(
 			new TeePrintStream(new FileOutputStream(logFile), System.out));
@@ -96,10 +95,11 @@ public class BaseChecker {
 			DataSource dataSource = initDB.connectToDatabase(databaseCfg);
 
 			BaseChecker baseChecker = new BaseChecker(
-				dataSource, filenamePrefix, filenameSuffix,
+				dataSource, fileNamePrefix, fileNameSuffix,
 				checkUndefinedTables);
 
 			long endTime = System.currentTimeMillis();
+
 			System.out.println("");
 			System.out.println("Total time: " + (endTime - startTime) + " ms");
 
@@ -131,7 +131,7 @@ public class BaseChecker {
 		return dataSource.getConnection();
 	}
 
-	public ReferencesChecker getReferenceChecker() {
+	public ReferenceChecker getReferenceChecker() {
 		return referenceChecker;
 	}
 
@@ -169,8 +169,8 @@ public class BaseChecker {
 
 				outputFileName = outputFileName + " and " + htmlFile.getName();
 			}
-			catch (IOException ioe) {
-				ioe.printStackTrace(System.out);
+			catch (IOException ioException) {
+				ioException.printStackTrace(System.out);
 			}
 		}
 
@@ -233,20 +233,20 @@ public class BaseChecker {
 	}
 
 	protected BaseChecker(
-			DataSource dataSource, String filenamePrefix, String filenameSuffix,
+			DataSource dataSource, String fileNamePrefix, String fileNameSuffix,
 			boolean checkUndefinedTables)
 		throws Exception {
 
 		this.dataSource = dataSource;
-		this.filenamePrefix = filenamePrefix;
-		this.filenameSuffix = filenameSuffix;
+		this.fileNamePrefix = fileNamePrefix;
+		this.fileNameSuffix = fileNameSuffix;
 
 		Connection connection = null;
 
 		try {
 			connection = dataSource.getConnection();
 
-			referenceChecker = new ReferencesChecker(connection);
+			referenceChecker = new ReferenceChecker(connection);
 
 			if (referenceChecker.getConfiguration() == null) {
 				throw new RuntimeException("Error loading configuration");
@@ -272,35 +272,9 @@ public class BaseChecker {
 	}
 
 	protected DataSource dataSource;
-	protected String filenamePrefix;
-	protected String filenameSuffix;
-	protected ReferencesChecker referenceChecker;
-
-	private static String _getDatabaseURL(DataSource dataSource) {
-		String databaseUrl = null;
-
-		Connection connection = null;
-
-		try {
-			connection = dataSource.getConnection();
-
-			DatabaseMetaData databaseMetaData = connection.getMetaData();
-
-			databaseUrl = databaseMetaData.getURL();
-		}
-		catch (SQLException sqle) {
-			sqle.printStackTrace();
-		}
-		finally {
-			JDBCUtil.cleanUp(connection);
-		}
-
-		if (databaseUrl == null) {
-			return StringUtils.EMPTY;
-		}
-
-		return databaseUrl;
-	}
+	protected String fileNamePrefix;
+	protected String fileNameSuffix;
+	protected ReferenceChecker referenceChecker;
 
 	private static File _getJarFile() throws Exception {
 		ProtectionDomain protectionDomain =
@@ -319,8 +293,34 @@ public class BaseChecker {
 		return p.getImplementationVersion();
 	}
 
+	private String _getDatabaseURL(DataSource dataSource) {
+		String databaseUrl = null;
+
+		Connection connection = null;
+
+		try {
+			connection = dataSource.getConnection();
+
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+			databaseUrl = databaseMetaData.getURL();
+		}
+		catch (SQLException sqlException) {
+			sqlException.printStackTrace();
+		}
+		finally {
+			JDBCUtil.cleanUp(connection);
+		}
+
+		if (databaseUrl == null) {
+			return StringUtils.EMPTY;
+		}
+
+		return databaseUrl;
+	}
+
 	private File _getOutputFile(String name, String extension) {
-		String fileName = filenamePrefix + name + filenameSuffix;
+		String fileName = fileNamePrefix + name + fileNameSuffix;
 
 		if (StringUtils.isNotEmpty(extension)) {
 			fileName = fileName + "." + extension;

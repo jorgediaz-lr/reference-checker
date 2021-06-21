@@ -97,15 +97,16 @@ public class TableUtil {
 				count = rs.getLong(1);
 			}
 		}
-		catch (SQLException sqle) {
+		catch (SQLException sqlException) {
 			if ((dbType == SQLUtil.TYPE_MYSQL) &&
-				(sqle.getErrorCode() == 1412)) {
+				(sqlException.getErrorCode() == 1412)) {
 
 				return -2;
 			}
 
 			_log.error(
-				"Error executing sql: " + sql + " EXCEPTION: " + sqle, sqle);
+				"Error executing sql: " + sql + " EXCEPTION: " + sqlException,
+				sqlException);
 
 			return -1;
 		}
@@ -118,7 +119,7 @@ public class TableUtil {
 
 	public static Map<String, Long> countTableClassName(
 		Connection connection, Table table, String classNameAttr,
-		String classNamePkAttr) {
+		String classNamePKAttr) {
 
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -138,8 +139,8 @@ public class TableUtil {
 				"SELECT " + classNameAttr + ", COUNT(" + key + ") FROM " +
 					table.getTableName();
 
-			if (classNamePkAttr != null) {
-				sql += " WHERE " + classNamePkAttr + "<>0 ";
+			if (classNamePKAttr != null) {
+				sql += " WHERE " + classNamePKAttr + "<>0 ";
 			}
 
 			sql += " GROUP BY " + classNameAttr;
@@ -163,9 +164,10 @@ public class TableUtil {
 				map.put(className, count);
 			}
 		}
-		catch (SQLException sqle) {
+		catch (SQLException sqlException) {
 			_log.error(
-				"Error executing sql: " + sql + " EXCEPTION: " + sqle, sqle);
+				"Error executing sql: " + sql + " EXCEPTION: " + sqlException,
+				sqlException);
 
 			return null;
 		}
@@ -178,7 +180,7 @@ public class TableUtil {
 
 	public static Map<Long, Long> countTableClassNameId(
 		Connection connection, Table table, String classNameIdAttr,
-		String classNamePkAttr) {
+		String classNamePKAttr) {
 
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -198,8 +200,8 @@ public class TableUtil {
 				"SELECT " + classNameIdAttr + ", COUNT(" + key + ") FROM " +
 					table.getTableName();
 
-			if (classNamePkAttr != null) {
-				sql += " WHERE " + classNamePkAttr + " IS NOT NULL ";
+			if (classNamePKAttr != null) {
+				sql += " WHERE " + classNamePKAttr + " IS NOT NULL ";
 			}
 
 			sql += " GROUP BY " + classNameIdAttr;
@@ -223,9 +225,10 @@ public class TableUtil {
 				map.put(classNameId, count);
 			}
 		}
-		catch (SQLException sqle) {
+		catch (SQLException sqlException) {
 			_log.error(
-				"Error executing sql: " + sql + " EXCEPTION: " + sqle, sqle);
+				"Error executing sql: " + sql + " EXCEPTION: " + sqlException,
+				sqlException);
 
 			return null;
 		}
@@ -329,8 +332,8 @@ public class TableUtil {
 
 				pattern = Pattern.compile(lowerCaseFilter);
 			}
-			catch (PatternSyntaxException pse) {
-				_log.warn(pse, pse);
+			catch (PatternSyntaxException patternSyntaxException) {
+				_log.warn(patternSyntaxException, patternSyntaxException);
 
 				return Collections.emptyList();
 			}
@@ -489,7 +492,7 @@ public class TableUtil {
 
 		String classNameAttr = matcher.group(1);
 		String classNameValue = matcher.group(2);
-		String classNamePkAttr = matcher.group(3);
+		String classNamePKAttr = matcher.group(3);
 
 		String key = table.getTableNameLowerCase();
 
@@ -499,11 +502,11 @@ public class TableUtil {
 			classNameAttr
 		);
 
-		if (classNamePkAttr != null) {
+		if (classNamePKAttr != null) {
 			key = key.concat(
 				"_"
 			).concat(
-				classNamePkAttr
+				classNamePKAttr
 			);
 		}
 
@@ -522,7 +525,7 @@ public class TableUtil {
 
 		if (map == null) {
 			map = countTableClassName(
-				connection, table, classNameAttr, classNamePkAttr);
+				connection, table, classNameAttr, classNamePKAttr);
 
 			emptyTableCacheClassName.put(key, map);
 		}
@@ -545,7 +548,7 @@ public class TableUtil {
 
 		String classNameIdAttr = matcher.group(1);
 		String classNameValue = matcher.group(2);
-		String classNamePkAttr = matcher.group(4);
+		String classNamePKAttr = matcher.group(4);
 
 		String key = table.getTableNameLowerCase();
 
@@ -555,11 +558,11 @@ public class TableUtil {
 			classNameIdAttr
 		);
 
-		if (classNamePkAttr != null) {
+		if (classNamePKAttr != null) {
 			key = key.concat(
 				"_"
 			).concat(
-				classNamePkAttr
+				classNamePKAttr
 			);
 		}
 
@@ -579,7 +582,7 @@ public class TableUtil {
 
 		if (map == null) {
 			map = countTableClassNameId(
-				connection, table, classNameIdAttr, classNamePkAttr);
+				connection, table, classNameIdAttr, classNamePKAttr);
 
 			emptyTableCacheClassNameId.put(key, map);
 		}
@@ -899,8 +902,8 @@ public class TableUtil {
 					tableMap.put(table.getTableNameLowerCase(), table);
 				}
 			}
-			catch (SQLException sqle) {
-				_log.error(sqle, sqle);
+			catch (SQLException sqlException) {
+				_log.error(sqlException, sqlException);
 			}
 		}
 

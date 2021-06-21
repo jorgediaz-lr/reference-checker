@@ -68,15 +68,15 @@ public class ModelUtilImpl
 
 			return method.invoke(object, args);
 		}
-		catch (NoSuchMethodException nsme) {
+		catch (NoSuchMethodException noSuchMethodException) {
 			throw new RuntimeException(
 				"invokeMethod: " + methodName + " method not found for " +
 					object,
-				nsme);
+				noSuchMethodException);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			String cause = null;
-			Throwable rootException = e.getCause();
+			Throwable rootException = exception.getCause();
 
 			if (rootException != null) {
 				cause = " (root cause: " + rootException.getMessage() + ")";
@@ -85,7 +85,7 @@ public class ModelUtilImpl
 			throw new RuntimeException(
 				"invokeMethod: " + methodName + " method for " + object + ": " +
 					cause,
-				e);
+				exception);
 		}
 	}
 
@@ -216,11 +216,11 @@ public class ModelUtilImpl
 
 				modelTableName = (String)field.get(null);
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				_log.error(
 					"Error accessing to " + classLiferayModelImpl.getName() +
 						"#TABLE_NAME",
-					e);
+					exception);
 
 				continue;
 			}
@@ -290,9 +290,9 @@ public class ModelUtilImpl
 				return clazz.getName();
 			}
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(e, e);
+				_log.debug(exception, exception);
 			}
 		}
 
@@ -445,7 +445,7 @@ public class ModelUtilImpl
 			return DynamicQueryFactoryUtil.forClass(
 				classInterface, null, classInterface.getClassLoader());
 		}
-		catch (ClassNotFoundException cnfe) {
+		catch (ClassNotFoundException classNotFoundException) {
 			return null;
 		}
 	}

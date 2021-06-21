@@ -53,7 +53,7 @@ public class InitDatabase {
 			try {
 				databaseProperties.load(databasePropertiesFile);
 			}
-			catch (IOException ioe) {
+			catch (IOException ioException) {
 				System.err.println("Unable to load " + databasePropertiesFile);
 			}
 		}
@@ -67,11 +67,6 @@ public class InitDatabase {
 
 		String driverClassName = databaseProperties.getProperty(
 			"jdbc.default.driverClassName");
-		String password = databaseProperties.getProperty(
-			"jdbc.default.password");
-		String url = databaseProperties.getProperty("jdbc.default.url");
-		String username = databaseProperties.getProperty(
-			"jdbc.default.username");
 
 		try {
 			Class.forName(driverClassName);
@@ -85,11 +80,17 @@ public class InitDatabase {
 			throw new Exception(t);
 		}
 
+		String password = databaseProperties.getProperty(
+			"jdbc.default.password");
+		String url = databaseProperties.getProperty("jdbc.default.url");
+		String userName = databaseProperties.getProperty(
+			"jdbc.default.username");
+
 		HikariConfig hikariConfig = new HikariConfig();
 
 		hikariConfig.setDriverClassName(driverClassName);
 		hikariConfig.setJdbcUrl(url);
-		hikariConfig.setUsername(username);
+		hikariConfig.setUsername(userName);
 		hikariConfig.setPassword(password);
 
 		DataSource dataSource = new HikariDataSource(hikariConfig);
@@ -101,12 +102,12 @@ public class InitDatabase {
 		try {
 			databaseProperties.store(databasePropertiesFile);
 		}
-		catch (IOException ioe) {
+		catch (IOException ioException) {
 			System.out.println(
 				"Error writting to " +
 					databasePropertiesFile.getAbsolutePath());
 
-			throw ioe;
+			throw ioException;
 		}
 
 		return dataSource;
@@ -191,7 +192,7 @@ public class InitDatabase {
 				try {
 					dataSource.setPort(Integer.parseInt(response));
 				}
-				catch (NumberFormatException nfe) {
+				catch (NumberFormatException numberFormatException) {
 				}
 			}
 		}
@@ -208,7 +209,7 @@ public class InitDatabase {
 
 		System.out.println("Please enter your database username: ");
 
-		String username = _consoleReader.readLine();
+		String userName = _consoleReader.readLine();
 
 		System.out.println("Please enter your database password: ");
 
@@ -220,7 +221,7 @@ public class InitDatabase {
 			"jdbc.default.driverClassName", dataSource.getClassName());
 		databaseProperties.setProperty("jdbc.default.password", password);
 		databaseProperties.setProperty("jdbc.default.url", dataSource.getURL());
-		databaseProperties.setProperty("jdbc.default.username", username);
+		databaseProperties.setProperty("jdbc.default.username", userName);
 
 		return databaseProperties;
 	}

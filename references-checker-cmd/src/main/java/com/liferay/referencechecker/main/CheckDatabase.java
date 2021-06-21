@@ -18,9 +18,9 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
+import com.liferay.referencechecker.OutputUtil;
+import com.liferay.referencechecker.ReferenceChecker;
 import com.liferay.referencechecker.main.util.BaseChecker;
-import com.liferay.referenceschecker.OutputUtil;
-import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.ref.MissingReferences;
 import com.liferay.referenceschecker.util.JDBCUtil;
 
@@ -50,8 +50,8 @@ public class CheckDatabase {
 		}
 
 		String databaseCfg = commandArguments.getDatabaseConfiguration();
-		String filenamePrefix = commandArguments.getOutputFilesPrefix();
-		String filenameSuffix = commandArguments.getOutputFilesSuffix();
+		String fileNamePrefix = commandArguments.getOutputFilesPrefix();
+		String fileNameSuffix = commandArguments.getOutputFilesSuffix();
 
 		int missingReferencesLimit =
 			commandArguments.getMissingReferencesLimit();
@@ -63,7 +63,7 @@ public class CheckDatabase {
 		boolean checkUndefinedTables = commandArguments.checkUndefinedTables();
 
 		BaseChecker baseChecker = BaseChecker.createBaseChecker(
-			PROGRAM_NAME, databaseCfg, filenamePrefix, filenameSuffix,
+			PROGRAM_NAME, databaseCfg, fileNamePrefix, fileNameSuffix,
 			checkUndefinedTables);
 
 		List<MissingReferences> missingReferenceList = execute(
@@ -94,7 +94,7 @@ public class CheckDatabase {
 			try {
 				return Integer.valueOf(_missingReferencesLimit);
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				return -1;
 			}
 		}
@@ -161,7 +161,7 @@ public class CheckDatabase {
 		System.out.println("");
 		System.out.println("Executing dump cleanup script...");
 
-		ReferencesChecker referenceChecker = baseChecker.getReferenceChecker();
+		ReferenceChecker referenceChecker = baseChecker.getReferenceChecker();
 
 		List<String> cleanup = referenceChecker.generateCleanupSentences(
 			missingReferenceList);
@@ -180,7 +180,7 @@ public class CheckDatabase {
 
 		List<MissingReferences> missingReferenceList = null;
 
-		ReferencesChecker referenceChecker = baseChecker.getReferenceChecker();
+		ReferenceChecker referenceChecker = baseChecker.getReferenceChecker();
 
 		Connection connection = null;
 
@@ -225,9 +225,9 @@ public class CheckDatabase {
 				return null;
 			}
 		}
-		catch (ParameterException pe) {
+		catch (ParameterException parameterException) {
 			if (!commandArguments.isHelp()) {
-				System.err.println(pe.getMessage());
+				System.err.println(parameterException.getMessage());
 			}
 
 			_printHelp(jCommander);

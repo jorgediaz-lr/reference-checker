@@ -14,8 +14,8 @@
 
 package com.liferay.referenceschecker.listener;
 
-import com.liferay.referenceschecker.OutputUtil;
-import com.liferay.referenceschecker.ReferencesChecker;
+import com.liferay.referencechecker.OutputUtil;
+import com.liferay.referencechecker.ReferenceChecker;
 import com.liferay.referenceschecker.config.Configuration;
 import com.liferay.referenceschecker.dao.Table;
 import com.liferay.referenceschecker.querieslistener.EventListener;
@@ -53,9 +53,9 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	@Override
 	public void afterCommit(
-		int connectionId, Connection connection, SQLException sqle) {
+		int connectionId, Connection connection, SQLException sqlException) {
 
-		if (sqle != null) {
+		if (sqlException != null) {
 			return;
 		}
 
@@ -64,26 +64,27 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 				forceInitReferencesChecker(connection, false);
 			}
 
-			if (referencesChecker == null) {
+			if (referenceChecker == null) {
 				initReferencesChecker(connection);
 			}
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			_log.error(
-				"Error creating ReferencesChecker instance: " + e.getMessage(),
-				e);
+				"Error creating ReferenceChecker instance: " +
+					exception.getMessage(),
+				exception);
 
 			return;
 		}
 
-		ReferencesChecker referencesChecker = this.referencesChecker;
+		ReferenceChecker referenceChecker = this.referenceChecker;
 
-		if (referencesChecker == null) {
+		if (referenceChecker == null) {
 			return;
 		}
 
 		refreshReferencesChecker(
-			connection, referencesChecker, _modifiedTables.get(connectionId),
+			connection, referenceChecker, _modifiedTables.get(connectionId),
 			_droppedTables.get(connectionId),
 			_regenerateModelUtil.get(connectionId));
 
@@ -102,51 +103,53 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		for (String insertedTable : insertedTablesLowerCase) {
-			referencesChecker.cleanEmptyTableCacheOnInsert(insertedTable);
+			referenceChecker.cleanEmptyTableCacheOnInsert(insertedTable);
 		}
 
 		for (String updatedTable : updatedTablesLowerCase) {
-			referencesChecker.cleanEmptyTableCacheOnUpdate(updatedTable);
+			referenceChecker.cleanEmptyTableCacheOnUpdate(updatedTable);
 		}
 
 		for (String deletedTable : deletedTablesLowerCase) {
-			referencesChecker.cleanEmptyTableCacheOnDelete(deletedTable);
+			referenceChecker.cleanEmptyTableCacheOnDelete(deletedTable);
 		}
 
 		checkMissingReferences(
-			connection, referencesChecker, insertedTablesLowerCase,
+			connection, referenceChecker, insertedTablesLowerCase,
 			updatedTablesLowerCase, _updatedTablesColumns.get(connectionId),
 			deletedTablesLowerCase);
 	}
 
 	@Override
 	public void afterConnectionClose(
-		int connectionId, Connection connection, SQLException e) {
+		int connectionId, Connection connection, SQLException sqlException) {
 	}
 
 	@Override
 	public void afterGetConnection(
-		int connectionId, Connection connection, SQLException sqle) {
+		int connectionId, Connection connection, SQLException sqlException) {
 
-		if ((referencesChecker != null) || (sqle != null)) {
+		if ((referenceChecker != null) || (sqlException != null)) {
 			return;
 		}
 
 		try {
 			initReferencesChecker(connection);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			_log.error(
-				"Error creating ReferencesChecker instance: " + e.getMessage(),
-				e);
+				"Error creating ReferenceChecker instance: " +
+					exception.getMessage(),
+				exception);
 		}
 	}
 
 	@Override
 	public void afterQuery(
-		int connectionId, Connection connection, Query query, SQLException e) {
+		int connectionId, Connection connection, Query query,
+		SQLException sqlException) {
 
-		if ((referencesChecker == null) || (e != null)) {
+		if ((referenceChecker == null) || (sqlException != null)) {
 			return;
 		}
 
@@ -161,7 +164,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			updatedTables.addAll(
 				filterIgnoredTables(
-					referencesChecker, query.getModifiedTables()));
+					referenceChecker, query.getModifiedTables()));
 
 			_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 		}
@@ -170,7 +173,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			deletedTables.addAll(
 				filterIgnoredTables(
-					referencesChecker, query.getModifiedTables()));
+					referenceChecker, query.getModifiedTables()));
 
 			_regenerateModelUtil.put(connectionId, Boolean.TRUE);
 		}
@@ -180,7 +183,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			insertedTables.addAll(
 				filterIgnoredTables(
-					referencesChecker, query.getModifiedTablesLowerCase()));
+					referenceChecker, query.getModifiedTablesLowerCase()));
 		}
 		else if (query.getQueryType() == Query.QueryType.DELETE) {
 			Set<String> deletedTables = _deletedTablesLowerCase.get(
@@ -188,7 +191,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			deletedTables.addAll(
 				filterIgnoredTables(
-					referencesChecker, query.getModifiedTablesLowerCase()));
+					referenceChecker, query.getModifiedTablesLowerCase()));
 		}
 		else if (query.getQueryType() == Query.QueryType.UPDATE) {
 			Set<String> updatedTables = _updatedTablesLowerCase.get(
@@ -199,11 +202,10 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			for (String modifiedTable :
 					filterIgnoredTables(
-						referencesChecker,
-						query.getModifiedTablesLowerCase())) {
+						referenceChecker, query.getModifiedTablesLowerCase())) {
 
 				List<String> modifiedColumns = filterIgnoredColumns(
-					referencesChecker, modifiedTable,
+					referenceChecker, modifiedTable,
 					query.getModifiedColumns());
 
 				if (modifiedColumns.isEmpty()) {
@@ -243,27 +245,27 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	@Override
 	public void afterRollback(
-		int connectionId, Connection connection, SQLException e) {
+		int connectionId, Connection connection, SQLException sqlException) {
 	}
 
 	@Override
 	public void beforeCommit(int connectionId, Connection connection) {
-		if (referencesChecker == null) {
+		if (referenceChecker == null) {
 			return;
 		}
 
 		for (String insertedTable :
 				_insertedTablesLowerCase.get(connectionId)) {
 
-			referencesChecker.cleanEmptyTableCacheOnInsert(insertedTable);
+			referenceChecker.cleanEmptyTableCacheOnInsert(insertedTable);
 		}
 
 		for (String updatedTable : _updatedTablesLowerCase.get(connectionId)) {
-			referencesChecker.cleanEmptyTableCacheOnUpdate(updatedTable);
+			referenceChecker.cleanEmptyTableCacheOnUpdate(updatedTable);
 		}
 
 		for (String deletedTable : _deletedTablesLowerCase.get(connectionId)) {
-			referencesChecker.cleanEmptyTableCacheOnDelete(deletedTable);
+			referenceChecker.cleanEmptyTableCacheOnDelete(deletedTable);
 		}
 	}
 
@@ -306,8 +308,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected static List<String> filterIgnoredColumns(
-		ReferencesChecker referencesChecker, String table,
-		List<String> columns) {
+		ReferenceChecker referenceChecker, String table, List<String> columns) {
 
 		if ((columns == null) || columns.isEmpty()) {
 			return Collections.emptyList();
@@ -316,7 +317,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		List<String> filteredColumns = new ArrayList<>(columns.size());
 
 		for (String column : columns) {
-			if (referencesChecker.ignoreColumn(table, column)) {
+			if (referenceChecker.ignoreColumn(table, column)) {
 				continue;
 			}
 
@@ -327,7 +328,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected static List<String> filterIgnoredTables(
-		ReferencesChecker referencesChecker, List<String> tables) {
+		ReferenceChecker referenceChecker, List<String> tables) {
 
 		if ((tables == null) || tables.isEmpty()) {
 			return Collections.emptyList();
@@ -336,7 +337,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		List<String> filteredTables = new ArrayList<>(tables.size());
 
 		for (String table : tables) {
-			if (referencesChecker.ignoreTable(table)) {
+			if (referenceChecker.ignoreTable(table)) {
 				continue;
 			}
 
@@ -347,14 +348,14 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected static Configuration.Listener getListenerConfiguration(
-		ReferencesChecker referencesChecker) {
+		ReferenceChecker referenceChecker) {
 
-		Configuration configuration = referencesChecker.getConfiguration();
+		Configuration configuration = referenceChecker.getConfiguration();
 
 		return configuration.getListener();
 	}
 
-	protected static ReferencesChecker getReferencesChecker() {
+	protected static ReferenceChecker getReferencesChecker() {
 		EventListenerRegistry eventListenerRegistry =
 			EventListenerRegistry.getEventListenerRegistry();
 
@@ -365,11 +366,11 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			referencesCheckerInfrastructureListener =
 				(ReferencesCheckerInfrastructureListener)eventListener;
 
-		return referencesCheckerInfrastructureListener.referencesChecker;
+		return referencesCheckerInfrastructureListener.referenceChecker;
 	}
 
 	protected void checkMissingReferences(
-		Connection connection, ReferencesChecker referencesChecker,
+		Connection connection, ReferenceChecker referenceChecker,
 		Set<String> insertedTablesLowerCase, Set<String> updatedTablesLowerCase,
 		Map<String, Set<String>> updatedTablesColumns,
 		Set<String> deletedTablesLowerCase) {
@@ -383,14 +384,14 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 				currentThread.getStackTrace()) {
 
 			if (_cleanUpMethod(
-					referencesChecker, stackTraceElement.getClassName(),
+					referenceChecker, stackTraceElement.getClassName(),
 					stackTraceElement.getMethodName())) {
 
 				cleanUp = true;
 			}
 
 			if (_ignoreMethod(
-					referencesChecker, stackTraceElement.getClassName(),
+					referenceChecker, stackTraceElement.getClassName(),
 					stackTraceElement.getMethodName())) {
 
 				abortCheck = true;
@@ -406,13 +407,13 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		checkMissingReferences(
-			connection, referencesChecker, insertedTablesLowerCase,
+			connection, referenceChecker, insertedTablesLowerCase,
 			updatedTablesLowerCase, updatedTablesColumns,
 			deletedTablesLowerCase, abortCheck, cleanUp, 0);
 	}
 
 	protected void checkMissingReferences(
-		Connection connection, ReferencesChecker referencesChecker,
+		Connection connection, ReferenceChecker referenceChecker,
 		Set<String> insertedTablesLowerCase, Set<String> updatedTablesLowerCase,
 		Map<String, Set<String>> updatedTablesColumns,
 		Set<String> deletedTablesLowerCase, boolean abortCheck, boolean cleanUp,
@@ -422,7 +423,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			_log.error("Reached check max depth, aborting...");
 		}
 
-		Collection<Reference> references = referencesChecker.getReferences(
+		Collection<Reference> references = referenceChecker.getReferences(
 			connection, true);
 
 		Collection<Reference> referencesToCheck = new HashSet<>();
@@ -473,17 +474,17 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 		}
 
-		referencesChecker.setIgnoreLowerValues(0);
+		referenceChecker.setIgnoreLowerValues(0);
 
-		referencesChecker.setIgnoreGreaterValues(
-			ReferencesChecker.getLiferayMaxCounter(connection));
+		referenceChecker.setIgnoreGreaterValues(
+			ReferenceChecker.getLiferayMaxCounter(connection));
 
 		Collection<MissingReferences> missingReferences =
-			referencesChecker.execute(connection, referencesToCheck);
+			referenceChecker.execute(connection, referencesToCheck);
 
 		if (cleanUp) {
 			missingReferences = cleanUp(
-				connection, referencesChecker, missingReferences, abortCheck,
+				connection, referenceChecker, missingReferences, abortCheck,
 				depth);
 		}
 
@@ -504,7 +505,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
-			referencesChecker);
+			referenceChecker);
 
 		if (listenerConfiguration.getPrintThreadDump()) {
 			if (cleanUp) {
@@ -517,7 +518,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected Collection<MissingReferences> cleanUp(
-		Connection connection, ReferencesChecker referencesChecker,
+		Connection connection, ReferenceChecker referenceChecker,
 		Collection<MissingReferences> missingReferencesList, boolean abortCheck,
 		int depth) {
 
@@ -566,7 +567,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 
 			try {
-				referencesChecker.executeCleanUp(connection, missingReferences);
+				referenceChecker.executeCleanUp(connection, missingReferences);
 			}
 			catch (SQLException sqlException) {
 				MissingReferences missingReferencesError =
@@ -584,11 +585,11 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		checkMissingReferences(
-			connection, referencesChecker, insertedTablesLowerCase,
+			connection, referenceChecker, insertedTablesLowerCase,
 			updatedTablesLowerCase, updatedTablesColumns,
 			deletedTablesLowerCase, abortCheck, true, depth + 1);
 
-		_cleanUpCache(referencesChecker);
+		_cleanUpCache(referenceChecker);
 
 		return notProcessed;
 	}
@@ -597,7 +598,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			Connection connection, boolean cleanUp)
 		throws SQLException {
 
-		ReferencesChecker referencesCheckerAux = new ReferencesChecker(
+		ReferenceChecker referencesCheckerAux = new ReferenceChecker(
 			connection);
 
 		if (referencesCheckerAux.getConfiguration() == null) {
@@ -607,19 +608,19 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		referencesCheckerAux.initModelUtil(connection);
 		referencesCheckerAux.initTableUtil(connection);
 
-		referencesChecker = referencesCheckerAux;
+		referenceChecker = referencesCheckerAux;
 
 		if (!cleanUp) {
 			return;
 		}
 
-		Collection<Reference> references = referencesChecker.getReferences(
+		Collection<Reference> references = referenceChecker.getReferences(
 			connection, true);
 
 		Set<String> allTablesLowerCase = getAllTablesLowerCase(references);
 
 		checkMissingReferences(
-			connection, referencesChecker, allTablesLowerCase,
+			connection, referenceChecker, allTablesLowerCase,
 			new HashSet<String>(), null, allTablesLowerCase, false, true, 0);
 	}
 
@@ -702,7 +703,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	protected synchronized void initReferencesChecker(Connection connection)
 		throws SQLException {
 
-		if (referencesChecker != null) {
+		if (referenceChecker != null) {
 			return;
 		}
 
@@ -710,38 +711,40 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	protected void refreshReferencesChecker(
-		Connection connection, ReferencesChecker referencesChecker,
+		Connection connection, ReferenceChecker referenceChecker,
 		Set<String> updatedTables, Set<String> deletedTables,
 		boolean regenerateModelUtil) {
 
 		try {
-			referencesChecker.addTables(connection, updatedTables);
+			referenceChecker.addTables(connection, updatedTables);
 		}
-		catch (SQLException sqle) {
+		catch (SQLException sqlException) {
 			_log.error(
-				"Error adding tables to tableUtil object" + sqle.getMessage(),
-				sqle);
+				"Error adding tables to tableUtil object" +
+					sqlException.getMessage(),
+				sqlException);
 		}
 
-		referencesChecker.removeTables(deletedTables);
+		referenceChecker.removeTables(deletedTables);
 
 		if (regenerateModelUtil) {
 			try {
-				referencesChecker.reloadModelUtil(connection);
+				referenceChecker.reloadModelUtil(connection);
 			}
-			catch (SQLException sqle) {
+			catch (SQLException sqlException) {
 				_log.error(
-					"Error updating modelUtil object" + sqle.getMessage(),
-					sqle);
+					"Error updating modelUtil object" +
+						sqlException.getMessage(),
+					sqlException);
 			}
 		}
 	}
 
-	protected ReferencesChecker referencesChecker;
+	protected ReferenceChecker referenceChecker;
 
-	private static void _cleanUpCache(ReferencesChecker referencesChecker) {
+	private void _cleanUpCache(ReferenceChecker referenceChecker) {
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
-			referencesChecker);
+			referenceChecker);
 
 		String cleanUpCache = listenerConfiguration.getCleanUpCache();
 
@@ -763,12 +766,12 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 	}
 
-	private static boolean _cleanUpMethod(
-		ReferencesChecker referencesChecker, String className,
+	private boolean _cleanUpMethod(
+		ReferenceChecker referenceChecker, String className,
 		String methodName) {
 
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
-			referencesChecker);
+			referenceChecker);
 
 		for (String cleanUpClass : listenerConfiguration.getCleanUpClasses()) {
 			if (className.endsWith(cleanUpClass)) {
@@ -798,12 +801,12 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return false;
 	}
 
-	private static boolean _ignoreMethod(
-		ReferencesChecker referencesChecker, String className,
+	private boolean _ignoreMethod(
+		ReferenceChecker referenceChecker, String className,
 		String methodName) {
 
 		Configuration.Listener listenerConfiguration = getListenerConfiguration(
-			referencesChecker);
+			referenceChecker);
 
 		for (String ignoredClass : listenerConfiguration.getIgnoredClasses()) {
 			if (className.endsWith(ignoredClass)) {

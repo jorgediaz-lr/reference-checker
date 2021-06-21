@@ -253,17 +253,6 @@ public class Query implements Comparable<Query> {
 	protected String tableAlias;
 	protected String toString;
 
-	private static boolean _isNumeric(String str) {
-		try {
-			Double.parseDouble(str);
-		}
-		catch (NumberFormatException nfe) {
-			return false;
-		}
-
-		return true;
-	}
-
 	private String _getSQLEmptyValue(Class<?> clazz) {
 		String nullValue;
 
@@ -278,6 +267,17 @@ public class Query implements Comparable<Query> {
 		}
 
 		return nullValue;
+	}
+
+	private boolean _isNumeric(String str) {
+		try {
+			Double.parseDouble(str);
+		}
+		catch (NumberFormatException numberFormatException) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private List<String> _rewriteConstants(List<String> columns) {

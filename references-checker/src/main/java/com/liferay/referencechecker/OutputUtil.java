@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker;
+package com.liferay.referencechecker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MappingIterator;

@@ -41,27 +41,27 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 	@Override
 	public void onAfterAnyAddBatch(
 		StatementInformation statementInformation, long timeElapsedNanos,
-		SQLException sqle) {
+		SQLException sqlException) {
 
 		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues(), sqle);
+			statementInformation.getSqlWithValues(), sqlException);
 	}
 
 	@Override
 	public void onAfterAnyExecute(
 		StatementInformation statementInformation, long timeElapsedNanos,
-		SQLException sqle) {
+		SQLException sqlException) {
 
 		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues(), sqle);
+			statementInformation.getSqlWithValues(), sqlException);
 	}
 
 	@Override
 	public void onAfterCommit(
 		ConnectionInformation connectionInformation, long timeElapsedNanos,
-		SQLException sqle) {
+		SQLException sqlException) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -71,10 +71,11 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 				_eventListenerRegistry.getEventListeners()) {
 
 			try {
-				eventListener.afterCommit(connectionId, connection, sqle);
+				eventListener.afterCommit(
+					connectionId, connection, sqlException);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 			finally {
 				eventListener.resetConnectionData(connectionId);
@@ -84,7 +85,8 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
 	@Override
 	public void onAfterConnectionClose(
-		ConnectionInformation connectionInformation, SQLException sqle) {
+		ConnectionInformation connectionInformation,
+		SQLException sqlException) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -95,10 +97,10 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
 			try {
 				eventListener.afterConnectionClose(
-					connectionId, connection, sqle);
+					connectionId, connection, sqlException);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 			finally {
 				eventListener.deleteConnectionData(connectionId);
@@ -109,16 +111,17 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 	@Override
 	public void onAfterExecuteBatch(
 		StatementInformation statementInformation, long timeElapsedNanos,
-		int[] updateCounts, SQLException sqle) {
+		int[] updateCounts, SQLException sqlException) {
 
 		afterQuery(
 			statementInformation.getConnectionInformation(),
-			statementInformation.getSqlWithValues(), sqle);
+			statementInformation.getSqlWithValues(), sqlException);
 	}
 
 	@Override
 	public void onAfterGetConnection(
-		ConnectionInformation connectionInformation, SQLException sqle) {
+		ConnectionInformation connectionInformation,
+		SQLException sqlException) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -129,10 +132,10 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
 			try {
 				eventListener.afterGetConnection(
-					connectionId, connection, sqle);
+					connectionId, connection, sqlException);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 			finally {
 				eventListener.resetConnectionData(connectionId);
@@ -143,7 +146,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 	@Override
 	public void onAfterRollback(
 		ConnectionInformation connectionInformation, long timeElapsedNanos,
-		SQLException sqle) {
+		SQLException sqlException) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -153,10 +156,11 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 				_eventListenerRegistry.getEventListeners()) {
 
 			try {
-				eventListener.afterRollback(connectionId, connection, sqle);
+				eventListener.afterRollback(
+					connectionId, connection, sqlException);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 			finally {
 				eventListener.resetConnectionData(connectionId);
@@ -230,7 +234,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 
 	protected void afterQuery(
 		ConnectionInformation connectionInformation, String sql,
-		SQLException sqle) {
+		SQLException sqlException) {
 
 		int connectionId = connectionInformation.getConnectionId();
 
@@ -248,7 +252,8 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 			for (EventListener eventListener :
 					_eventListenerRegistry.getEventListeners()) {
 
-				eventListener.afterQuery(connectionId, connection, query, sqle);
+				eventListener.afterQuery(
+					connectionId, connection, query, sqlException);
 			}
 		}
 
@@ -257,8 +262,8 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 				return;
 			}
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
 		}
 
 		// AUTOCOMMIT
@@ -266,7 +271,7 @@ public class QueriesListenerAgent extends SimpleJdbcEventListener {
 		for (EventListener eventListener :
 				_eventListenerRegistry.getEventListeners()) {
 
-			eventListener.afterCommit(connectionId, connection, sqle);
+			eventListener.afterCommit(connectionId, connection, sqlException);
 		}
 	}
 

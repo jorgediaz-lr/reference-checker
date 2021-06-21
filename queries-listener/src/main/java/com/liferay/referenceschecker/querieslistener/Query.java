@@ -254,10 +254,10 @@ public class Query implements Comparable<Query> {
 		try {
 			_statement = CCJSqlParserUtil.parse(sqlAux);
 		}
-		catch (JSQLParserException jsqlpe) {
+		catch (JSQLParserException jsqlParserException) {
 			_cannot_parse_sql = true;
 
-			Throwable rootCause = jsqlpe.getCause();
+			Throwable rootCause = jsqlParserException.getCause();
 
 			String rootCauseMsg = String.valueOf(rootCause);
 
@@ -466,10 +466,10 @@ public class Query implements Comparable<Query> {
 		if (statement instanceof Insert) {
 			Insert insert = (Insert)statement;
 
-			ItemsList itemList = insert.getItemsList();
+			ItemsList itemsList = insert.getItemsList();
 
-			if (itemList instanceof ExpressionList) {
-				ExpressionList expressionList = (ExpressionList)itemList;
+			if (itemsList instanceof ExpressionList) {
+				ExpressionList expressionList = (ExpressionList)itemsList;
 
 				return expressionList.getExpressions();
 			}

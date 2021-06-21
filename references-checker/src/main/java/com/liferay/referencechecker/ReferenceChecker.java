@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker;
+package com.liferay.referencechecker;
 
 import com.liferay.referenceschecker.config.Configuration;
 import com.liferay.referenceschecker.config.ConfigurationUtil;
@@ -59,7 +59,7 @@ import org.apache.log4j.Logger;
 /**
  * @author Jorge Díaz
  */
-public class ReferencesChecker {
+public class ReferenceChecker {
 
 	public static long getLiferayBuildNumber(Connection connection) {
 		PreparedStatement ps = null;
@@ -85,8 +85,8 @@ public class ReferencesChecker {
 				buildNumber = rs.getLong(1);
 			}
 		}
-		catch (SQLException sqle) {
-			_log.warn(sqle);
+		catch (SQLException sqlException) {
+			_log.warn(sqlException);
 		}
 		finally {
 			JDBCUtil.cleanUp(ps);
@@ -118,8 +118,8 @@ public class ReferencesChecker {
 				maxCounter = rs.getLong(1);
 			}
 		}
-		catch (SQLException sqle) {
-			_log.warn(sqle);
+		catch (SQLException sqlException) {
+			_log.warn(sqlException);
 		}
 		finally {
 			JDBCUtil.cleanUp(ps);
@@ -139,26 +139,28 @@ public class ReferencesChecker {
 			ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
 	}
 
-	public ReferencesChecker(Connection connection) {
+	public ReferenceChecker(Connection connection) {
 		try {
 			dbType = SQLUtil.getDBType(connection);
 		}
-		catch (SQLException sqle) {
+		catch (SQLException sqlException) {
 			_log.error(
-				"Error getting database type: " + sqle.getMessage(), sqle);
+				"Error getting database type: " + sqlException.getMessage(),
+				sqlException);
 
-			throw new RuntimeException(sqle);
+			throw new RuntimeException(sqlException);
 		}
 
 		try {
 			configuration = getConfiguration(connection);
 		}
-		catch (IOException ioe) {
+		catch (IOException ioException) {
 			_log.error(
-				"Error reading configuration_xx.yml file: " + ioe.getMessage(),
-				ioe);
+				"Error reading configuration_xx.yml file: " +
+					ioException.getMessage(),
+				ioException);
 
-			throw new RuntimeException(ioe);
+			throw new RuntimeException(ioException);
 		}
 	}
 
@@ -546,9 +548,7 @@ public class ReferencesChecker {
 	}
 
 	public void initModelUtil(Connection connection) throws SQLException {
-		ModelUtil modelUtil = new ModelUtilImpl();
-
-		initModelUtil(connection, modelUtil);
+		initModelUtil(connection, new ModelUtilImpl());
 	}
 
 	public void initModelUtil(Connection connection, ModelUtil modelUtil)
@@ -869,8 +869,8 @@ public class ReferencesChecker {
 
 			return count;
 		}
-		catch (SQLException sqle) {
-			_log.warn(sqle);
+		catch (SQLException sqlException) {
+			_log.warn(sqlException);
 		}
 		finally {
 			JDBCUtil.cleanUp(ps, rs);
@@ -942,7 +942,7 @@ public class ReferencesChecker {
 
 	}
 
-	private static void _appendInClause(
+	private void _appendInClause(
 		StringBuilder sb, List<String> columns, Collection<Object[]> rows) {
 
 		sb.append("(");
@@ -980,26 +980,6 @@ public class ReferencesChecker {
 		sb.append(")");
 	}
 
-	private static String _castValue(Object value) {
-		if (value instanceof Number) {
-			return value.toString();
-		}
-
-		if ((value instanceof String) &&
-			StringUtils.equalsIgnoreCase("null", (String)value)) {
-
-			return "NULL";
-		}
-
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("'");
-		sb.append(value);
-		sb.append("'");
-
-		return sb.toString();
-	}
-
 	private void _appendInClause(
 		StringBuilder sb, Query query, Collection<Object[]> values) {
 
@@ -1022,6 +1002,26 @@ public class ReferencesChecker {
 
 			first = false;
 		}
+	}
+
+	private String _castValue(Object value) {
+		if (value instanceof Number) {
+			return value.toString();
+		}
+
+		if ((value instanceof String) &&
+			StringUtils.equalsIgnoreCase("null", (String)value)) {
+
+			return "NULL";
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("'");
+		sb.append(value);
+		sb.append("'");
+
+		return sb.toString();
 	}
 
 	private void _executeCleanUp(
@@ -1197,6 +1197,6 @@ public class ReferencesChecker {
 		return true;
 	}
 
-	private static Logger _log = LogManager.getLogger(ReferencesChecker.class);
+	private static Logger _log = LogManager.getLogger(ReferenceChecker.class);
 
 }

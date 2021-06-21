@@ -151,8 +151,8 @@ public class Table implements Comparable<Table> {
 
 				pattern = Pattern.compile(lowerCaseRegex);
 			}
-			catch (PatternSyntaxException pse) {
-				_log.warn(pse, pse);
+			catch (PatternSyntaxException patternSyntaxException) {
+				_log.warn(patternSyntaxException, patternSyntaxException);
 
 				return Collections.emptyList();
 			}

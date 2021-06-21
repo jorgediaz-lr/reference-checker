@@ -144,11 +144,12 @@ public class ReferenceUtil {
 
 				referencesList.addAll(references);
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				_log.error(
 					"Error parsing reference config: " + referenceConfig +
-						" EXCEPTION: " + e.getClass() + " - " + e.getMessage(),
-					e);
+						" EXCEPTION: " + exception.getClass() + " - " +
+							exception.getMessage(),
+					exception);
 			}
 		}
 

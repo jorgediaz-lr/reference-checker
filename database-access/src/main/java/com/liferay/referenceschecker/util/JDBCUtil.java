@@ -33,8 +33,8 @@ public class JDBCUtil {
 				connection.close();
 			}
 		}
-		catch (SQLException sqle) {
-			_log.warn(sqle.getMessage());
+		catch (SQLException sqlException) {
+			_log.warn(sqlException.getMessage());
 		}
 	}
 
@@ -60,8 +60,8 @@ public class JDBCUtil {
 				resultSet.close();
 			}
 		}
-		catch (SQLException sqle) {
-			_log.warn(sqle.getMessage());
+		catch (SQLException sqlException) {
+			_log.warn(sqlException.getMessage());
 		}
 	}
 
@@ -71,8 +71,8 @@ public class JDBCUtil {
 				statement.close();
 			}
 		}
-		catch (SQLException sqle) {
-			_log.warn(sqle.getMessage());
+		catch (SQLException sqlException) {
+			_log.warn(sqlException.getMessage());
 		}
 	}
 
@@ -90,8 +90,8 @@ public class JDBCUtil {
 				cleanUp(statement.getConnection(), statement, resultSet);
 			}
 		}
-		catch (SQLException sqle) {
-			_log.warn(sqle.getMessage());
+		catch (SQLException sqlException) {
+			_log.warn(sqlException.getMessage());
 		}
 	}
 

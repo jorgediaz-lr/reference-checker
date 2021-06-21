@@ -14,10 +14,10 @@
 
 package com.liferay.referencechecker.main;
 
+import com.liferay.referencechecker.OutputUtil;
+import com.liferay.referencechecker.ReferenceChecker;
 import com.liferay.referencechecker.main.util.BaseChecker;
 import com.liferay.referencechecker.main.util.CommandArguments;
-import com.liferay.referenceschecker.OutputUtil;
-import com.liferay.referenceschecker.ReferencesChecker;
 import com.liferay.referenceschecker.util.JDBCUtil;
 
 import java.io.IOException;
@@ -49,13 +49,13 @@ public class DatabaseInfo {
 		}
 
 		String databaseCfg = commandArguments.getDatabaseConfiguration();
-		String filenamePrefix = commandArguments.getOutputFilesPrefix();
-		String filenameSuffix = commandArguments.getOutputFilesSuffix();
+		String fileNamePrefix = commandArguments.getOutputFilesPrefix();
+		String fileNameSuffix = commandArguments.getOutputFilesSuffix();
 
 		boolean checkUndefinedTables = commandArguments.checkUndefinedTables();
 
 		BaseChecker baseChecker = BaseChecker.createBaseChecker(
-			PROGRAM_NAME, databaseCfg, filenamePrefix, filenameSuffix,
+			PROGRAM_NAME, databaseCfg, fileNamePrefix, fileNameSuffix,
 			checkUndefinedTables);
 
 		dumpDatabaseInfo(baseChecker);
@@ -73,7 +73,7 @@ public class DatabaseInfo {
 
 		Connection connection = null;
 
-		ReferencesChecker referenceChecker = baseChecker.getReferenceChecker();
+		ReferenceChecker referenceChecker = baseChecker.getReferenceChecker();
 
 		Map<String, Long> mapTableCount;
 
@@ -104,7 +104,7 @@ public class DatabaseInfo {
 
 		Connection connection = null;
 
-		ReferencesChecker referenceChecker = baseChecker.getReferenceChecker();
+		ReferenceChecker referenceChecker = baseChecker.getReferenceChecker();
 
 		List<String> outputList;
 

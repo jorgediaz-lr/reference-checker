@@ -322,11 +322,11 @@
 
 				return (String)field.get(null);
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				out.println(
 					"Error accessing to " + modelClassImpl.getName() +
 						"#TABLE_NAME",
-					e);
+					exception);
 
 				return null;
 			}
