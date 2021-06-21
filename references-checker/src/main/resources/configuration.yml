@@ -1,0 +1,11 @@
+#
+ignoreColumns: [actionId, userId]
+ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, syncDLFileVersionDiff, syncDLObject, syncDevice, systemEvent]
+#
+listener: !include listener.yml
+#
+references: !include references_%s.yml
+#
+tableToClassNameMapping: !include tableToClassNameMapping_%s.yml
+#
+tableRank: !include tableRank.yml
