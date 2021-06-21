@@ -306,7 +306,6 @@ tableToClassNameMapping : {
     "MBDiscussion" : "com.liferay.message.boards.model.MBDiscussion",
     "MBMailingList" : "com.liferay.message.boards.model.MBMailingList",
     "MBMessage" : "com.liferay.message.boards.model.MBMessage",
-    "MBStatsUser" : "com.liferay.message.boards.model.MBStatsUser",
     "MBThread" : "com.liferay.message.boards.model.MBThread",
     "MBThreadFlag" : "com.liferay.message.boards.model.MBThreadFlag",
     "MDRAction" : "com.liferay.mobile.device.rules.model.MDRAction",
