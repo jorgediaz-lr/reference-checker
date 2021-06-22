@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.util;
+package com.liferay.referencechecker.util;
 
 import java.math.BigDecimal;
 

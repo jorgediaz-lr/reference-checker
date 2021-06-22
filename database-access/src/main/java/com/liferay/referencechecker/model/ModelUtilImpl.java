@@ -12,10 +12,10 @@
  * details.
  */
 
-package com.liferay.referenceschecker.model;
+package com.liferay.referencechecker.model;
 
-import com.liferay.referenceschecker.util.JDBCUtil;
-import com.liferay.referenceschecker.util.SQLUtil;
+import com.liferay.referencechecker.util.JDBCUtil;
+import com.liferay.referencechecker.util.SQLUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

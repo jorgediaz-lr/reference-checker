@@ -12,9 +12,9 @@
  * details.
  */
 
-package com.liferay.referenceschecker.dao;
+package com.liferay.referencechecker.dao;
 
-import com.liferay.referenceschecker.util.SQLUtil;
+import com.liferay.referencechecker.util.SQLUtil;
 
 import java.sql.Types;
 

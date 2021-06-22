@@ -14,18 +14,18 @@
 
 package com.liferay.referencechecker;
 
-import com.liferay.referenceschecker.config.Configuration;
-import com.liferay.referenceschecker.config.ConfigurationUtil;
-import com.liferay.referenceschecker.dao.Query;
-import com.liferay.referenceschecker.dao.Table;
-import com.liferay.referenceschecker.dao.TableUtil;
-import com.liferay.referenceschecker.model.ModelUtil;
-import com.liferay.referenceschecker.model.ModelUtilImpl;
-import com.liferay.referenceschecker.ref.MissingReferences;
-import com.liferay.referenceschecker.ref.Reference;
-import com.liferay.referenceschecker.ref.ReferenceUtil;
-import com.liferay.referenceschecker.util.JDBCUtil;
-import com.liferay.referenceschecker.util.SQLUtil;
+import com.liferay.referencechecker.config.Configuration;
+import com.liferay.referencechecker.config.ConfigurationUtil;
+import com.liferay.referencechecker.dao.Query;
+import com.liferay.referencechecker.dao.Table;
+import com.liferay.referencechecker.dao.TableUtil;
+import com.liferay.referencechecker.model.ModelUtil;
+import com.liferay.referencechecker.model.ModelUtilImpl;
+import com.liferay.referencechecker.ref.MissingReferences;
+import com.liferay.referencechecker.ref.Reference;
+import com.liferay.referencechecker.ref.ReferenceUtil;
+import com.liferay.referencechecker.util.JDBCUtil;
+import com.liferay.referencechecker.util.SQLUtil;
 
 import java.io.IOException;
 

@@ -18,7 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import com.liferay.referencechecker.OutputUtil;
 import com.liferay.referencechecker.ReferenceChecker;
-import com.liferay.referenceschecker.util.JDBCUtil;
+import com.liferay.referencechecker.util.JDBCUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;

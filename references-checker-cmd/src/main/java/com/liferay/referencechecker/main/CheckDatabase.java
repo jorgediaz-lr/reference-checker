@@ -21,8 +21,8 @@ import com.beust.jcommander.ParameterException;
 import com.liferay.referencechecker.OutputUtil;
 import com.liferay.referencechecker.ReferenceChecker;
 import com.liferay.referencechecker.main.util.BaseChecker;
-import com.liferay.referenceschecker.ref.MissingReferences;
-import com.liferay.referenceschecker.util.JDBCUtil;
+import com.liferay.referencechecker.ref.MissingReferences;
+import com.liferay.referencechecker.util.JDBCUtil;
 
 import java.io.IOException;
 

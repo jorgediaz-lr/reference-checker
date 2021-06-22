@@ -16,13 +16,13 @@ package com.liferay.referenceschecker.listener;
 
 import com.liferay.referencechecker.OutputUtil;
 import com.liferay.referencechecker.ReferenceChecker;
-import com.liferay.referenceschecker.config.Configuration;
-import com.liferay.referenceschecker.dao.Table;
+import com.liferay.referencechecker.config.Configuration;
+import com.liferay.referencechecker.dao.Table;
+import com.liferay.referencechecker.ref.MissingReferences;
+import com.liferay.referencechecker.ref.Reference;
 import com.liferay.referenceschecker.querieslistener.EventListener;
 import com.liferay.referenceschecker.querieslistener.EventListenerRegistry;
 import com.liferay.referenceschecker.querieslistener.Query;
-import com.liferay.referenceschecker.ref.MissingReferences;
-import com.liferay.referenceschecker.ref.Reference;
 
 import java.lang.reflect.Method;
 
@@ -429,14 +429,14 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		Collection<Reference> referencesToCheck = new HashSet<>();
 
 		for (Reference reference : references) {
-			com.liferay.referenceschecker.dao.Query destinationQuery =
+			com.liferay.referencechecker.dao.Query destinationQuery =
 				reference.getDestinationQuery();
 
 			if (destinationQuery == null) {
 				continue;
 			}
 
-			com.liferay.referenceschecker.dao.Query originQuery =
+			com.liferay.referencechecker.dao.Query originQuery =
 				reference.getOriginQuery();
 
 			Table originTable = originQuery.getTable();
@@ -537,7 +537,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 			String fixAction = reference.getFixAction();
 
-			com.liferay.referenceschecker.dao.Query query =
+			com.liferay.referencechecker.dao.Query query =
 				reference.getOriginQuery();
 
 			Table table = query.getTable();
@@ -630,14 +630,14 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		Set<String> tablesLowerCase = new HashSet<>();
 
 		for (Reference reference : references) {
-			com.liferay.referenceschecker.dao.Query destinationQuery =
+			com.liferay.referencechecker.dao.Query destinationQuery =
 				reference.getDestinationQuery();
 
 			if (destinationQuery == null) {
 				continue;
 			}
 
-			com.liferay.referenceschecker.dao.Query originQuery =
+			com.liferay.referencechecker.dao.Query originQuery =
 				reference.getOriginQuery();
 
 			Table originTable = originQuery.getTable();
@@ -837,7 +837,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	}
 
 	private boolean _queryHasAnyUpdatedColumn(
-		com.liferay.referenceschecker.dao.Query query, Set<String> columns) {
+		com.liferay.referencechecker.dao.Query query, Set<String> columns) {
 
 		if (columns == null) {
 			return false;

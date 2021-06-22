@@ -12,9 +12,9 @@
  * details.
  */
 
-package com.liferay.referenceschecker.ref;
+package com.liferay.referencechecker.ref;
 
-import com.liferay.referenceschecker.dao.Query;
+import com.liferay.referencechecker.dao.Query;
 
 import java.util.Arrays;
 

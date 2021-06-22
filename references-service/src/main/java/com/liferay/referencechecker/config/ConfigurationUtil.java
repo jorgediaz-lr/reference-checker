@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.config;
+package com.liferay.referencechecker.config;
 
 import java.io.IOException;
 import java.io.InputStream;

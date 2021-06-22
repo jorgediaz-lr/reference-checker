@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.config;
+package com.liferay.referencechecker.config;
 
 import java.util.Collections;
 import java.util.HashMap;

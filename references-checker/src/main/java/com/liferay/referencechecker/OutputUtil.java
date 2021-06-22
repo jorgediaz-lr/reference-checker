@@ -21,10 +21,10 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
-import com.liferay.referenceschecker.dao.Query;
-import com.liferay.referenceschecker.dao.Table;
-import com.liferay.referenceschecker.ref.MissingReferences;
-import com.liferay.referenceschecker.ref.Reference;
+import com.liferay.referencechecker.dao.Query;
+import com.liferay.referencechecker.dao.Table;
+import com.liferay.referencechecker.ref.MissingReferences;
+import com.liferay.referencechecker.ref.Reference;
 
 import java.io.IOException;
 

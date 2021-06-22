@@ -12,11 +12,11 @@
  * details.
  */
 
-package com.liferay.referenceschecker.dao;
+package com.liferay.referencechecker.dao;
 
-import com.liferay.referenceschecker.model.ModelUtil;
-import com.liferay.referenceschecker.util.JDBCUtil;
-import com.liferay.referenceschecker.util.SQLUtil;
+import com.liferay.referencechecker.model.ModelUtil;
+import com.liferay.referencechecker.util.JDBCUtil;
+import com.liferay.referencechecker.util.SQLUtil;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;

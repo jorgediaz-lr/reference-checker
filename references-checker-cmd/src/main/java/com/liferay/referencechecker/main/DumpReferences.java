@@ -18,8 +18,8 @@ import com.liferay.referencechecker.OutputUtil;
 import com.liferay.referencechecker.ReferenceChecker;
 import com.liferay.referencechecker.main.util.BaseChecker;
 import com.liferay.referencechecker.main.util.CommandArguments;
-import com.liferay.referenceschecker.ref.Reference;
-import com.liferay.referenceschecker.util.JDBCUtil;
+import com.liferay.referencechecker.ref.Reference;
+import com.liferay.referencechecker.util.JDBCUtil;
 
 import java.io.IOException;
 

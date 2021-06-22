@@ -12,13 +12,13 @@
  * details.
  */
 
-package com.liferay.referenceschecker.ref;
+package com.liferay.referencechecker.ref;
 
-import com.liferay.referenceschecker.config.Configuration;
-import com.liferay.referenceschecker.dao.Query;
-import com.liferay.referenceschecker.dao.Table;
-import com.liferay.referenceschecker.dao.TableUtil;
-import com.liferay.referenceschecker.model.ModelUtil;
+import com.liferay.referencechecker.config.Configuration;
+import com.liferay.referencechecker.dao.Query;
+import com.liferay.referencechecker.dao.Table;
+import com.liferay.referencechecker.dao.TableUtil;
+import com.liferay.referencechecker.model.ModelUtil;
 
 import java.sql.Connection;
 

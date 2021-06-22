@@ -14,8 +14,8 @@
 
 package com.liferay.referencechecker.main.util;
 
-import com.liferay.referenceschecker.util.JDBCUtil;
-import com.liferay.referenceschecker.util.SQLUtil;
+import com.liferay.referencechecker.util.JDBCUtil;
+import com.liferay.referencechecker.util.SQLUtil;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;

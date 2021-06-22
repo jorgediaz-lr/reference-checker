@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.util;
+package com.liferay.referencechecker.util;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

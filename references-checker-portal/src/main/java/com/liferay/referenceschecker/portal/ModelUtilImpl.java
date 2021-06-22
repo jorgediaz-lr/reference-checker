@@ -39,7 +39,7 @@ import org.apache.log4j.Logger;
  * @author Jorge Díaz
  */
 public class ModelUtilImpl
-	extends com.liferay.referenceschecker.model.ModelUtilImpl {
+	extends com.liferay.referencechecker.model.ModelUtilImpl {
 
 	public static Field getDeclaredField(Class<?> clazz, String name)
 		throws Exception {
