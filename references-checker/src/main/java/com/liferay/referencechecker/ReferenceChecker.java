@@ -802,13 +802,14 @@ public class ReferenceChecker {
 			_log.info("Liferay build number: " + liferayBuildNumber);
 		}
 
-		String configurationFile = ConfigurationUtil.getConfigurationFileName(
-			liferayBuildNumber);
+		long liferayVersion = liferayBuildNumber / 100;
+
+		String versionSuffix = String.valueOf(liferayVersion);
 
 		Class<?> clazz = getClass();
 
 		return ConfigurationUtil.readConfigurationFile(
-			clazz.getClassLoader(), configurationFile);
+			clazz.getClassLoader(), versionSuffix);
 	}
 
 	protected String getSQLDelete(Query originQuery, Query destinationQuery) {
