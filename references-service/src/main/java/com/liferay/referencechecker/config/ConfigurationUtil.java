@@ -30,21 +30,15 @@ import org.yaml.snakeyaml.nodes.Tag;
  */
 public class ConfigurationUtil {
 
-	public static String getConfigurationFileName(long liferayBuildNumber) {
-		long liferayVersion = liferayBuildNumber / 100;
-
-		return String.format(_CONFIGURATION_FILE, liferayVersion);
-	}
-
 	public static Configuration readConfigurationFile(
-			ClassLoader classLoader, String configurationFile)
+			ClassLoader classLoader, String versionSuffix)
 		throws IOException {
 
 		InputStream inputStream = _getInputStream(
-			classLoader, configurationFile);
+			classLoader, _CONFIGURATION_FILE, versionSuffix);
 
 		Constructor constructor = new CustomConstructor(
-			Configuration.class, classLoader);
+			Configuration.class, classLoader, versionSuffix);
 
 		Yaml yaml = new Yaml(constructor);
 
@@ -52,7 +46,10 @@ public class ConfigurationUtil {
 	}
 
 	private static InputStream _getInputStream(
-		ClassLoader classLoader, String configurationFile) {
+		ClassLoader classLoader, String configurationFile,
+		String versionSuffix) {
+
+		configurationFile = String.format(configurationFile, versionSuffix);
 
 		InputStream inputStream = classLoader.getResourceAsStream(
 			configurationFile);
@@ -65,12 +62,13 @@ public class ConfigurationUtil {
 		return inputStream;
 	}
 
-	private static final String _CONFIGURATION_FILE = "configuration_%s.yml";
+	private static final String _CONFIGURATION_FILE = "configuration.yml";
 
 	private static class CustomConstructor extends Constructor {
 
 		public CustomConstructor(
-			Class<? extends Object> theRoot, ClassLoader classLoader) {
+			Class<? extends Object> theRoot, ClassLoader classLoader,
+			String versionSuffix) {
 
 			super(theRoot);
 
@@ -83,15 +81,17 @@ public class ConfigurationUtil {
 			addTypeDescription(configurationDescription);
 
 			yamlConstructors.put(
-				new Tag("!include"), new ImportConstruct(classLoader));
+				new Tag("!include"),
+				new ImportConstruct(classLoader, versionSuffix));
 		}
 
 	}
 
 	private static class ImportConstruct extends AbstractConstruct {
 
-		public ImportConstruct(ClassLoader classLoader) {
+		public ImportConstruct(ClassLoader classLoader, String versionSuffix) {
 			_classLoader = classLoader;
+			_versionSuffix = versionSuffix;
 		}
 
 		@Override
@@ -104,13 +104,13 @@ public class ConfigurationUtil {
 			ScalarNode scalarNode = (ScalarNode)node;
 
 			InputStream inputStream = _getInputStream(
-				_classLoader, scalarNode.getValue());
+				_classLoader, scalarNode.getValue(), _versionSuffix);
 
 			Class<? extends Object> clazz = node.getType();
 
 			if (clazz != Configuration.References.class) {
 				Constructor constructor = new CustomConstructor(
-					clazz, _classLoader);
+					clazz, _classLoader, _versionSuffix);
 
 				Yaml yaml = new Yaml(constructor);
 
@@ -118,7 +118,7 @@ public class ConfigurationUtil {
 			}
 
 			Constructor constructor = new CustomConstructor(
-				Configuration.class, _classLoader);
+				Configuration.class, _classLoader, _versionSuffix);
 
 			Yaml yaml = new Yaml(constructor);
 
@@ -128,6 +128,7 @@ public class ConfigurationUtil {
 		}
 
 		private ClassLoader _classLoader;
+		private String _versionSuffix;
 
 	}
 
