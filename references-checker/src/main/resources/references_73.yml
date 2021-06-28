@@ -33,12 +33,6 @@ references: [
   {origin: {table: ".*", columns: ["smallImageId"], condition: "smallImage=[$TRUE$] and smallImageURL IS NULL", conditionColumns: ["smallImage","smallImageURL"]}, dest: {table: "Image", columns: ["imageId"]}},
   {origin: {table: ".*", columns: ["smallImageId"]}}, #ignore
   {origin: {table: "DLFileEntry", columns: [".*imageId"]}}, #ignore
-    #portletId
-  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId not like '%_USER_%'"},                                                                        dest: {table: "Portlet", columns: ["portletId"]}},
-  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},         dest: {table: "Portlet", columns: ["portletId"]}},
-  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId not like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_INSTANCE_')-1 )"]},     dest: {table: "Portlet", columns: ["portletId"]}},
-  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},             dest: {table: "Portlet", columns: ["portletId"]}},
-  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, INSTR(portletId, '_USER_')+6, INSTR(portletId, '_INSTANCE_')-(INSTR(portletId, '_USER_')+6) )"]},    dest: {table: "User_", columns: ["userId"]}},
     #ignore generic references
   {origin: {table: ".*", columns: ["${origTable.primaryKey}"]}}, #primary keys must not be checked with any other pk
   {origin: {table: ".*", columns: ["groupId", "${origTable.primaryKey}"], condition: "folderId<>0", conditionColumns: ["folderId"]}}, #primary keys must not be checked with any other pk

@@ -2,3 +2,9 @@
   {origin: {table: "^(?!Contact_\\b).*$", columns: ["^(userId|completionUserId|creatorUserId|lastPostByUserId|lockUserId|receiverUserId|replierUserId|rootMessageUserId|statusByUserId|versionUserId)$"]}, dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
   {origin: {table: ".*", columns: ["userId.+"]}, dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
   {origin: {table: "PollsVote", columns: ["userId"]}}, #ignore
+    #portletId
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId not like '%_USER_%'"},                                                                        dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId not like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},         dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId not like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_INSTANCE_')-1 )"]},     dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, 1, INSTR(portletId, '_USER_')-1 )"]},             dest: {table: "Portlet", columns: ["portletId"]}},
+  {origin: {table: "^(?!Repository\\b).*$", columns: ["portletId"], condition: "portletId like '%_INSTANCE_%' and portletId like '%_USER_%'", castings: ["SUBSTR(portletId, INSTR(portletId, '_USER_')+6, INSTR(portletId, '_INSTANCE_')-(INSTR(portletId, '_USER_')+6) )"]},    dest: {table: "User_", columns: ["userId"]}},
