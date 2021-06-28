@@ -1,0 +1,4 @@
+    #userId
+  {origin: {table: "^(?!Contact_\\b).*$", columns: ["^(userId|completionUserId|creatorUserId|lastPostByUserId|lockUserId|receiverUserId|replierUserId|rootMessageUserId|statusByUserId|versionUserId)$"]}, dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
+  {origin: {table: ".*", columns: ["userId.+"]}, dest: {table: "User_", columns: ["userId"]}, fixAction: "update" },
+  {origin: {table: "PollsVote", columns: ["userId"]}}, #ignore

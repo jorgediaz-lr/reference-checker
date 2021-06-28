@@ -1,5 +1,5 @@
 #
-ignoreColumns: [actionId, userId]
+ignoreColumns: [actionId]
 ignoreTables: [audit_auditevent, counter, cyrusUser, cyrusVirtual, syncDLFileVersionDiff, syncDLObject, syncDevice, systemEvent]
 #
 listener: !include listener.yml
