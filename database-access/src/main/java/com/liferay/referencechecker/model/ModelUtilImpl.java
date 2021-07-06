@@ -53,12 +53,12 @@ public class ModelUtilImpl implements ModelUtil {
 			return 0L;
 		}
 
-		return classNameToClassNameIdMapping.get(className);
+		return classNameToClassNameIdsMapping.get(className);
 	}
 
 	public Set<String> getClassNames() {
 		return Collections.unmodifiableSet(
-			classNameToClassNameIdMapping.keySet());
+			classNameToClassNameIdsMapping.keySet());
 	}
 
 	@Override
@@ -114,7 +114,7 @@ public class ModelUtilImpl implements ModelUtil {
 
 		this.tableNameToClassNameMapping = tableNameToClassNameMappingAux;
 
-		classNameToClassNameIdMapping = getClassNameIdsMapping(connection);
+		classNameToClassNameIdsMapping = getClassNameIdsMapping(connection);
 
 		classNameToTableNameMapping = classNameToTableNameMappingAux;
 
@@ -151,7 +151,7 @@ public class ModelUtilImpl implements ModelUtil {
 		return mapping;
 	}
 
-	protected Map<String, Long> classNameToClassNameIdMapping;
+	protected Map<String, Long> classNameToClassNameIdsMapping;
 	protected Map<String, String> classNameToTableNameMapping;
 	protected Map<String, String> tableNameToClassNameMapping;
 	protected Map<String, Number> tableRank;
