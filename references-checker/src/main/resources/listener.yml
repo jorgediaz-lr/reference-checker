@@ -14,7 +14,7 @@
         "BookmarksEntryLocalServiceTest.testGetNoAssetFolders", "BookmarksFolderLocalServiceTest.testGetNoAssetFolders", "JournalFolderLocalServiceTest.testGetNoAssetFolders", "JournalArticleLocalServiceTest.testGetNoAssetArticles",
         "InlineSQLHelperImplTest.testInvalidCompany", "DDMFormInstanceTestUtil.deleteDDMFormInstance", "CopyLayoutPageTemplateEntryMVCActionCommandTest.testCopyLayoutPageTemplateEntryRollbackMVCActionCommand",
         "BaseStagedModelDataHandlerTestCase.testCleanStagedModelDataHandler", "OrganizationStagedModelDataHandlerTest.addStagedModel",
-        "ServiceConfigurationInitializer.start"
+        "ServiceConfigurationInitializer.start", "DeleteStyleBookEntryPreviewMVCActionCommandTest.testDeleteStyleBookEntryPreviewFileEntry"
   ],
   printThreadDump: true
 }
