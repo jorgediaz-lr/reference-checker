@@ -65,5 +65,6 @@
     "ResourceBlockPermission" : -50,
     "ResourcePermission" : -50,
     "SocialActivity" : -10,
-    "Subscription" : -10
+    "Subscription" : -10,
+    "ViewCountEntry" : -10
 }
