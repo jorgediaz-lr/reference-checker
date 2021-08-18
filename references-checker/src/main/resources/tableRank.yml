@@ -66,5 +66,6 @@
     "ResourcePermission" : -50,
     "SocialActivity" : -10,
     "Subscription" : -10,
+    "Ticket" : -10,
     "ViewCountEntry" : -10
 }
