@@ -1,5 +1,5 @@
 plugins {
-	id "com.liferay.source.formatter" version "2.3.237" apply false
+	id "com.liferay.source.formatter" version "5.1.29" apply false
 }
 
 allprojects {
