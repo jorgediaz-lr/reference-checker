@@ -19,6 +19,7 @@ import com.liferay.referencechecker.util.SQLUtil;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -82,7 +83,7 @@ public class Query implements Comparable<Query> {
 
 		List<String> castedColumns = casting;
 
-		if ((castedColumns == null) || castedColumns.isEmpty()) {
+		if (CollectionUtils.isEmpty(castedColumns)) {
 			List<String> destinationColumns = destinationQuery.getColumns();
 
 			Table destinationTable = destinationQuery.getTable();

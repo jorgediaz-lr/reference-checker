@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.log4j.LogManager;
@@ -723,7 +724,7 @@ public class ReferenceUtil {
 	}
 
 	protected boolean hasColumns(Table table, List<String> columns) {
-		if ((columns == null) || columns.isEmpty()) {
+		if (CollectionUtils.isEmpty(columns)) {
 			return false;
 		}
 

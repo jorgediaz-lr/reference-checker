@@ -42,6 +42,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -310,7 +311,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	protected static List<String> filterIgnoredColumns(
 		ReferenceChecker referenceChecker, String table, List<String> columns) {
 
-		if ((columns == null) || columns.isEmpty()) {
+		if (CollectionUtils.isEmpty(columns)) {
 			return Collections.emptyList();
 		}
 
@@ -330,7 +331,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	protected static List<String> filterIgnoredTables(
 		ReferenceChecker referenceChecker, List<String> tables) {
 
-		if ((tables == null) || tables.isEmpty()) {
+		if (CollectionUtils.isEmpty(tables)) {
 			return Collections.emptyList();
 		}
 
