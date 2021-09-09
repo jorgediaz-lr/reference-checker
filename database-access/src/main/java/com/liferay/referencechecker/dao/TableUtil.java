@@ -351,6 +351,10 @@ public class TableUtil {
 			}
 		}
 
+		if (tableList.isEmpty()) {
+			_log.warn(regex + " regex does not return any table");
+		}
+
 		return tableList;
 	}
 
