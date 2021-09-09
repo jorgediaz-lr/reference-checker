@@ -118,7 +118,7 @@ references: [
   {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 1 and ownerId <> 0"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 2 and ownerId <> 0"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 3 and ownerId <> 0"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 4 and ownerId <> 0"}, dest: {table: "User", columns: ["${destTable.primaryKey}"]}},
+  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 4 and ownerId <> 0"}, dest: {table: "User_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 5 and ownerId <> 0"}, dest: {table: "PortletItem", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 6 and ownerId <> 0"}, dest: {table: "Organization_", columns: ["${destTable.primaryKey}"]}},
   {origin: {table: "PortletPreferences", columns: ["plid"]}}, #ignore
