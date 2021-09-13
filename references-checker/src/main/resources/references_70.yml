@@ -115,12 +115,12 @@ references: [
   {origin: {table: "Workflow.*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DDLRecord.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DDLRecordVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
   {origin: {table: "Workflow.*", columns: ["classPk"], condition: "classNameId in (select classNameId from ClassName_ where value='${DLFileEntry.className}') and classPk IS NOT NULL", conditionColumns: ["classNameId", "classPk"]}, dest: {table: "DLFileVersion", columns: ["${destTable.primaryKey}"]}, displayRaw: true, hidden: true},
     #PortalPreferences/PortletPreferences relations
-  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 1 and ownerId <> 0"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 2 and ownerId <> 0"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 3 and ownerId <> 0"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 4 and ownerId <> 0"}, dest: {table: "User_", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 5 and ownerId <> 0"}, dest: {table: "PortletItem", columns: ["${destTable.primaryKey}"]}},
-  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 6 and ownerId <> 0"}, dest: {table: "Organization_", columns: ["${destTable.primaryKey}"]}},
+  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 1 and ownerId <> 0"}, dest: {table: "Company", columns: ["${destTable.primaryKey}"]}, fixAction: "delete"},
+  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 2 and ownerId <> 0"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}, fixAction: "delete"},
+  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 3 and ownerId <> 0"}, dest: {table: "Group_", columns: ["${destTable.primaryKey}"]}, fixAction: "delete"},
+  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 4 and ownerId <> 0"}, dest: {table: "User_", columns: ["${destTable.primaryKey}"]}, fixAction: "delete"},
+  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 5 and ownerId <> 0"}, dest: {table: "PortletItem", columns: ["${destTable.primaryKey}"]}, fixAction: "delete"},
+  {origin: {table: "^(PortalPreferences|PortletPreferences)$", columns: ["ownerId"], condition: "ownerType = 6 and ownerId <> 0"}, dest: {table: "Organization_", columns: ["${destTable.primaryKey}"]}, fixAction: "delete"},
   {origin: {table: "PortletPreferences", columns: ["plid"]}}, #ignore
   {origin: {table: "PortletPreferences", columns: ["plid"], condition: "plid not in (select layoutRevisionId from LayoutRevision)"}, dest: {table: "Layout", columns: ["plid"]}},
     #ResourcePermission relations
