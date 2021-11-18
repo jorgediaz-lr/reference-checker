@@ -448,9 +448,9 @@ public class ReferenceChecker {
 				continue;
 			}
 
-			Reference reference = missingReferences.getReference();
-
-			cleanUpSentences.add("/* " + reference.toString() + " */");
+			cleanUpSentences.add(
+				"/* " + String.valueOf(missingReferences.getReference()) +
+					" */");
 
 			for (String sql : sqls) {
 				cleanUpSentences.add(sql + ";");
