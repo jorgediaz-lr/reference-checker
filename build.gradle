@@ -44,8 +44,8 @@ allprojects {
 	}
 
 	task copyDist(type: Copy) {
-		dependsOn ':references-checker-cmd:distZip'
-		from new File(rootProject.projectDir, "build/references-checker-cmd/distributions")
+		dependsOn ':reference-checker-cmd:distZip'
+		from new File(rootProject.projectDir, "build/reference-checker-cmd/distributions")
 		into new File(rootProject.projectDir, "dist")
 	}
 

@@ -24,7 +24,7 @@ dependencies {
 	compile group: "org.mariadb.jdbc", name: "mariadb-java-client", version: "2.3.0"
 	compile group: "org.postgresql", name: "postgresql", version: "42.2.5"
 	compile group: "org.slf4j", name: "slf4j-simple", version: "1.7.25"
-	compile project(":references-checker")
+	compile project(":reference-checker")
 }
 
 distributions {

@@ -3,11 +3,10 @@ plugins {
 }
 
 dependencies {
-	compile group: "com.fasterxml.jackson.core", name: "jackson-databind", version: "2.9.7"
-	compile group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-csv", version: "2.9.7"
 	compile group: "log4j", name: "log4j", version: "1.2.17"
 	compile group: "org.apache.commons", name: "commons-collections4", version: "4.2"
 	compile group: "org.apache.commons", name: "commons-lang3", version: "3.8.1"
-	compile project(":database-access")
-	compile project(":references-service")
+	compile group: "org.apache.commons", name: "commons-text", version: "1.3"
+	compile project(":queries-listener")
+	compile project(":reference-checker")
 }

@@ -3,7 +3,7 @@
 
 <liferay-portlet-app>
 	<portlet>
-		<portlet-name>references-checker</portlet-name>
+		<portlet-name>reference-checker</portlet-name>
 		<icon>/icon.png</icon>
 		<control-panel-entry-category>
 			apps
@@ -14,7 +14,7 @@
 			/js/main.js
 		</footer-portlet-javascript>
 		<css-class-wrapper>
-			references-checker-portlet
+			reference-checker-portlet
 		</css-class-wrapper>
 	</portlet>
 	<role-mapper>

@@ -9,9 +9,9 @@ It also allows viewing the table relations of Liferay data model.
 Download it from https://github.com/jorgediaz-lr/reference-checker/releases page
 
 There are two versions available: command line and portlet version
-  - Command line tool: `references-checker-cmd-n.n.n.zip`
-  - Portlet version for 6.1 and 6.2: `references-checker-portlet-6x-n.n.n.war`
-  - Portlet version for 7.x: `references-checker-portlet-7x-n.n.n.war`
+  - Command line tool: `reference-checker-cmd-n.n.n.zip`
+  - Portlet version for 6.1 and 6.2: `reference-checker-portlet-6x-n.n.n.war`
+  - Portlet version for 7.x: `reference-checker-portlet-7x-n.n.n.war`
 
 Command line tool version is the recommended one!!
 
@@ -25,7 +25,7 @@ Command line tool version is the recommended one!!
  ## Checking the reference integrity of Liferay database:
 
 Execution:
- - **Command line:** Execute script `./references-checker -m` (Linux / Unix) or `references-checker.bat -m` (Windows)
+ - **Command line:** Execute script `./reference-checker -m` (Linux / Unix) or `reference-checker.bat -m` (Windows)
  - **Portlet version:** Open portlet in "Control panel => Apps" and click "Execute"
 
 For each column, a SQL that checks invalid values is executed: select column1 from table1 where column1 not in (select column2 from table2)
@@ -34,7 +34,7 @@ Wrong values will be written to the output
  ## Viewing all Liferay data model relations:
 
 Execution:
- - **Command line:** Command line: Execute script `./references-checker -r` (Linux / Unix) or references-checker.bat -r (Windows)
+ - **Command line:** Command line: Execute script `./reference-checker -r` (Linux / Unix) or reference-checker.bat -r (Windows)
  - **Command line:** Portlet version: Open portlet in "Control panel => Apps" and click "Get relations list"
  
 All defined relations for each table  will be written to the output

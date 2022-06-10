@@ -3,6 +3,6 @@
 
 <display>
 	<category name="category.hidden">
-		<portlet id="references-checker"></portlet>
+		<portlet id="reference-checker"></portlet>
 	</category>
 </display>
