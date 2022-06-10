@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.querieslistener.agent;
+package com.liferay.referencechecker.querieslistener.agent;
 
 import com.p6spy.engine.spy.P6LoadableOptions;
 import com.p6spy.engine.spy.P6ModuleManager;

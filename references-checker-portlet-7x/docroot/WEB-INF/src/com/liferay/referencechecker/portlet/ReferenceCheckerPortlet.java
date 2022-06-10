@@ -12,37 +12,38 @@
  * details.
  */
 
-package com.liferay.referenceschecker.portlet;
+package com.liferay.referencechecker.portlet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
+import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.Repository;
-import com.liferay.portal.service.CompanyLocalServiceUtil;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.documentlibrary.NoSuchFileEntryException;
-import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.service.DLAppLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
-import com.liferay.referenceschecker.OutputUtil;
-import com.liferay.referenceschecker.ReferencesChecker;
-import com.liferay.referenceschecker.model.ModelUtil;
-import com.liferay.referenceschecker.model.ModelUtilImpl;
-import com.liferay.referenceschecker.ref.MissingReferences;
-import com.liferay.referenceschecker.ref.Reference;
-import com.liferay.referenceschecker.util.PortletFileRepositoryUtil;
-import com.liferay.util.bridges.mvc.MVCPortlet;
+import com.liferay.referencechecker.OutputUtil;
+import com.liferay.referencechecker.ReferenceChecker;
+import com.liferay.referencechecker.model.ModelUtil;
+import com.liferay.referencechecker.model.ModelUtilImpl;
+import com.liferay.referencechecker.ref.MissingReferences;
+import com.liferay.referencechecker.ref.Reference;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -71,11 +72,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Portlet implementation class ReferencesCheckerPortlet
+ * Portlet implementation class ReferenceCheckerPortlet
  *
  * @author Jorge Díaz
  */
-public class ReferencesCheckerPortlet extends MVCPortlet {
+public class ReferenceCheckerPortlet extends MVCPortlet {
 
 	public static FileEntry addPortletOutputFileEntry(
 		long groupId, String portletId, long userId, String outputContent) {
@@ -86,13 +87,18 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 
 		try {
 			InputStream inputStream = new ByteArrayInputStream(
-				outputContent.getBytes(StringPool.UTF8));
+					outputContent.getBytes(StringPool.UTF8));
 
 			Repository repository =
-				PortletFileRepositoryUtil.getPortletRepository(
+				PortletFileRepositoryUtil.fetchPortletRepository(
 					groupId, portletId);
 
-			ReferencesCheckerPortlet.cleanupPortletFileEntries(
+			if (repository == null) {
+				repository = PortletFileRepositoryUtil.addPortletRepository(
+					groupId, portletId, new ServiceContext());
+			}
+
+			ReferenceCheckerPortlet.cleanupPortletFileEntries(
 				repository, 8 * 60);
 
 			String fileName =
@@ -100,7 +106,9 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 					System.currentTimeMillis() + ".csv";
 
 			return PortletFileRepositoryUtil.addPortletFileEntry(
-				repository, inputStream, userId, fileName, "text/csv");
+				repository.getGroupId(), userId, StringPool.BLANK,
+				(long) 0, portletId, repository.getDlFolderId(), inputStream,
+				fileName, "text/csv", true);
 		}
 		catch (Throwable t) {
 			_log.error(t, t);
@@ -193,21 +201,21 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		try {
 			connection = DataAccess.getConnection();
 
-			ReferencesChecker referencesChecker = new ReferencesChecker(
+			ReferenceChecker referenceChecker = new ReferenceChecker(
 				connection);
 
 			if (excludeColumnsParam != null) {
 				List<String> excludeColumns =
 					Arrays.asList(excludeColumnsParam.split(","));
 
-				referencesChecker.addExcludeColumns(excludeColumns);
+				referenceChecker.addExcludeColumns(excludeColumns);
 			}
 
-			referencesChecker.setIgnoreNullValues(ignoreNullValues);
-			referencesChecker.initModelUtil(connection, getModelUtil());
-			referencesChecker.initTableUtil(connection);
+			referenceChecker.setIgnoreNullValues(ignoreNullValues);
+			referenceChecker.initModelUtil(connection, getModelUtil());
+			referenceChecker.initTableUtil(connection);
 
-			listMissingReferences = referencesChecker.execute(connection);
+			listMissingReferences = referenceChecker.execute(connection);
 		}
 		finally {
 			DataAccess.cleanUp(connection);
@@ -249,21 +257,21 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 		try {
 			connection = DataAccess.getConnection();
 
-			ReferencesChecker referencesChecker = new ReferencesChecker(
+			ReferenceChecker referenceChecker = new ReferenceChecker(
 				connection);
 
 			if (excludeColumnsParam != null) {
 				List<String> excludeColumns =
 					Arrays.asList(excludeColumnsParam.split(","));
 
-				referencesChecker.addExcludeColumns(excludeColumns);
+				referenceChecker.addExcludeColumns(excludeColumns);
 			}
 
-			referencesChecker.initModelUtil(connection, getModelUtil());
-			referencesChecker.initTableUtil(connection);
+			referenceChecker.initModelUtil(connection, getModelUtil());
+			referenceChecker.initTableUtil(connection);
 
 
-			references = referencesChecker.calculateReferences(
+			references = referenceChecker.calculateReferences(
 				connection, ignoreEmptyTables);
 		}
 		finally {
@@ -299,7 +307,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			String portletId = portletConfig.getPortletName();
 			String resourceId = request.getResourceID();
 
-			ReferencesCheckerPortlet.servePortletFileEntry(
+			ReferenceCheckerPortlet.servePortletFileEntry(
 				groupId, portletId, resourceId, request, response);
 		}
 		catch (NoSuchFileEntryException nsfe) {
@@ -333,7 +341,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 	}
 
 	protected ModelUtil getModelUtil() {
-		String className = "com.liferay.referenceschecker.portal.ModelUtilImpl";
+		String className = "com.liferay.referencechecker.portal.ModelUtilImpl";
 
 		try {
 			Class<?> clazz = Class.forName(className);
@@ -361,7 +369,7 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 			outputList, StringPool.NEW_LINE);
 
 		FileEntry exportCsvFileEntry =
-			ReferencesCheckerPortlet.addPortletOutputFileEntry(
+			ReferenceCheckerPortlet.addPortletOutputFileEntry(
 				groupId, portletId, userId, outputContent);
 
 		if (exportCsvFileEntry != null) {
@@ -376,6 +384,6 @@ public class ReferencesCheckerPortlet extends MVCPortlet {
 	}
 
 	private static Log _log = LogFactoryUtil.getLog(
-			ReferencesCheckerPortlet.class);
+			ReferenceCheckerPortlet.class);
 
 }

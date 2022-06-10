@@ -10,7 +10,7 @@
 		</control-panel-entry-category>
 		<control-panel-entry-weight>1.5</control-panel-entry-weight>
 		<control-panel-entry-class>
-			com.liferay.referenceschecker.portlet.ReferencesCheckerControlPanelEntry
+			com.liferay.referencechecker.portlet.ReferenceCheckerControlPanelEntry
 		</control-panel-entry-class>
 		<header-portlet-css>/css/main.css</header-portlet-css>
 		<footer-portlet-javascript>

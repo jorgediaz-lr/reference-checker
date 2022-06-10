@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.listener;
+package com.liferay.referencechecker.listener;
 
 import com.liferay.referencechecker.OutputUtil;
 import com.liferay.referencechecker.ReferenceChecker;
@@ -20,9 +20,9 @@ import com.liferay.referencechecker.config.Configuration;
 import com.liferay.referencechecker.dao.Table;
 import com.liferay.referencechecker.ref.MissingReferences;
 import com.liferay.referencechecker.ref.Reference;
-import com.liferay.referenceschecker.querieslistener.EventListener;
-import com.liferay.referenceschecker.querieslistener.EventListenerRegistry;
-import com.liferay.referenceschecker.querieslistener.Query;
+import com.liferay.referencechecker.querieslistener.EventListener;
+import com.liferay.referencechecker.querieslistener.EventListenerRegistry;
+import com.liferay.referencechecker.querieslistener.Query;
 
 import java.lang.reflect.Method;
 
@@ -50,7 +50,7 @@ import org.apache.log4j.Logger;
 /**
  * @author Jorge Díaz
  */
-public class ReferencesCheckerInfrastructureListener implements EventListener {
+public class ReferenceCheckerInfrastructureListener implements EventListener {
 
 	@Override
 	public void afterCommit(
@@ -61,12 +61,12 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		try {
-			if (_regenerateReferencesChecker.get(connectionId)) {
-				forceInitReferencesChecker(connection, false);
+			if (_regenerateReferenceChecker.get(connectionId)) {
+				forceInitReferenceChecker(connection, false);
 			}
 
 			if (referenceChecker == null) {
-				initReferencesChecker(connection);
+				initReferenceChecker(connection);
 			}
 		}
 		catch (Exception exception) {
@@ -84,7 +84,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			return;
 		}
 
-		refreshReferencesChecker(
+		refreshReferenceChecker(
 			connection, referenceChecker, _modifiedTables.get(connectionId),
 			_droppedTables.get(connectionId),
 			_regenerateModelUtil.get(connectionId));
@@ -135,7 +135,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		}
 
 		try {
-			initReferencesChecker(connection);
+			initReferenceChecker(connection);
 		}
 		catch (Exception exception) {
 			_log.error(
@@ -227,10 +227,10 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 			}
 		}
 
-		if (!_regenerateReferencesChecker.get(connectionId) &&
+		if (!_regenerateReferenceChecker.get(connectionId) &&
 			hasUpdatedReleaseBuildNumber(query)) {
 
-			_regenerateReferencesChecker.put(connectionId, Boolean.TRUE);
+			_regenerateReferenceChecker.put(connectionId, Boolean.TRUE);
 		}
 
 		if (!_regenerateModelUtil.get(connectionId)) {
@@ -285,7 +285,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	@Override
 	public void deleteConnectionData(int connectionId) {
-		_regenerateReferencesChecker.remove(connectionId);
+		_regenerateReferenceChecker.remove(connectionId);
 		_regenerateModelUtil.remove(connectionId);
 		_modifiedTables.remove(connectionId);
 		_droppedTables.remove(connectionId);
@@ -297,7 +297,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 
 	@Override
 	public void resetConnectionData(int connectionId) {
-		_regenerateReferencesChecker.put(connectionId, Boolean.FALSE);
+		_regenerateReferenceChecker.put(connectionId, Boolean.FALSE);
 		_regenerateModelUtil.put(connectionId, Boolean.FALSE);
 		_modifiedTables.put(connectionId, new ConcurrentSkipListSet<String>());
 		_droppedTables.put(connectionId, new ConcurrentSkipListSet<String>());
@@ -356,18 +356,18 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return configuration.getListener();
 	}
 
-	protected static ReferenceChecker getReferencesChecker() {
+	protected static ReferenceChecker getReferenceChecker() {
 		EventListenerRegistry eventListenerRegistry =
 			EventListenerRegistry.getEventListenerRegistry();
 
 		EventListener eventListener = eventListenerRegistry.getEventListener(
-			ReferencesCheckerInfrastructureListener.class.getName());
+			ReferenceCheckerInfrastructureListener.class.getName());
 
-		ReferencesCheckerInfrastructureListener
-			referencesCheckerInfrastructureListener =
-				(ReferencesCheckerInfrastructureListener)eventListener;
+		ReferenceCheckerInfrastructureListener
+			referenceCheckerInfrastructureListener =
+				(ReferenceCheckerInfrastructureListener)eventListener;
 
-		return referencesCheckerInfrastructureListener.referenceChecker;
+		return referenceCheckerInfrastructureListener.referenceChecker;
 	}
 
 	protected void checkMissingReferences(
@@ -595,21 +595,21 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return notProcessed;
 	}
 
-	protected synchronized void forceInitReferencesChecker(
+	protected synchronized void forceInitReferenceChecker(
 			Connection connection, boolean cleanUp)
 		throws SQLException {
 
-		ReferenceChecker referencesCheckerAux = new ReferenceChecker(
+		ReferenceChecker referenceCheckerAux = new ReferenceChecker(
 			connection);
 
-		if (referencesCheckerAux.getConfiguration() == null) {
+		if (referenceCheckerAux.getConfiguration() == null) {
 			return;
 		}
 
-		referencesCheckerAux.initModelUtil(connection);
-		referencesCheckerAux.initTableUtil(connection);
+		referenceCheckerAux.initModelUtil(connection);
+		referenceCheckerAux.initTableUtil(connection);
 
-		referenceChecker = referencesCheckerAux;
+		referenceChecker = referenceCheckerAux;
 
 		if (!cleanUp) {
 			return;
@@ -701,17 +701,17 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		return false;
 	}
 
-	protected synchronized void initReferencesChecker(Connection connection)
+	protected synchronized void initReferenceChecker(Connection connection)
 		throws SQLException {
 
 		if (referenceChecker != null) {
 			return;
 		}
 
-		forceInitReferencesChecker(connection, true);
+		forceInitReferenceChecker(connection, true);
 	}
 
-	protected void refreshReferencesChecker(
+	protected void refreshReferenceChecker(
 		Connection connection, ReferenceChecker referenceChecker,
 		Set<String> updatedTables, Set<String> deletedTables,
 		boolean regenerateModelUtil) {
@@ -863,7 +863,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 	private static final int _CHECK_MAX_DEPTH = 4;
 
 	private static Logger _log = LogManager.getLogger(
-		ReferencesCheckerInfrastructureListener.class);
+		ReferenceCheckerInfrastructureListener.class);
 
 	private Map<Integer, Set<String>> _deletedTablesLowerCase =
 		new ConcurrentHashMap<>();
@@ -875,7 +875,7 @@ public class ReferencesCheckerInfrastructureListener implements EventListener {
 		new ConcurrentHashMap<>();
 	private Map<Integer, Boolean> _regenerateModelUtil =
 		new ConcurrentHashMap<>();
-	private Map<Integer, Boolean> _regenerateReferencesChecker =
+	private Map<Integer, Boolean> _regenerateReferenceChecker =
 		new ConcurrentHashMap<>();
 	private Map<Integer, Map<String, Set<String>>> _updatedTablesColumns =
 		new ConcurrentHashMap<>();

@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.querieslistener;
+package com.liferay.referencechecker.querieslistener;
 
 import java.sql.Connection;
 import java.sql.SQLException;

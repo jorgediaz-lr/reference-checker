@@ -12,11 +12,11 @@
  * details.
  */
 
-package com.liferay.referenceschecker.querieslistener.agent;
+package com.liferay.referencechecker.querieslistener.agent;
 
-import com.liferay.referenceschecker.querieslistener.EventListener;
-import com.liferay.referenceschecker.querieslistener.EventListenerRegistry;
-import com.liferay.referenceschecker.querieslistener.Query;
+import com.liferay.referencechecker.querieslistener.EventListener;
+import com.liferay.referencechecker.querieslistener.EventListenerRegistry;
+import com.liferay.referencechecker.querieslistener.Query;
 
 import com.p6spy.engine.common.ConnectionInformation;
 import com.p6spy.engine.common.StatementInformation;

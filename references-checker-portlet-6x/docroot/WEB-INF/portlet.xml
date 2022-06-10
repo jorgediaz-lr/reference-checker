@@ -4,10 +4,10 @@
 	<portlet>
 		<portlet-name>references-checker</portlet-name>
 		<display-name>References Checker</display-name>
-		<portlet-class>com.liferay.referenceschecker.portlet.ReferencesCheckerPortlet</portlet-class>
+		<portlet-class>com.liferay.referencechecker.portlet.ReferenceCheckerPortlet</portlet-class>
 		<init-param>
 			<name>view-template</name>
-			<value>/html/referenceschecker/view.jsp</value>
+			<value>/html/referencechecker/view.jsp</value>
 		</init-param>
 		<expiration-cache>0</expiration-cache>
 		<supports>

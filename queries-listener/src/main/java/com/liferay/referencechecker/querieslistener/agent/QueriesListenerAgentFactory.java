@@ -12,19 +12,26 @@
  * details.
  */
 
-package com.liferay.referenceschecker.querieslistener.agent;
+package com.liferay.referencechecker.querieslistener.agent;
 
-import java.util.Set;
+import com.p6spy.engine.event.JdbcEventListener;
+import com.p6spy.engine.spy.P6Factory;
+import com.p6spy.engine.spy.P6LoadableOptions;
+import com.p6spy.engine.spy.option.P6OptionsRepository;
 
 /**
  * @author Jorge Díaz
  */
-public interface QueriesListenerAgentOptionsMBean {
+public class QueriesListenerAgentFactory implements P6Factory {
 
-	public Set<String> getEventListeners();
+	@Override
+	public JdbcEventListener getJdbcEventListener() {
+		return QueriesListenerAgent.INSTANCE;
+	}
 
-	public String getEventListenersString();
-
-	public void setEventListenersString(String eventListeners);
+	@Override
+	public P6LoadableOptions getOptions(P6OptionsRepository optionsRepository) {
+		return new QueriesListenerAgentOptions(optionsRepository);
+	}
 
 }

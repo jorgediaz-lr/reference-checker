@@ -12,18 +12,18 @@
  * details.
  */
 
-package com.liferay.referenceschecker.portlet;
+package com.liferay.referencechecker.portlet;
 
 import com.liferay.portal.model.Portlet;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portlet.BaseControlPanelEntry;
 
 /**
- * Control panel entry class ReferencesCheckerControlPanelEntry
+ * Control panel entry class ReferenceCheckerControlPanelEntry
  *
  * @author Jorge Díaz
  */
-public class ReferencesCheckerControlPanelEntry extends BaseControlPanelEntry {
+public class ReferenceCheckerControlPanelEntry extends BaseControlPanelEntry {
 
 	@Override
 	public boolean isVisible(

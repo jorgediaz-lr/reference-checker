@@ -32,10 +32,10 @@
 <%@ page contentType="text/html; charset=UTF-8" %>
 
 <%@ page import="com.liferay.portal.kernel.dao.search.SearchContainer" %>
-<%@ page import="com.liferay.referenceschecker.dao.Table" %>
-<%@ page import="com.liferay.referenceschecker.portlet.ReferencesCheckerPortlet" %>
-<%@ page import="com.liferay.referenceschecker.ref.MissingReferences" %>
-<%@ page import="com.liferay.referenceschecker.ref.Reference" %>
+<%@ page import="com.liferay.referencechecker.dao.Table" %>
+<%@ page import="com.liferay.referencechecker.portlet.ReferenceCheckerPortlet" %>
+<%@ page import="com.liferay.referencechecker.ref.MissingReferences" %>
+<%@ page import="com.liferay.referencechecker.ref.Reference" %>
 
 <%@ page import="java.util.Collection" %>
 <%@ page import="java.util.List" %>
@@ -50,16 +50,15 @@
 <portlet:actionURL name="executeCheckReferences" var="executeCheckReferencesURL" windowState="normal" />
 <portlet:actionURL name="executeMappingList" var="executeMappingListURL" windowState="normal" />
 
-<div class="container-fluid-1280"><div class="card-horizontal main-content-card"><div class="panel-body">
-<div class="alert alert-warning"><liferay-ui:message key="disclaimer" /></div>
+<div class="alert portlet-msg-alert"><liferay-ui:message key="disclaimer" /></div>
 <aui:form action="<%= executeCheckReferencesURL %>" method="POST" name="fm">
-	<aui:col width="33">
+	<aui:fieldset column="<%= true %>" cssClass="aui-w33 span4">
 		<aui:input name="ignoreNullValues" type="checkbox" value="true" />
 		<aui:input name="ignoreEmptyTables" type="checkbox" value="false" />
-	</aui:col>
-	<aui:col width="33">
+	</aui:fieldset>
+	<aui:fieldset column="<%= true %>" cssClass="aui-w33 span4">
 		<aui:input name="excludeColumns"  style="width: 100%;" type="text" value="userId" />
-	</aui:col>
+	</aui:fieldset>
 	<aui:button-row>
 		<aui:button type="submit" value="execute" />
 		<aui:button onClick='<%= renderResponse.getNamespace() + "mappingList();" %>' value="mapping-list" />
@@ -86,13 +85,11 @@
 	if (jsonData != null) {
 %>
 
-	<%@ include file="/html/referenceschecker/output.jspf" %>
+	<%@ include file="/html/referencechecker/output.jspf" %>
 
 <%
 	}
 %>
-
-</div></div></div>
 
 <aui:script>
 	function <portlet:namespace />mappingList() {

@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.querieslistener;
+package com.liferay.referencechecker.querieslistener;
 
 import java.util.HashSet;
 import java.util.Map;

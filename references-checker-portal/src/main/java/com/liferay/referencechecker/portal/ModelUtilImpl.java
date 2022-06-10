@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.referenceschecker.portal;
+package com.liferay.referencechecker.portal;
 
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
