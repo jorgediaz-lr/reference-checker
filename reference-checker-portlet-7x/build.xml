@@ -30,7 +30,7 @@
 	</target>
 
 	<target name="compile">
-		<exec executable="${reference.checker.root}/gradlew.bat" dir="${reference.checker.root}">
+		<exec executable="${reference.checker.root}/gradlew" dir="${reference.checker.root}">
 			<arg value="deploy"/>
 		</exec>
 		<copy todir="docroot/WEB-INF/lib">
